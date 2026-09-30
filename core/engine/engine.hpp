@@ -240,9 +240,28 @@ namespace zp
 	constexpr auto hamlet_attempts = 12u;
 	constexpr auto hamlet_turn = 0.4f;
 	constexpr auto rail_gauge = 1.435f;
+	constexpr auto rail_panel_near = 42.0f;
+	constexpr auto rail_panel_far = 1400.0f;
+	constexpr auto rail_panel_shadow = 70.0f;
+	constexpr auto rail_panel_weeds = 0.22f;
+	constexpr auto rail_panel_sway = -1.0f;
 	constexpr auto rail_sleeper_spacing = 0.7f;
 	constexpr auto rail_ballast_top = 0.26f;
 	constexpr auto road_lift = 0.05f;
+	constexpr auto road_lift_step = 0.003f;
+	constexpr auto road_tile = 3.0f;
+	constexpr auto road_skirt = 0.45f;
+	constexpr auto road_skirt_drop = 0.16f;
+	constexpr auto crossing_inset = 0.06f;
+	constexpr auto crossing_reach = 1.2f;
+	constexpr auto crossing_grade = 0.06f;
+	constexpr auto crossing_search = 14.0f;
+	constexpr auto crossing_overhang = 0.9f;
+	constexpr auto crossing_board_width = 0.29f;
+	constexpr auto crossing_board_depth = 0.14f;
+	constexpr auto crossing_board_sink = 0.015f;
+	constexpr auto junction_reach = 0.5f;
+	constexpr std::float_t crossing_boards[6] = { -1.0f, -0.45f, -0.15f, 0.15f, 0.45f, 1.0f };
 	constexpr auto crate_far_distance = 150.0f;
 	constexpr auto crate_shadow_distance = 50.0f;
 	constexpr auto building_near_distance = 95.0f;
@@ -347,6 +366,9 @@ namespace zp
 
 	constexpr auto collision_epsilon = 0.002f;
 	constexpr auto collision_cell_size = 4.0f;
+	constexpr auto trace_piece = 8.0f;
+	constexpr auto audio_occlusion_reach = 60.0f;
+	constexpr auto audio_drone_recheck = 0.2f;
 	constexpr auto terrain_clip_planes = 16u;
 	constexpr auto trace_bumps = 4u;
 
@@ -428,7 +450,38 @@ namespace zp
 	constexpr auto bullet_range = 500.0f;
 	constexpr auto sprint_to_fire_time = 0.2f;
 	constexpr auto maximum_particles = 4096u;
-	constexpr auto maximum_decals = 512u;
+	constexpr auto maximum_decals = 1536u;
+	constexpr auto decal_atlas_columns = 8u;
+	constexpr auto decal_rough = 0.92f;
+	constexpr auto decal_gloss = 0.16f;
+	constexpr auto decal_distance_fade = 0.2f;
+	constexpr auto mark_capacity = 32768u;
+	constexpr auto mark_cell = 32.0f;
+	constexpr auto mark_cells = 144u;
+	constexpr auto mark_interest = 2;
+	constexpr auto mark_bytes = 14u;
+	constexpr auto marks_per_message = 36u;
+	constexpr auto mark_queue_room = 96u;
+	constexpr auto mark_cells_per_flush = 3u;
+	constexpr auto mark_backlog = 1024u;
+	constexpr auto mark_plane_scale = 16777216.0f / 4608.0f;
+	constexpr auto mark_height_floor = -16.0f;
+	constexpr auto mark_height_scale = 256.0f;
+	constexpr auto mark_age_step = 8.0;
+	constexpr auto mark_guess_life = 3.0;
+	constexpr auto mark_guess_reach = 0.12f;
+	constexpr auto mark_sweep = 512u;
+	constexpr auto mark_lift = 0.01f;
+	constexpr auto mark_power_full = 90.0f;
+	constexpr auto mark_wet_steps = 14u;
+	constexpr auto mark_foot_offset = 0.1f;
+	constexpr auto mark_tread_speed = 0.8f;
+	constexpr auto mark_tread_slope = 0.72f;
+	constexpr auto mark_blood_reach = 2.6f;
+	constexpr auto mark_blood_exit = 0.35f;
+	constexpr auto mark_blood_drop = 2.5f;
+	constexpr auto mark_blood_scatter = 0.3f;
+	constexpr auto mark_save_limit = 8192u;
 	constexpr auto maximum_tracers = 256u;
 	constexpr auto tick_rate = 60.0f;
 	constexpr auto tick_interval = 1.0f / tick_rate;
@@ -438,7 +491,7 @@ namespace zp
 	constexpr auto remote_character = "survivor";
 	constexpr auto server_executable_name = "zero_point_server.exe";
 	constexpr auto net_protocol_id = 0x314E505Au;
-	constexpr auto net_protocol_version = 4u;
+	constexpr auto net_protocol_version = 5u;
 	constexpr auto net_time_scale = 4096.0;
 	constexpr auto net_time_window = 1.0;
 	constexpr auto net_time_lead = 0.1;
@@ -500,7 +553,8 @@ namespace zp
 	constexpr auto world_save_interval = 60.0f;
 	constexpr auto world_save_name = "zero_point_world.sav";
 	constexpr std::uint32_t world_save_magic = 0x5A505744u;
-	constexpr std::uint32_t world_save_version = 7u;
+	constexpr std::uint32_t world_save_version = 8u;
+	constexpr std::uint32_t world_save_marks = 8u;
 	constexpr std::uint32_t world_save_oldest = 7u;
 	constexpr std::uint32_t world_save_tiers = 5u;
 	constexpr std::uint32_t world_save_claims = 5u;
@@ -1039,6 +1093,8 @@ namespace zp
 			std::float_t yaw;
 			std::float_t scale;
 			std::uint32_t species;
+			std::float_t bend;
+			std::float_t slope;
 		};
 		/*
 		//=====================================================================================
@@ -1087,6 +1143,7 @@ namespace zp
 			profile_foliage,
 			profile_grass,
 			profile_models,
+			profile_decals,
 			profile_ssao,
 			profile_lighting,
 			profile_effects,
@@ -1967,6 +2024,8 @@ namespace zp
 			std::float_t pitch;
 			std::float_t reference;
 			std::float_t delay;
+			std::float_t blocked;
+			std::float_t recheck;
 			std::uint32_t queued;
 			bool fresh;
 		};
@@ -2742,6 +2801,91 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		enum mark_e : std::uint32_t
+		{
+			mark_stone,
+			mark_metal,
+			mark_wood,
+			mark_earth,
+			mark_sand,
+			mark_glass,
+			mark_fabric,
+			mark_print_mud,
+			mark_print_sand,
+			mark_print_wet,
+			mark_blood_spatter,
+			mark_blood_drip,
+			mark_blood_pool,
+			mark_scorch,
+			mark_cut,
+			mark_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct mark_definition_s
+		{
+			std::uint32_t cell;
+			std::uint32_t variants;
+			std::float_t size;
+			std::float_t vary;
+			std::float_t depth;
+			std::float_t life;
+			std::float_t fade;
+			std::float_t reach;
+			std::float_t dry;
+			std::float_t grow;
+			bool wet;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct mark_s
+		{
+			vec3_s position;
+			vec3_s normal;
+			vec3_s axis;
+			std::float_t size;
+			std::double_t born;
+			std::int32_t next;
+			std::int32_t previous;
+			std::uint16_t cell;
+			std::uint8_t kind;
+			std::uint8_t variant;
+			std::uint8_t spin;
+			std::uint8_t scale;
+			bool live;
+			bool guessed;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct tread_s
+		{
+			std::float_t stride;
+			std::uint32_t steps;
+			std::uint32_t wet;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct decal_gpu_s
+		{
+			vec4_s center;
+			vec4_s normal;
+			vec4_s axis;
+			vec4_s tint;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct decal_constants_s
+		{
+			vec4_s params;
+		};
+		/*
+		//=====================================================================================
+		*/
 		enum contents_e : std::uint32_t
 		{
 			contents_solid = 1u,
@@ -3044,7 +3188,8 @@ namespace zp
 			message_hurt,
 			message_bags,
 			message_keypad,
-			message_sound
+			message_sound,
+			message_marks
 		};
 		/*
 		//=====================================================================================
@@ -3232,6 +3377,10 @@ namespace zp
 			std::double_t struck;
 			std::int32_t cell;
 			std::vector<std::float_t> priority;
+			tread_s tread;
+			std::int32_t mark_center;
+			std::vector<std::uint16_t> mark_sync;
+			std::vector<std::int32_t> mark_fresh;
 			bool active;
 			bool bot;
 			bool alive;
@@ -3428,6 +3577,8 @@ namespace zp
 			bool dive_test;
 			bool save_test;
 			bool ride_test;
+			bool impact_test;
+			bool trace;
 		};
 	}
 
@@ -3888,6 +4039,29 @@ namespace zp
 	constexpr const char* weather_names[4] = { "clear", "overcast", "rainy", "stormy" };
 	constexpr std::uint32_t impact_sounds[structures::surface_count] = { structures::sound_hit_rock, structures::sound_hit_metal, structures::sound_hit_metal, structures::sound_hit_wood, structures::sound_hit_metal, structures::sound_hit_soft, structures::sound_hit_soft, structures::sound_hit_flesh, structures::sound_splash, structures::sound_hit_soft, structures::sound_hit_soft, structures::sound_hit_rock, structures::sound_hit_soft };
 	constexpr bool ricochet_surfaces[structures::surface_count] = { true, true, true, false, false, false, false, false, false, false, false, true, false };
+	constexpr structures::mark_definition_s mark_definitions[structures::mark_count] =
+	{
+		{ 0u, 4u, 0.08f, 0.25f, 0.05f, 0.0f, 0.0f, 70.0f, 0.0f, 0.0f, false },
+		{ 4u, 4u, 0.05f, 0.2f, 0.04f, 0.0f, 0.0f, 60.0f, 0.0f, 0.0f, false },
+		{ 8u, 4u, 0.06f, 0.2f, 0.05f, 0.0f, 0.0f, 60.0f, 0.0f, 0.0f, false },
+		{ 12u, 2u, 0.11f, 0.25f, 0.1f, 900.0f, 90.0f, 45.0f, 0.0f, 0.0f, false },
+		{ 14u, 2u, 0.13f, 0.25f, 0.1f, 600.0f, 90.0f, 45.0f, 0.0f, 0.0f, false },
+		{ 32u, 2u, 0.12f, 0.2f, 0.04f, 0.0f, 0.0f, 50.0f, 0.0f, 0.0f, false },
+		{ 34u, 2u, 0.04f, 0.2f, 0.04f, 0.0f, 0.0f, 25.0f, 0.0f, 0.0f, false },
+		{ 16u, 2u, 0.18f, 0.0f, 0.1f, 600.0f, 150.0f, 40.0f, 0.0f, 0.0f, false },
+		{ 18u, 2u, 0.18f, 0.0f, 0.1f, 420.0f, 150.0f, 40.0f, 0.0f, 0.0f, false },
+		{ 20u, 2u, 0.18f, 0.0f, 0.06f, 80.0f, 70.0f, 30.0f, 0.0f, 0.0f, true },
+		{ 24u, 4u, 0.25f, 0.3f, 0.1f, 1800.0f, 300.0f, 55.0f, 240.0f, 0.0f, true },
+		{ 28u, 2u, 0.1f, 0.3f, 0.08f, 1200.0f, 300.0f, 35.0f, 180.0f, 0.0f, true },
+		{ 30u, 2u, 0.5f, 0.2f, 0.12f, 1800.0f, 300.0f, 60.0f, 420.0f, 25.0f, true },
+		{ 36u, 2u, 0.4f, 0.3f, 0.15f, 0.0f, 0.0f, 80.0f, 0.0f, 0.0f, false },
+		{ 38u, 2u, 0.12f, 0.15f, 0.05f, 0.0f, 0.0f, 40.0f, 0.0f, 0.0f, false }
+	};
+	constexpr std::uint32_t surface_marks[structures::surface_count] = { structures::mark_stone, structures::mark_metal, structures::mark_metal, structures::mark_wood, structures::mark_glass, structures::mark_fabric, structures::mark_earth, structures::mark_count, structures::mark_count, structures::mark_earth, structures::mark_sand, structures::mark_stone, structures::mark_earth };
+	constexpr bool surface_hard[structures::surface_count] = { true, true, true, true, true, false, false, false, false, false, false, true, false };
+	constexpr std::uint32_t layer_surfaces[terrain_layer_count] = { structures::surface_grass, structures::surface_grass, structures::surface_dirt, structures::surface_dirt, structures::surface_rock, structures::surface_rock, structures::surface_sand, structures::surface_gravel, structures::surface_dirt, structures::surface_grass, structures::surface_grass, structures::surface_dirt, structures::surface_sand, structures::surface_gravel, structures::surface_grass, structures::surface_dirt };
+	constexpr std::uint32_t layer_prints[terrain_layer_count] = { structures::mark_count, structures::mark_count, structures::mark_count, structures::mark_print_mud, structures::mark_count, structures::mark_count, structures::mark_print_sand, structures::mark_count, structures::mark_count, structures::mark_count, structures::mark_count, structures::mark_print_mud, structures::mark_print_sand, structures::mark_count, structures::mark_count, structures::mark_print_mud };
+	constexpr structures::vec3_s mark_blood_dried{ 0.42f, 0.3f, 0.3f };
 	constexpr const char* reject_texts[structures::reject_count] = { "That server is full", "That server runs a different version", "That server is not accepting players", "You are banned from that server", "That server only lets in people on its whitelist", "Wrong server password", "Someone with your name is already playing there", "That name belongs to someone else on that server" };
 	constexpr auto item_icon_size = 128u;
 	constexpr auto item_icon_columns = 16u;
@@ -3994,11 +4168,13 @@ namespace zp
 		{ { -900.0f, -600.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_quarry }
 	};
 	constexpr structures::vec2_s railway_points[] = { { 1480.0f, 360.0f }, { 1560.0f, 700.0f }, { 1500.0f, 1000.0f }, { 1380.0f, 1300.0f }, { 1100.0f, 1520.0f }, { 700.0f, 1620.0f }, { 300.0f, 1520.0f }, { -60.0f, 1500.0f }, { -330.0f, 1330.0f }, { -560.0f, 1150.0f }, { -850.0f, 1030.0f }, { -1150.0f, 930.0f }, { -1380.0f, 740.0f }, { -1460.0f, 480.0f }, { -1520.0f, 150.0f }, { -1680.0f, -300.0f }, { -1620.0f, -700.0f }, { -1500.0f, -1050.0f }, { -1250.0f, -1350.0f }, { -1000.0f, -1480.0f }, { -640.0f, -1560.0f }, { -240.0f, -1470.0f }, { 150.0f, -1300.0f }, { 500.0f, -1000.0f }, { 800.0f, -650.0f }, { 880.0f, -300.0f }, { 1100.0f, -100.0f }, { 1350.0f, 150.0f } };
-	constexpr structures::vec2_s south_road_points[] = { { 1180.0f, -330.0f }, { 860.0f, -330.0f }, { 600.0f, -420.0f }, { 460.0f, -560.0f }, { 300.0f, -700.0f }, { 172.0f, -844.0f }, { 60.0f, -1080.0f }, { -92.0f, -1300.0f }, { -420.0f, -1470.0f }, { -760.0f, -1500.0f }, { -1100.0f, -1480.0f } };
-	constexpr structures::vec2_s east_road_points[] = { { 860.0f, -330.0f }, { 1000.0f, -150.0f }, { 1250.0f, 50.0f }, { 1440.0f, 250.0f }, { 1520.0f, 520.0f }, { 1450.0f, 860.0f }, { 1380.0f, 1120.0f }, { 1284.0f, 1232.0f }, { 1000.0f, 1420.0f }, { 650.0f, 1500.0f }, { 300.0f, 1450.0f } };
-	constexpr structures::vec2_s west_road_points[] = { { 300.0f, 1450.0f }, { -100.0f, 1420.0f }, { -420.0f, 1190.0f }, { -780.0f, 1040.0f }, { -1120.0f, 950.0f }, { -1340.0f, 780.0f }, { -1470.0f, 450.0f }, { -1610.0f, 330.0f }, { -1580.0f, 0.0f }, { -1600.0f, -400.0f }, { -1520.0f, -800.0f }, { -1380.0f, -1150.0f }, { -1100.0f, -1480.0f } };
-	constexpr structures::vec2_s valley_road_points[] = { { 460.0f, -300.0f }, { 520.0f, -60.0f }, { 600.0f, 200.0f }, { 740.0f, 480.0f }, { 740.0f, 580.0f } };
-	constexpr structures::vec2_s quarry_road_points[] = { { 300.0f, -700.0f }, { 0.0f, -650.0f }, { -350.0f, -620.0f }, { -650.0f, -600.0f }, { -900.0f, -600.0f } };
+	constexpr structures::vec2_s south_road_points[] = { { 1180.0f, -330.0f }, { 1004.0f, -305.0f }, { 860.0f, -330.0f }, { 800.0f, -350.0f }, { 722.0f, -361.0f }, { 600.0f, -420.0f }, { 528.0f, -485.0f }, { 460.0f, -560.0f }, { 379.0f, -630.0f }, { 300.0f, -700.0f }, { 257.0f, -766.0f }, { 172.0f, -844.0f }, { 118.0f, -957.0f }, { 60.0f, -1029.0f }, { -26.0f, -1194.0f }, { -92.0f, -1300.0f }, { -256.0f, -1334.0f }, { -337.0f, -1459.0f }, { -418.0f, -1478.0f }, { -586.0f, -1514.0f }, { -649.0f, -1516.0f }, { -832.0f, -1500.0f }, { -947.0f, -1438.0f }, { -1022.0f, -1413.0f }, { -1100.0f, -1480.0f } };
+	constexpr structures::vec2_s east_road_points[] = { { 800.0f, -350.0f }, { 849.0f, -277.0f }, { 932.0f, -146.0f }, { 975.0f, -91.0f }, { 1084.0f, -8.0f }, { 1120.0f, 19.0f }, { 1177.0f, 78.0f }, { 1250.0f, 158.0f }, { 1400.0f, 330.0f }, { 1419.0f, 416.0f }, { 1464.0f, 560.0f }, { 1485.0f, 742.0f }, { 1475.0f, 835.0f }, { 1422.0f, 953.0f }, { 1338.0f, 1174.0f }, { 1284.0f, 1232.0f }, { 1184.0f, 1326.0f }, { 1090.0f, 1379.0f }, { 950.0f, 1413.0f }, { 844.0f, 1410.0f }, { 741.0f, 1491.0f }, { 594.0f, 1479.0f }, { 533.0f, 1494.0f }, { 421.0f, 1479.0f }, { 300.0f, 1450.0f } };
+	constexpr structures::vec2_s west_road_points[] = { { 300.0f, 1450.0f }, { 126.0f, 1418.0f }, { 35.0f, 1461.0f }, { -128.0f, 1430.0f }, { -195.0f, 1366.0f }, { -398.0f, 1200.0f }, { -452.0f, 1161.0f }, { -592.0f, 1080.0f }, { -719.0f, 1016.0f }, { -912.0f, 946.0f }, { -1030.0f, 913.0f }, { -1166.0f, 826.0f }, { -1209.0f, 760.0f }, { -1256.0f, 690.0f }, { -1399.0f, 556.0f }, { -1436.0f, 379.0f }, { -1425.0f, 300.0f }, { -1477.0f, 180.0f }, { -1451.0f, 80.0f }, { -1473.0f, 2.0f }, { -1540.0f, -139.0f }, { -1544.0f, -286.0f }, { -1581.0f, -378.0f }, { -1589.0f, -582.0f }, { -1572.0f, -734.0f }, { -1437.0f, -841.0f }, { -1436.0f, -978.0f }, { -1403.0f, -1073.0f }, { -1350.0f, -1188.0f }, { -1229.0f, -1272.0f }, { -1163.0f, -1321.0f }, { -1072.0f, -1370.0f }, { -1022.0f, -1413.0f } };
+	constexpr structures::vec2_s valley_road_points[] = { { 460.0f, -300.0f }, { 500.0f, -52.0f }, { 553.0f, 21.0f }, { 666.0f, 112.0f }, { 770.0f, 176.0f }, { 783.0f, 297.0f }, { 856.0f, 370.0f }, { 857.0f, 506.0f }, { 850.0f, 565.0f }, { 810.0f, 590.0f }, { 740.0f, 580.0f } };
+	constexpr structures::vec2_s quarry_road_points[] = { { 300.0f, -700.0f }, { 81.0f, -674.0f }, { -58.0f, -636.0f }, { -142.0f, -653.0f }, { -302.0f, -696.0f }, { -400.0f, -666.0f }, { -480.0f, -646.0f }, { -646.0f, -634.0f }, { -734.0f, -655.0f }, { -900.0f, -600.0f } };
+	constexpr structures::vec2_s battery_road_points[] = { { -1425.0f, 300.0f }, { -1520.0f, 318.0f }, { -1610.0f, 330.0f } };
+	constexpr structures::vec2_s harbour_road_points[] = { { 1400.0f, 330.0f }, { 1460.0f, 315.0f }, { 1520.0f, 300.0f } };
 	constexpr structures::world_route_s world_routes[] =
 	{
 		{ railway_points, static_cast<std::uint32_t>(std::size(railway_points)), structures::route_rail, 5.2f, 0.025f, 100.0f, 0.65f, true },
@@ -4006,7 +4182,9 @@ namespace zp
 		{ east_road_points, static_cast<std::uint32_t>(std::size(east_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
 		{ west_road_points, static_cast<std::uint32_t>(std::size(west_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
 		{ valley_road_points, static_cast<std::uint32_t>(std::size(valley_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
-		{ quarry_road_points, static_cast<std::uint32_t>(std::size(quarry_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false }
+		{ quarry_road_points, static_cast<std::uint32_t>(std::size(quarry_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ battery_road_points, static_cast<std::uint32_t>(std::size(battery_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ harbour_road_points, static_cast<std::uint32_t>(std::size(harbour_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false }
 	};
 	constexpr structures::train_vehicle_s train_vehicles[structures::train_vehicle_count] =
 	{
@@ -4026,7 +4204,7 @@ namespace zp
 	constexpr auto train_view_distance = 1500.0f;
 	constexpr auto train_detail_distance = 170.0f;
 	constexpr auto train_shadow_distance = 230.0f;
-	constexpr auto train_joint_spacing = 18.0f;
+	constexpr auto train_joint_spacing = 12.0f;
 	constexpr auto train_axle_spacing = 1.8f;
 	constexpr auto train_clack_range = 45.0f;
 	constexpr auto train_engine_reference = 16.0f;
@@ -4187,7 +4365,7 @@ namespace zp
 		{ 0.0f, 2.0f, 0.0f }
 	};
 
-	constexpr const char* profile_names[structures::profile_count] = { "c0 ground", "c0 foliage", "c1 ground", "c1 foliage", "c2 ground", "c2 foliage", "c3 ground", "c3 foliage", "world", "terrain", "foliage", "grass", "models", "ssao", "lighting", "effects", "post" };
+	constexpr const char* profile_names[structures::profile_count] = { "c0 ground", "c0 foliage", "c1 ground", "c1 foliage", "c2 ground", "c2 foliage", "c3 ground", "c3 foliage", "world", "terrain", "foliage", "grass", "models", "decals", "ssao", "lighting", "effects", "post" };
 
 	constexpr structures::vec4_s grass_sprites[grass_sprite_count] =
 	{
@@ -4350,6 +4528,7 @@ namespace zp
 	constexpr const char* surface_names[structures::surface_count] = { "concrete", "metal", "grate", "wood", "glass", "fabric", "dirt", "flesh", "water", "grass", "sand", "rock", "gravel" };
 	constexpr const char* biome_names[structures::biome_count] = { "sea", "beach", "rocky shore", "dunes", "marsh", "meadow", "farmland", "broadleaf woodland", "pinewood", "coastal heath", "moorland", "summit" };
 	constexpr auto biome_scatter = 7.0f;
+	constexpr structures::vec3_s biome_moods[structures::biome_count] = { { 0.0f, 0.0f, 0.1f }, { 0.25f, 0.3f, 0.12f }, { 0.15f, 0.2f, 0.18f }, { 0.35f, 0.5f, 0.16f }, { 0.8f, 1.3f, 0.0f }, { 0.85f, 1.0f, 0.04f }, { 0.8f, 0.9f, 0.04f }, { 1.35f, 0.9f, -0.06f }, { 1.1f, 0.7f, -0.04f }, { 0.45f, 0.6f, 0.2f }, { 0.25f, 0.4f, 0.3f }, { 0.08f, 0.15f, 0.45f } };
 	constexpr structures::biome_flora_s biome_flora[structures::biome_count] =
 	{
 		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
