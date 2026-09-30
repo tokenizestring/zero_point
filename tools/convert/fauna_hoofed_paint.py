@@ -44,6 +44,15 @@ def vertex_normals(points, triangles):
     return total / numpy.maximum(numpy.linalg.norm(total, axis=1), 1e-12)[:, None]
 
 
+def model_normals(model, triangles):
+    normals = vertex_normals(model["points"], triangles)
+    override = model.get("normal")
+    if override is not None:
+        chosen = ~numpy.isnan(override[:, 0])
+        normals[chosen] = override[chosen]
+    return normals
+
+
 def engine_tangents(points, triangles, uv, normals):
     flat = triangles.reshape(-1)
     keys = numpy.column_stack([flat, numpy.round(uv.reshape(-1, 2) * 65535.0).astype(numpy.int64)])
@@ -208,7 +217,7 @@ class canvas:
         self.corner_uv = model["uv"][loops]
         self.face_of = owner
         points = model["points"]
-        self.normals = vertex_normals(points, triangles)
+        self.normals = model_normals(model, triangles)
         self.corner_tangent, self.corner_sign, tangent, bitangent = engine_tangents(points, triangles, self.corner_uv, self.normals)
         tri, weights = rasterize(self.corner_uv, size, points[triangles])
         self.valid = tri >= 0
@@ -244,6 +253,10 @@ class canvas:
     def tagged(self, *names):
         codes = [self.tag_names.index(name) for name in names if name in self.tag_names]
         return numpy.isin(self.tag, codes)
+
+    def vertex_mask(self, *names):
+        part = numpy.isin(numpy.array(self.model["part"]), names).astype(numpy.float64)
+        return self.blend(part[self.triangles][:, :, None])[:, 0]
 
     def grid(self, values, fill=0.0):
         values = numpy.asarray(values)
@@ -323,11 +336,18 @@ def transfer(source, values, target, passes=10):
     return picked if values.ndim > 1 else picked[:, 0]
 
 
-def write(canvas, values, path, passes=24):
+def write(canvas, values, path, passes=24, fill=None):
     image = canvas.grid(values)
     if image.ndim == 2:
         image = image[..., None]
     image = dilate(image, canvas.valid, passes)
+    reached = canvas.valid.copy()
+    for step in range(passes):
+        grown = reached.copy()
+        for axis, offset in ((0, 1), (0, -1), (1, 1), (1, -1)):
+            grown |= numpy.roll(reached, offset, axis=axis)
+        reached = grown
+    image[~reached] = numpy.asarray(fill if fill is not None else numpy.asarray(values).reshape(len(values), -1).mean(axis=0), dtype=numpy.float32)
     size = canvas.size
     rgba = numpy.ones((size, size, 4), dtype=numpy.float32)
     rgba[:, :, :3] = numpy.clip(image[:, :, :3] if image.shape[2] >= 3 else numpy.repeat(image, 3, axis=2), 0.0, 1.0)
