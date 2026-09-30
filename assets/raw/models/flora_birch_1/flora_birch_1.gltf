@@ -1,0 +1,292 @@
+{
+ "asset": {
+  "generator": "zero point flora",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bark",
+   "doubleSided": false,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "leaf",
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 5
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 5
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "flora_birch_1_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "flora_birch_1_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_bark_diff_2k.png",
+   "uri": "../flora_birch_0/flora_birch_bark_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_bark_nor_gl_2k.png",
+   "uri": "../flora_birch_0/flora_birch_bark_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_bark_arm_2k.png",
+   "uri": "../flora_birch_0/flora_birch_bark_arm_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_leaf_diff_2k.png",
+   "uri": "../flora_birch_0/flora_birch_leaf_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_leaf_nor_gl_2k.png",
+   "uri": "../flora_birch_0/flora_birch_leaf_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_birch_leaf_arm_2k.png",
+   "uri": "../flora_birch_0/flora_birch_leaf_arm_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 5650,
+   "max": [
+    2.034930944442749,
+    10.120203018188477,
+    2.5230894088745117
+   ],
+   "min": [
+    -3.9023773670196533,
+    -0.5109360218048096,
+    -3.4086201190948486
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 5650,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 5650,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 15990,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 11190,
+   "max": [
+    2.6158623695373535,
+    10.726300239562988,
+    2.9379208087921143
+   ],
+   "min": [
+    -4.158405780792236,
+    3.37205171585083,
+    -4.0174455642700195
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 11190,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 11190,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 24732,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 67800,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 67800,
+   "byteOffset": 67800,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 45200,
+   "byteOffset": 135600,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 31980,
+   "byteOffset": 180800,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 134280,
+   "byteOffset": 212780,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 134280,
+   "byteOffset": 347060,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 89520,
+   "byteOffset": 481340,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 49464,
+   "byteOffset": 570860,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 620324,
+   "uri": "flora_birch_1.bin"
+  }
+ ]
+}
