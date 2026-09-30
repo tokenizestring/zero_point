@@ -13,7 +13,58 @@ def shell(points, faces, tags, bone, part, cuts=(), coord=None):
 
 
 def mirrored(piece, bone=None):
-    return {"points": piece["points"] * flip[None, :], "faces": [tuple(reversed(face)) for face in piece["faces"]], "tags": list(piece["tags"]), "bone": bone or piece["bone"], "part": piece["part"], "cuts": list(piece["cuts"]), "coord": piece["coord"].copy()}
+    result = {"points": piece["points"] * flip[None, :], "faces": [tuple(reversed(face)) for face in piece["faces"]], "tags": list(piece["tags"]), "bone": bone or piece["bone"], "part": piece["part"], "cuts": list(piece["cuts"]), "coord": piece["coord"].copy()}
+    if "normal" in piece:
+        result["normal"] = piece["normal"] * flip[None, :]
+        result["root"] = piece["root"] * flip
+    return result
+
+
+def lock(root, normal, direction, length, width, thick, lift, droop=(0.0, 0.0, 0.0), tag="lock"):
+    root = numpy.asarray(root, dtype=numpy.float64)
+    n = fields.unit(normal)
+    d = fields.unit(direction)
+    side = fields.unit(numpy.cross(n, d))
+    base = root - n * 0.006
+    middle = root + d * (length * 0.55) + n * lift
+    tip = root + d * length + n * (lift * 0.4) + numpy.asarray(droop, dtype=numpy.float64)
+    points = [base + side * (width * 0.5), base - side * (width * 0.5), base + n * thick - d * 0.008, middle + side * (width * 0.3), middle - side * (width * 0.3), middle + n * (thick * 0.55), tip]
+    faces = [(0, 3, 4, 1), (1, 4, 5, 2), (2, 5, 3, 0), (3, 6, 4), (4, 6, 5), (5, 6, 3)]
+    piece = shell(points, faces, [tag] * len(faces), None, "lock", [(0, 3), (3, 6)], [(0.0, 1.0)] * 3 + [(0.55, 1.0)] * 3 + [(1.0, 1.0)])
+    piece["normal"] = numpy.array([fields.unit(n + side * 0.45), fields.unit(n - side * 0.45), fields.unit(n - d * 0.2), fields.unit(n + side * 0.45 + d * 0.2), fields.unit(n - side * 0.45 + d * 0.2), fields.unit(n + d * 0.1), fields.unit(n * 0.7 + d * 0.7)])
+    piece["root"] = root
+    return piece
+
+
+def tufts(f, groups, seeds, seed=7):
+    rng = numpy.random.default_rng(seed)
+    pieces = []
+    for entry in seeds:
+        if "root" in entry:
+            root = numpy.asarray(entry["root"], dtype=numpy.float64)
+            normal = fields.unit(entry["normal"])
+        else:
+            origin = numpy.asarray(entry["origin"], dtype=numpy.float64)
+            ray = fields.unit(entry["ray"])
+            distance, found = f.cast(origin[None, :], ray[None, :], entry.get("reach", 0.5), groups, steps=200)
+            if not found[0]:
+                continue
+            root = origin + ray * float(distance[0])
+            normal = f.normals(root[None, :], groups)[0]
+        flow = numpy.asarray(entry["flow"], dtype=numpy.float64)
+        if "lean" in entry:
+            along = fields.unit(flow - normal * float(flow @ normal))
+            flow = along * math.cos(math.radians(entry["lean"])) + normal * math.sin(math.radians(entry["lean"]))
+        if "facing" in entry:
+            normal = fields.unit(entry["facing"])
+        flow = fields.rotation(normal, (rng.random() - 0.5) * 2.0 * entry.get("spread", 12.0)) @ (flow - normal * float(flow @ normal))
+        direction = fields.unit(fields.unit(flow) + normal * entry.get("rise", 0.35))
+        jitter = 0.75 + 0.5 * rng.random()
+        piece = lock(root, normal, direction, entry["length"] * jitter, entry["width"] * (0.85 + 0.3 * rng.random()), entry.get("thick", 0.012), entry.get("lift", 0.004), numpy.array([0.0, 0.0, -entry.get("sag", 0.2) * entry["length"] * jitter]), entry.get("tag", "lock"))
+        pieces.append(piece)
+        if abs(root[0]) > 1e-4:
+            pieces.append(mirrored(piece))
+    return pieces
 
 
 def claw(center, heel, length, width, toe_height, heel_height, side, gap=0.004, spread=0.004, retreat=0.42, bone="hoof"):
@@ -124,10 +175,14 @@ def combine(skin, pieces):
     side = [skin["side"]]
     coord = [skin["coord"]]
     detail = [~skin["pinned"]]
+    normal = [numpy.full((len(skin["points"]), 3), numpy.nan)]
+    root = [numpy.full((len(skin["points"]), 3), numpy.nan)]
     offset = len(skin["points"])
     for piece in pieces:
         count = len(piece["points"])
         points.append(piece["points"])
+        normal.append(piece["normal"] if "normal" in piece else numpy.full((count, 3), numpy.nan))
+        root.append(numpy.tile(piece["root"], (count, 1)) if "root" in piece else numpy.full((count, 3), numpy.nan))
         faces.extend(tuple(index + offset for index in face) for face in piece["faces"])
         tags.extend(piece["tags"])
         part.extend([piece["part"]] * count)
@@ -137,4 +192,11 @@ def combine(skin, pieces):
         coord.append(piece["coord"])
         detail.append(numpy.zeros(count, dtype=bool))
         offset += count
-    return {"points": numpy.vstack(points), "faces": faces, "tags": tags, "part": part, "bone": bone, "cuts": cuts, "side": numpy.concatenate(side), "coord": numpy.vstack(coord), "detail": numpy.concatenate(detail), "skin_count": len(skin["points"])}
+    result = {"points": numpy.vstack(points), "faces": faces, "tags": tags, "part": part, "bone": bone, "cuts": cuts, "side": numpy.concatenate(side), "coord": numpy.vstack(coord), "detail": numpy.concatenate(detail), "skin_count": len(skin["points"])}
+    result["normal"] = numpy.vstack(normal)
+    roots = numpy.vstack(root)
+    anchor = numpy.full(len(roots), -1, dtype=numpy.int64)
+    for index in numpy.flatnonzero(~numpy.isnan(roots[:, 0])):
+        anchor[index] = int(numpy.argmin(numpy.linalg.norm(skin["points"] - roots[index][None, :], axis=1)))
+    result["anchor"] = anchor
+    return result
