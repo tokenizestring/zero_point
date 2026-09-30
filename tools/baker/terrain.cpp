@@ -186,8 +186,9 @@ namespace zp
 		const auto radius{ std::sqrt(wu * wu * 1.12f + wv * wv * 0.92f) };
 		const auto inland{ (0.74f - radius) * half };
 		const auto northern{ mathematics.smoothstep(-0.2f, 0.45f, v + 0.3f * fbm(u * 1.6f, v * 1.6f, 3u, seed + 6u)) };
-		const auto bluff{ mathematics.smoothstep(0.0f, 0.16f, fbm(wu * 2.2f - 5.0f, wv * 2.2f + 3.0f, 3u, seed + 18u)) * mathematics.smoothstep(baker::bluff_guard, baker::bluff_guard + 180.0f, clearance(x, z)) };
-		const auto retreat{ inland - bluff * (baker::bluff_retreat + baker::bluff_northern * northern) };
+		const auto bluff{ mathematics.smoothstep(0.0f, 0.16f, fbm(wu * 2.2f - 5.0f, wv * 2.2f + 3.0f, 3u, seed + 18u)) * mathematics.smoothstep(baker::bluff_guard, baker::bluff_guard + 120.0f, clearance(x, z)) };
+		const auto crest{ (baker::bluff_height + baker::bluff_northern * northern) * (0.65f + 0.7f * fbm(hu * 5.0f + 9.0f, hv * 5.0f - 3.0f, 3u, seed + 19u)) };
+		const auto rampart{ bluff * crest * mathematics.smoothstep(3.0f, 3.0f + baker::bluff_face, inland) * (1.0f - mathematics.smoothstep(baker::bluff_reach * 0.25f, baker::bluff_reach, inland)) };
 		const auto cliff{ mathematics.smoothstep(0.1f, 0.34f, fbm(wu * 3.0f + 3.0f, wv * 3.0f - 8.0f, 3u, seed + 4u)) * (1.0f - bluff) };
 		const auto plains{ 1.8f * mathematics.smoothstep(0.0f, 22.0f, inland) + 5.0f * mathematics.smoothstep(18.0f, 150.0f, inland) + 7.0f * mathematics.smoothstep(220.0f, 950.0f, inland) };
 		const auto rolling{ 0.55f + 0.45f * fbm(u * 1.7f + 4.4f, v * 1.7f - 1.9f, 3u, seed + 17u) };
@@ -195,8 +196,8 @@ namespace zp
 		const auto mountains{ 190.0f * std::pow(std::max(ridged(u * 3.4f + 0.7f, v * 3.4f - 0.4f, 6u, seed + 7u), 0.0f), 1.7f) * northern * mathematics.smoothstep(200.0f, 820.0f, inland) };
 		const auto western{ mathematics.smoothstep(0.0f, 0.4f, -u + 0.3f * fbm(u * 1.4f + 2.0f, v * 1.4f, 3u, seed + 15u)) * (1.0f - northern * 0.7f) };
 		const auto highlands{ 120.0f * std::pow(std::max(ridged(hu * 1.6f + 3.1f, hv * 1.6f + 1.7f, 5u, seed + 16u), 0.0f), 1.3f) * western * mathematics.smoothstep(120.0f, 560.0f, inland) };
-		const auto land{ plains + std::max(hills, 0.0f) + mountains + highlands };
-		const auto shelf{ retreat > 0.0f ? land * mathematics.smoothstep(0.0f, baker::bluff_face, retreat) : -2.6f * mathematics.smoothstep(0.0f, 45.0f, -retreat) + retreat * 0.075f };
+		const auto land{ plains + std::max(hills, 0.0f) + mountains + highlands + rampart };
+		const auto shelf{ inland > 0.0f ? land : -2.6f * mathematics.smoothstep(0.0f, 45.0f, -inland) + inland * 0.075f };
 		const auto cliff_top{ 14.0f + 7.0f * fbm(hu * 6.0f, hv * 6.0f, 3u, seed + 9u) };
 		const auto cliff_land{ inland > 6.0f ? std::max(land, cliff_top * mathematics.smoothstep(6.0f, 11.0f, inland) + land * 0.6f) : (inland > 0.0f ? 0.6f * mathematics.smoothstep(0.0f, 6.0f, inland) : shelf) };
 		const auto height{ mathematics.lerp(shelf, cliff_land, cliff) };
@@ -493,6 +494,11 @@ namespace zp
 		route_kind.assign(heights.size(), 0u);
 		routes.clear();
 
+		std::vector<std::float_t> nearest(heights.size(), FLT_MAX);
+		std::vector<std::float_t> target(heights.size(), 0.0f);
+		std::vector<std::uint8_t> bedded(heights.size(), 0u);
+		std::vector<std::size_t> touched;
+
 		for (const auto& route : world_routes)
 		{
 			std::vector<structures::vec2_s> path;
@@ -503,10 +509,14 @@ namespace zp
 			const auto window{ std::max(1, static_cast<std::int32_t>(route.smoothing / baker::route_spacing * 0.5f)) };
 			const auto half{ route.width * 0.5f };
 			const auto reach{ half + baker::route_shoulder };
+			const auto segments{ route.closed ? count : count - 1 };
 
 			std::vector<std::float_t> level(path.size());
 			std::vector<std::float_t> smoothed(path.size());
 			std::vector<std::float_t> spans(path.size());
+			std::vector<std::float_t> lowest(path.size(), -FLT_MAX);
+			std::vector<std::float_t> highest(path.size(), FLT_MAX);
+			std::vector<std::uint8_t> pinned(path.size(), 0u);
 
 			for (auto index{ 0 }; index < count; index++)
 			{
@@ -543,11 +553,62 @@ namespace zp
 
 			for (auto index{ 0 }; index < count; index++)
 			{
-				const auto& center{ path[index] };
-				const auto first_column{ std::max(static_cast<std::int32_t>(center.x - reach - terrain_origin), 0) };
-				const auto last_column{ std::min(static_cast<std::int32_t>(center.x + reach - terrain_origin) + 1, size - 1) };
-				const auto first_row{ std::max(static_cast<std::int32_t>(center.y - reach - terrain_origin), 0) };
-				const auto last_row{ std::min(static_cast<std::int32_t>(center.y + reach - terrain_origin) + 1, size - 1) };
+				for (const auto& other : routes)
+				{
+					const auto rail{ other.kind == structures::route_rail };
+					const auto limit{ other.width * 0.5f + (rail ? crossing_reach : junction_reach) };
+
+					auto best{ limit * limit };
+
+					for (const auto& point : other.points)
+					{
+						if (const auto gap{ (point.x - path[index].x) * (point.x - path[index].x) + (point.z - path[index].y) * (point.z - path[index].y) }; gap < best && (rail || pinned[index] != 2u))
+						{
+							best = gap;
+							lowest[index] = point.y + (rail ? rail_head - road_lift - crossing_inset : 0.0f);
+							pinned[index] = static_cast<std::uint8_t>(rail ? 2u : 1u);
+						}
+					}
+				}
+
+				highest[index] = pinned[index] ? lowest[index] : FLT_MAX;
+			}
+
+			for (auto index{ 1 }; index < count; index++)
+			{
+				const auto step{ mathematics.length(path[index] - path[index - 1]) * crossing_grade };
+
+				lowest[index] = std::max(lowest[index], lowest[index - 1] - step);
+				highest[index] = std::min(highest[index], highest[index - 1] + step);
+			}
+
+			for (auto index{ count - 2 }; index >= 0; index--)
+			{
+				const auto step{ mathematics.length(path[index + 1] - path[index]) * crossing_grade };
+
+				lowest[index] = std::max(lowest[index], lowest[index + 1] - step);
+				highest[index] = std::min(highest[index], highest[index + 1] + step);
+			}
+
+			for (auto index{ 0 }; index < count; index++)
+			{
+				level[index] = std::min(std::max(level[index], lowest[index]), highest[index]);
+			}
+
+			touched.clear();
+
+			for (auto index{ 0 }; index < segments; index++)
+			{
+				const auto next{ (index + 1) % count };
+				const auto& from{ path[index] };
+				const auto& to{ path[next] };
+				const auto span{ to - from };
+				const auto squared{ std::max(span.x * span.x + span.y * span.y, 0.0001f) };
+				const auto joined{ pinned[index] != 0u && pinned[next] != 0u };
+				const auto first_column{ std::max(static_cast<std::int32_t>(std::min(from.x, to.x) - reach - terrain_origin), 0) };
+				const auto last_column{ std::min(static_cast<std::int32_t>(std::max(from.x, to.x) + reach - terrain_origin) + 1, size - 1) };
+				const auto first_row{ std::max(static_cast<std::int32_t>(std::min(from.y, to.y) - reach - terrain_origin), 0) };
+				const auto last_row{ std::min(static_cast<std::int32_t>(std::max(from.y, to.y) + reach - terrain_origin) + 1, size - 1) };
 
 				for (auto row{ first_row }; row <= last_row; row++)
 				{
@@ -555,22 +616,42 @@ namespace zp
 					{
 						const auto cell{ static_cast<std::size_t>(row) * static_cast<std::size_t>(size) + static_cast<std::size_t>(column) };
 						const structures::vec2_s spot{ terrain_origin + static_cast<std::float_t>(column), terrain_origin + static_cast<std::float_t>(row) };
+						const auto along{ mathematics.saturate(((spot.x - from.x) * span.x + (spot.y - from.y) * span.y) / squared) };
 
-						if (const auto distance{ mathematics.length(spot - center) }; distance < reach)
+						if (const auto distance{ mathematics.length(spot - (from + span * along)) }; distance < reach && distance < nearest[cell])
 						{
-							const auto margin{ std::max(distance - half, 0.0f) * route.slope };
-							const auto closeness{ 1.0f - mathematics.smoothstep(half, half + baker::route_paint_band, distance) };
-
-							heights[cell] = std::clamp(heights[cell], level[index] - margin, level[index] + margin);
-
-							if (closeness > route_near[cell])
+							if (nearest[cell] == FLT_MAX)
 							{
-								route_near[cell] = closeness;
-								route_kind[cell] = static_cast<std::uint8_t>(route.kind + 1u);
+								touched.push_back(cell);
 							}
+
+							nearest[cell] = distance;
+							target[cell] = mathematics.lerp(level[index], level[next], along);
+							bedded[cell] = static_cast<std::uint8_t>((bedded[cell] & 1u) | (joined ? 2u : 0u));
 						}
 					}
 				}
+			}
+
+			for (const auto cell : touched)
+			{
+				const auto distance{ nearest[cell] };
+				const auto margin{ std::max(distance - half, 0.0f) * route.slope };
+				const auto closeness{ 1.0f - mathematics.smoothstep(half, half + baker::route_paint_band, distance) };
+
+				if ((bedded[cell] & 1u) == 0u || (bedded[cell] & 2u) != 0u)
+				{
+					heights[cell] = std::clamp(heights[cell], target[cell] - margin, target[cell] + margin);
+				}
+
+				if (closeness > route_near[cell])
+				{
+					route_near[cell] = closeness;
+					route_kind[cell] = static_cast<std::uint8_t>(route.kind + 1u);
+				}
+
+				bedded[cell] = static_cast<std::uint8_t>(distance < half ? 1u : (bedded[cell] & 1u));
+				nearest[cell] = FLT_MAX;
 			}
 
 			structures::route_path_s entry{ route.kind, route.width, route.closed, {} };
@@ -805,7 +886,7 @@ namespace zp
 					const auto wooded{ forest > 0.535f ? (tall > 48.0f + 28.0f * edge || z / half > 0.12f + 0.5f * drift ? structures::biome_pinewood : structures::biome_woodland) : (relief[cell] < -2.5f && tilt > 0.06f && coast[cell] > 120.0f ? structures::biome_woodland : (farmed && tilt < 0.09f && tall > 4.0f ? structures::biome_farmland : structures::biome_meadow)) };
 					const auto windswept{ (exposure[cell] > 0.62f && coast[cell] < 300.0f + 160.0f * drift && tall > 7.0f) || (relief[cell] > 3.5f && exposure[cell] > 0.45f && tall > 30.0f) || (coast[cell] < 150.0f + 260.0f * edge && tall > 11.0f && drift > -0.12f) };
 					const auto upland{ tall > 148.0f + 44.0f * edge ? structures::biome_summit : (tall > 86.0f + 40.0f * edge ? structures::biome_moor : (windswept ? structures::biome_heath : wooded)) };
-					const auto soaked{ (moist[cell] > 0.085f + 0.05f * edge && tilt < 0.06f && tall < 34.0f) || (tall < 6.5f + 3.0f * drift && tilt < 0.03f && coast[cell] > 45.0f && edge > -0.05f) };
+					const auto soaked{ (moist[cell] > 0.17f + 0.06f * edge && tilt < 0.05f && tall < 30.0f) || (tall < 4.4f + 1.5f * drift && tilt < 0.022f && coast[cell] > 50.0f && edge > 0.08f) };
 					const auto sandy{ coast[cell] < 190.0f + 120.0f * edge && tall < 12.0f && tilt < 0.16f && exposure[cell] > 0.5f };
 					const auto inland{ sandy ? structures::biome_dunes : (soaked ? structures::biome_marsh : upland) };
 					const auto coastal{ tall < shoreline + 1.4f ? (tilt > 0.14f ? structures::biome_shore : structures::biome_beach) : (coast[cell] < 60.0f && tilt > 0.22f ? structures::biome_shore : inland) };
@@ -962,7 +1043,7 @@ namespace zp
 					weight[structures::layer_moor] = moor * (0.82f - 0.1f * mathematics.smoothstep(0.3f, 0.8f, wetness)) + peak * (0.34f - 0.15f * stony);
 
 					const std::float_t covers[structures::biome_count] = { 0.0f, 0.0f, 0.0f, 0.3f * tuft, 0.85f, 1.0f - bare * 1.5f, crop == structures::field_ploughed ? 0.0f : (crop == structures::field_stubble ? 0.45f : 1.0f), 0.32f, 0.1f, 0.4f, 0.9f, 0.15f };
-					const std::float_t droughts[structures::biome_count] = { 0.0f, 0.0f, 0.0f, 0.95f, 0.1f, dry, crop == structures::field_stubble ? 0.95f : (crop == structures::field_hay ? 0.3f + 0.4f * dry : 0.12f), 0.2f, 0.3f, 0.85f, 0.9f, 0.9f };
+					const std::float_t droughts[structures::biome_count] = { 0.0f, 0.0f, 0.0f, 0.95f, 0.1f, dry, crop == structures::field_stubble ? 0.62f : (crop == structures::field_hay ? 0.3f + 0.4f * dry : 0.12f), 0.2f, 0.3f, 0.85f, 0.9f, 0.9f };
 					const std::float_t statures[structures::biome_count] = { 0.0f, 0.0f, 0.0f, 1.2f, 1.35f, 1.0f - cropped, crop == structures::field_pasture ? 0.5f : (crop == structures::field_stubble ? 0.4f : 1.3f), 0.8f, 0.7f, 0.6f, 0.9f, 0.5f };
 
 					auto lawn{ 0.0f };
