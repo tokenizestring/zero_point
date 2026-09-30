@@ -137,7 +137,7 @@ namespace zp
 		{
 			const auto bots{ std::count_if(clients.begin(), clients.end(), [](const structures::server_client_s& peer) { return peer.active && peer.bot; }) };
 
-			logger.write("server: %u/%u players (%zd bots), tick %.2f ms, up %.1f KB/s, down %.1f KB/s", player_count, maximum, bots, tick_cost * 1000.0f, static_cast<std::double_t>(bytes_sent) / 1024.0 / status_timer, static_cast<std::double_t>(bytes_received) / 1024.0 / status_timer);
+			logger.write("server: %u/%u players (%zd bots), tick %.2f ms, up %.1f KB/s, down %.1f KB/s, %u marks", player_count, maximum, bots, tick_cost * 1000.0f, static_cast<std::double_t>(bytes_sent) / 1024.0 / status_timer, static_cast<std::double_t>(bytes_received) / 1024.0 / status_timer, marks.count);
 
 			status_timer = 0.0f;
 			bytes_sent = 0u;
@@ -314,6 +314,7 @@ namespace zp
 					std::snprintf(peer.name, sizeof(peer.name), "%s", player_name);
 
 					peer.active = true;
+					peer.mark_center = -1;
 					peer.commands.reserve(net_command_queue);
 
 					lookup[key(address)] = slot;
@@ -1008,9 +1009,9 @@ namespace zp
 			{
 				auto sample{ rewound(index, when) };
 
-				if (const auto platform{ clients[index].state.platform }; lead > 0.0f && train.ready && platform && platform <= std::size(train_consist))
+				if (const auto carrier{ clients[index].state.platform }; lead > 0.0f && train.ready && carrier && carrier <= std::size(train_consist))
 				{
-					sample.position = mathematics.transform_point(mathematics.transform_point(sample.position, mathematics.inverse(train.pose(when, platform - 1u))), train.pose(when + lead, platform - 1u));
+					sample.position = mathematics.transform_point(mathematics.transform_point(sample.position, mathematics.inverse(train.pose(when, carrier - 1u))), train.pose(when + lead, carrier - 1u));
 				}
 
 				if (sample.alive)
@@ -1065,6 +1066,8 @@ namespace zp
 			const auto killed{ loot.strike(static_cast<std::uint32_t>(sleeper), item_definitions[item].damage) };
 
 			send_hit(index, 0xFFFF, item_definitions[item].damage, false, killed, origin + direction * slumber);
+
+			marks.bleed(origin + direction * slumber, direction);
 		}
 
 		else if (victim >= 0)
@@ -1076,11 +1079,18 @@ namespace zp
 			hurt(victim, damage, structures::death_shot, index);
 
 			send_hit(index, victim, damage, headshot, clients[victim].alive == false, origin + direction * distance);
+
+			marks.bleed(origin + direction * distance, direction);
 		}
 
-		else if (hit.hit && hit.brush >= 0)
+		else if (hit.hit)
 		{
-			building.damage(hit.brush, item_definitions[item].damage * 0.25f, true);
+			marks.impact(hit, direction, item_definitions[item].damage, false);
+
+			if (hit.brush >= 0)
+			{
+				building.damage(hit.brush, item_definitions[item].damage * 0.25f, true);
+			}
 		}
 
 		shots.push_back({ static_cast<std::uint16_t>(index), static_cast<std::uint8_t>(peer.weapon.weapon), static_cast<std::uint8_t>(victim >= 0 || sleeper >= 0 ? 255u : (hit.hit ? std::min(hit.surface, 252u) : 254u)), origin, origin + direction * (sleeper >= 0 ? slumber : (victim >= 0 ? distance : limit)) });
@@ -1131,6 +1141,8 @@ namespace zp
 				hurt(victim, damage, structures::death_beaten, index);
 
 				send_hit(index, victim, damage, headshot, clients[victim].alive == false, eye + forward * distance);
+
+				marks.bleed(eye + forward * distance, forward);
 
 				sound_at(index, structures::sound_hit_flesh, eye + forward * distance, 0.9f, 1.0f, audio_event_mid);
 
@@ -1455,6 +1467,8 @@ namespace zp
 
 			movement.simulate(peer.state, command);
 
+			marks.tread(peer.state, peer.tread);
+
 			const auto usable{ peer.alive && (peer.state.flags & structures::movement_swimming) == 0u };
 
 			weapons.step(peer.weapon, survivors[index], command, usable, mathematics.length(structures::vec3_s{ peer.state.velocity.x, 0.0f, peer.state.velocity.z }) > 1.0f);
@@ -1505,6 +1519,8 @@ namespace zp
 				peer.state.flags &= ~structures::movement_on_ground;
 
 				sound_at(-1, structures::sound_hit_flesh, peer.state.position + structures::vec3_s{ 0.0f, 1.0f, 0.0f }, 1.0f, 0.8f, audio_event_far);
+
+				marks.bleed(peer.state.position + structures::vec3_s{ 0.0f, 1.0f, 0.0f }, mathematics.normalize(structures::vec3_s{ shove.x, -0.4f, shove.z }));
 
 				hurt(index, blow, structures::death_train, -1);
 			}
@@ -1568,6 +1584,11 @@ namespace zp
 			if (peer.bot == false)
 			{
 				loot.drop(survivors[index], peer.state.position, peer.yaw, peer.name);
+			}
+
+			if (peer.state.water_depth < 0.1f && (cause == structures::death_shot || cause == structures::death_beaten || cause == structures::death_fall || cause == structures::death_train))
+			{
+				marks.pool(peer.state.position);
 			}
 
 			peer.alive = false;
@@ -1688,6 +1709,8 @@ namespace zp
 	{
 		build_grid();
 
+		share_marks();
+
 		for (auto index{ 0 }; index < static_cast<std::int32_t>(clients.size()); index++)
 		{
 			auto& peer{ clients[index] };
@@ -1695,6 +1718,8 @@ namespace zp
 			if (peer.active && peer.bot == false)
 			{
 				gather(index);
+
+				send_marks(index);
 
 				const auto armed{ peer.weapon.weapon | (peer.weapon.slot << 8u) | ((peer.weapon.flags & structures::weapon_flag_jammed) << 16u) | (peer.weapon.reloading > 0.0f ? 1u << 20u : 0u) | (peer.weapon.clearing > 0.0f ? 1u << 21u : 0u) | (peer.weapon.hangfire > 0.0f ? 1u << 22u : 0u) };
 
@@ -1776,6 +1801,139 @@ namespace zp
 		}
 
 		shots.clear();
+	}
+	/*
+	//=====================================================================================
+	*/
+	void server_c::share_marks()
+	{
+		const auto span{ static_cast<std::int32_t>(mark_cells) };
+
+		for (const auto slot : marks.fresh)
+		{
+			if (marks.ring[slot].live)
+			{
+				const auto cell{ marks.ring[slot].cell };
+				const auto column{ static_cast<std::int32_t>(cell) % span };
+				const auto row{ static_cast<std::int32_t>(cell) / span };
+
+				for (auto& peer : clients)
+				{
+					if (peer.active && peer.bot == false && peer.mark_center >= 0 && std::abs(peer.mark_center % span - column) <= mark_interest && std::abs(peer.mark_center / span - row) <= mark_interest && peer.mark_fresh.size() < mark_backlog && std::find(peer.mark_sync.begin(), peer.mark_sync.end(), cell) == peer.mark_sync.end())
+					{
+						peer.mark_fresh.push_back(slot);
+					}
+				}
+			}
+		}
+
+		marks.fresh.clear();
+
+		marks.expire();
+	}
+	/*
+	//=====================================================================================
+	*/
+	void server_c::send_marks(std::int32_t index)
+	{
+		auto& peer{ clients[index] };
+
+		const auto span{ static_cast<std::int32_t>(mark_cells) };
+		const auto center{ static_cast<std::int32_t>(marks.cell_of(peer.state.position)) };
+		const auto column{ center % span };
+		const auto row{ center / span };
+
+		if (center != peer.mark_center)
+		{
+			const auto before{ peer.mark_center };
+
+			peer.mark_sync.erase(std::remove_if(peer.mark_sync.begin(), peer.mark_sync.end(), [&](std::uint16_t cell) { return std::abs(static_cast<std::int32_t>(cell) % span - column) > mark_interest || std::abs(static_cast<std::int32_t>(cell) / span - row) > mark_interest; }), peer.mark_sync.end());
+
+			for (auto z{ std::max(row - mark_interest, 0) }; z <= std::min(row + mark_interest, span - 1); z++)
+			{
+				for (auto x{ std::max(column - mark_interest, 0) }; x <= std::min(column + mark_interest, span - 1); x++)
+				{
+					const auto known{ before >= 0 && std::abs(before % span - x) <= mark_interest && std::abs(before / span - z) <= mark_interest };
+					const auto cell{ static_cast<std::uint16_t>(z * span + x) };
+
+					if (known == false && std::find(peer.mark_sync.begin(), peer.mark_sync.end(), cell) == peer.mark_sync.end())
+					{
+						peer.mark_sync.push_back(cell);
+					}
+				}
+			}
+
+			peer.mark_center = center;
+		}
+
+		for (auto synced{ 0u }; synced < mark_cells_per_flush && peer.mark_sync.size() && peer.connection.outgoing.size() < mark_queue_room; synced++)
+		{
+			const auto cell{ peer.mark_sync.front() };
+
+			auto cursor{ marks.heads[cell] };
+			auto replace{ true };
+
+			peer.mark_sync.erase(peer.mark_sync.begin());
+
+			while ((cursor >= 0 || replace) && peer.connection.outgoing.size() + 4u < net_reliable_capacity)
+			{
+				stream_writer_c writer{};
+
+				writer.reset(scratch, sizeof(scratch));
+
+				writer.u8(replace ? 1u : 0u);
+				writer.u16(cell);
+				writer.u8(0u);
+
+				auto written{ 0u };
+
+				for (; cursor >= 0 && written < marks_per_message; cursor = marks.ring[cursor].next)
+				{
+					marks.write(writer, marks.ring[cursor]);
+
+					written++;
+				}
+
+				scratch[3] = static_cast<std::uint8_t>(written);
+
+				transport.queue(peer.connection, structures::message_marks, scratch, writer.size);
+
+				replace = false;
+			}
+		}
+
+		while (peer.mark_fresh.size() && peer.connection.outgoing.size() < mark_queue_room)
+		{
+			stream_writer_c writer{};
+
+			writer.reset(scratch, sizeof(scratch));
+
+			writer.u8(0u);
+			writer.u16(0u);
+			writer.u8(0u);
+
+			auto written{ 0u };
+			auto taken{ 0u };
+
+			for (; taken < peer.mark_fresh.size() && written < marks_per_message; taken++)
+			{
+				if (const auto& mark{ marks.ring[peer.mark_fresh[taken]] }; mark.live)
+				{
+					marks.write(writer, mark);
+
+					written++;
+				}
+			}
+
+			scratch[3] = static_cast<std::uint8_t>(written);
+
+			peer.mark_fresh.erase(peer.mark_fresh.begin(), peer.mark_fresh.begin() + static_cast<std::ptrdiff_t>(taken));
+
+			if (written)
+			{
+				transport.queue(peer.connection, structures::message_marks, scratch, writer.size);
+			}
+		}
 	}
 	/*
 	//=====================================================================================

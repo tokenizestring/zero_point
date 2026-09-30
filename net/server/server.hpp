@@ -92,6 +92,8 @@ namespace zp
 		void sound_events(std::int32_t index);
 		void spawn(std::int32_t index);
 		void send_snapshots();
+		void share_marks();
+		void send_marks(std::int32_t index);
 		void build_grid();
 		void gather(std::int32_t index);
 		void write_player(stream_writer_c& writer, std::int32_t index);
