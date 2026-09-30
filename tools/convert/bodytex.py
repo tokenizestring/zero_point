@@ -222,12 +222,10 @@ def hair_pass(page, normals, zones, color, name, scale, rng):
     return color, total
 
 
-def body_maps(setup, shapes, frames, uv, positions, triangles, occlusion, palette, seam_color, directory, prefix, size=4096, chunk=500000):
+def skin_layers(setup, shapes, page, occlusion, palette, rng, furred=True, chunk=500000):
     started = time.time()
     name = setup["name"]
     scale = setup["figure"]["scale"]
-    rng = numpy.random.default_rng(23 if name == "male" else 29)
-    page = sheet(uv, positions, frames, size, triangles)
     points, normals = surface(shapes, page.position)
     print("BODY surface", round(time.time() - started, 1), "s")
     tangent_normal = numpy.stack([numpy.sum(normals * page.tangent, axis=1), numpy.sum(normals * page.bitangent, axis=1), numpy.sum(normals * page.normal, axis=1)], axis=1)
@@ -236,16 +234,19 @@ def body_maps(setup, shapes, frames, uv, positions, triangles, occlusion, palett
     roughness = numpy.empty(len(points))
     detail = numpy.empty(len(points))
     lines = numpy.empty(len(points))
-    keys = ("forearm", "forearm_hair", "shin", "thigh", "upper_arm", "chest", "trail", "pubic", "armpit")
+    keys = ("forearm", "forearm_hair", "shin", "thigh", "upper_arm", "chest", "trail", "pubic", "armpit", "fold")
     zones = {key: numpy.empty(len(points), dtype=numpy.float32) for key in keys}
     zones["direction"] = numpy.empty((len(points), 3), dtype=numpy.float32)
+    zones["pitch"] = numpy.empty(len(points), dtype=numpy.float32)
+    texel = setup.setdefault("texel", float(numpy.median(numpy.linalg.norm(page.jacobian_u, axis=1))))
+    print("BODY texel mm", round(texel * 1000.0, 3))
     for start in range(0, len(points), chunk):
         stop = start + chunk
         block = points[start:stop]
         block_normals = normals[start:stop]
         nails = skin.nail_fields(shapes, block)
-        c, r, d, n = skin.tones(block, block_normals, setup, nails, palette, skin.vein_field(shapes, block))
-        local = skin.regions(block, block_normals, setup)
+        local = skin.regions(block, block_normals, setup, shapes)
+        c, r, d, n = skin.tones(block, block_normals, setup, nails, palette, skin.vein_field(shapes, block), local)
         skin_weight = 1.0 - n
         shaded, r = skin.pigment(c, r, local, palette)
         shaded, r, streaks = skin.weathering(block, block_normals, setup, shaded, r, ambient[start:stop], local, palette)
@@ -256,34 +257,66 @@ def body_maps(setup, shapes, frames, uv, positions, triangles, occlusion, palett
         for key in keys:
             zones[key][start:stop] = local[key] * skin_weight
         zones["direction"][start:stop] = local["direction"]
+        zones["pitch"][start:stop] = local["pitch"]
     print("BODY tones", round(time.time() - started, 1), "s")
     color = surface_marks(points, normals, zones, color, name, scale, rng)
-    if seam_color is not None:
-        field, reach = seam_color
-        tint, weight = field(points)
-        color = color * (1.0 - weight[:, None]) + tint * weight[:, None]
-        head_now, head_scale = setup["placement"]
-        local = (points - head_now) / head_scale
-        close = numpy.flatnonzero((local[:, 2] > -0.05) & (local[:, 1] > 0.0))
-        if len(close):
-            look = headtex.looks[name]
-            tone = texels.to_linear(numpy.asarray(look.get("scalp_tint") or look["hair"]["root"]))
-            nape = texels.smoothstep(-0.008, 0.006, headtex.hairline(local[close], headtex.hairlines[name]))
-            color[close] = color[close] * (1.0 - nape[:, None] * 0.86) + tone[None, :] * (nape[:, None] * 0.86)
-    color, hair = hair_pass(page, normals, zones, color, name, scale, rng)
+    head_now, head_scale = setup["placement"]
+    local = (points - head_now) / head_scale
+    close = numpy.flatnonzero((local[:, 2] > -0.05) & (local[:, 1] > 0.0))
+    if len(close):
+        look = headtex.looks[name]
+        tone = texels.to_linear(numpy.asarray(look.get("scalp_tint") or look["hair"]["root"]))
+        nape = texels.smoothstep(-0.008, 0.006, headtex.hairline(local[close], headtex.hairlines[name]))
+        color[close] = color[close] * (1.0 - nape[:, None] * 0.86) + tone[None, :] * (nape[:, None] * 0.86)
+        roughness[close] = roughness[close] * (1.0 - nape) + 0.62 * nape
+    hair = numpy.zeros(len(points))
+    if furred:
+        color, hair = hair_pass(page, normals, zones, color, name, scale, rng)
     print("BODY hair", round(time.time() - started, 1), "s")
     height = numpy.zeros(len(points))
     for start in range(0, len(points), chunk):
         stop = start + chunk
-        height[start:stop] = skin.micro_height(points[start:stop], detail[start:stop], hair[start:stop])
+        height[start:stop] = skin.micro_height(points[start:stop], detail[start:stop], hair[start:stop], zones["fold"][start:stop], zones["direction"][start:stop], zones["pitch"][start:stop], texel)
     height += hair * 0.00002 - lines * 0.00003
     sx, sy = slopes(page, height)
     combined = numpy.stack([tangent_normal[:, 0] - sx, tangent_normal[:, 1] - sy, tangent_normal[:, 2]], axis=1)
     combined /= numpy.maximum(numpy.linalg.norm(combined, axis=1), 1e-9)[:, None]
     print("BODY detail", round(time.time() - started, 1), "s")
-    headtex.save_image(os.path.join(directory, prefix + "_body_albedo.png"), page.image(texels.to_srgb(numpy.clip(color, 0.0, 1.0))), 'sRGB')
-    headtex.save_image(os.path.join(directory, prefix + "_body_nor_gl.png"), page.image(headtex.encode_normal(combined)), 'Non-Color')
     orm = numpy.stack([numpy.clip(0.3 + 0.7 * ambient, 0.0, 1.0), numpy.clip(roughness + hair * 0.06, 0.05, 1.0), numpy.zeros(len(points))], axis=1)
+    return numpy.clip(color, 0.0, 1.0), combined, orm
+
+
+def body_maps(setup, shapes, frames, uv, positions, triangles, occlusion, palette, directory, prefix, size=4096):
+    name = setup["name"]
+    page = sheet(uv, positions, frames, size, triangles)
+    color, shading, orm = skin_layers(setup, shapes, page, occlusion, palette, numpy.random.default_rng(23 if name == "male" else 29))
+    headtex.save_image(os.path.join(directory, prefix + "_body_albedo.png"), page.image(texels.to_srgb(color)), 'sRGB')
+    headtex.save_image(os.path.join(directory, prefix + "_body_nor_gl.png"), page.image(headtex.encode_normal(shading)), 'Non-Color')
     headtex.save_image(os.path.join(directory, prefix + "_body_orm.png"), page.image(orm), 'Non-Color')
-    print("BODY maps done", round(time.time() - started, 1), "s")
     return page
+
+
+def collar_maps(setup, shapes, frames, uv, positions, triangles, occlusion, palette, mask, neck, directory, prefix, size=4096, band=0.042):
+    point, normal = neck
+    scale = setup["placement"][1]
+    low = ((positions - numpy.asarray(point)) @ numpy.asarray(normal)).min(axis=1)
+    chosen = numpy.flatnonzero(low < (band + 0.006) * scale)
+    tangent, sign, shading_normal = frames
+    page = sheet(uv[chosen], positions[chosen], (tangent[chosen], sign[chosen], shading_normal[chosen]), size, triangles[chosen])
+    color, shading, orm = skin_layers(setup, shapes, page, occlusion, palette, numpy.random.default_rng(37), False)
+    height = (page.position - numpy.asarray(point)) @ numpy.asarray(normal)
+    weight = texels.smoothstep(band * scale, 0.006 * scale, height)[:, None]
+    for suffix, space, fresh in (("albedo", 'sRGB', color), ("nor_gl", 'Non-Color', shading), ("orm", 'Non-Color', orm)):
+        path = os.path.join(directory, "%s_head_%s.png" % (prefix, suffix))
+        image = headtex.load_image(path, space)[:, :, :3].astype(numpy.float64).reshape(-1, 3)
+        current = image[page.covered]
+        if suffix == "albedo":
+            blended = texels.to_srgb(texels.to_linear(current) * (1.0 - weight) + fresh * weight)
+        elif suffix == "nor_gl":
+            mixed = (current * 2.0 - 1.0) * (1.0 - weight) + fresh * weight
+            blended = headtex.encode_normal(mixed / numpy.maximum(numpy.linalg.norm(mixed, axis=1), 1e-9)[:, None])
+        else:
+            blended = current * (1.0 - weight) + fresh * weight
+        image[page.covered] = blended
+        headtex.save_image(path, texels.fill(image.reshape(size, size, 3), mask | page.mask), space)
+    print("COLLAR texels", len(page.covered), "fully procedural", int((weight > 0.99).sum()))
