@@ -39,11 +39,12 @@ namespace zp
 			{ "tree_dead_2", 8000u, 1200u }
 		};
 		constexpr auto terrain_seed = 20260928u;
-		constexpr auto terrain_cache_version = 5u;
-		constexpr auto bluff_guard = 210.0f;
-		constexpr auto bluff_retreat = 170.0f;
-		constexpr auto bluff_northern = 110.0f;
-		constexpr auto bluff_face = 9.0f;
+		constexpr auto terrain_cache_version = 7u;
+		constexpr auto bluff_guard = 55.0f;
+		constexpr auto bluff_height = 17.0f;
+		constexpr auto bluff_northern = 15.0f;
+		constexpr auto bluff_face = 11.0f;
+		constexpr auto bluff_reach = 320.0f;
 		constexpr auto terrain_erosion_size = 2305u;
 		constexpr auto terrain_erosion_cell = 2.0f;
 		constexpr auto terrain_erosion_droplets = 1920000u;
@@ -559,6 +560,16 @@ namespace zp
 		void append_items(std::vector<baker::pak_item_s>& items);
 	};
 
+	class baker_marks_c
+	{
+	public:
+
+		std::vector<baker::pak_item_s> items;
+
+		bool bake(const char* assets_directory);
+		void add(const char* name, const baker::image_s& image, bool color);
+	};
+
 	class baker_c
 	{
 	public:
@@ -583,6 +594,7 @@ namespace zp
 	extern baker_glyphs_c baker_glyphs;
 	extern baker_icon_c baker_icon;
 	extern baker_item_icons_c baker_item_icons;
+	extern baker_marks_c baker_marks;
 	extern baker_c baker_main;
 }
 

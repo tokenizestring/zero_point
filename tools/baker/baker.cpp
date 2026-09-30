@@ -58,7 +58,7 @@ namespace zp
 
 				const auto output_directory{ std::string(arguments[3]).substr(0u, std::string(arguments[3]).find_last_of("\\/")) };
 
-				if (baker_materials.bake(arguments[1]) && baker_models.bake(arguments[1]) && baker_characters.bake(arguments[1]) && baker_terrain.bake(output_directory + "\\terrain_cache.bin", output_directory + "\\terrain_preview.png", true) && baker_skies.bake(arguments[1]) && baker_audio.bake(arguments[1]) && baker_glyphs.bake(arguments[1]) && baker_item_icons.bake(arguments[1]) && baker_icon.bake(arguments[3]))
+				if (baker_materials.bake(arguments[1]) && baker_models.bake(arguments[1]) && baker_characters.bake(arguments[1]) && baker_terrain.bake(output_directory + "\\terrain_cache.bin", output_directory + "\\terrain_preview.png", true) && baker_skies.bake(arguments[1]) && baker_audio.bake(arguments[1]) && baker_glyphs.bake(arguments[1]) && baker_item_icons.bake(arguments[1]) && baker_marks.bake(arguments[1]) && baker_icon.bake(arguments[3]))
 				{
 					baker_models.bake_materials(baker_materials.outputs);
 
@@ -92,6 +92,11 @@ namespace zp
 					baker_glyphs.append_items(items);
 
 					baker_item_icons.append_items(items);
+
+					for (auto& item : baker_marks.items)
+					{
+						items.push_back(std::move(item));
+					}
 
 					if (write(arguments[2], pak_stamp))
 					{
