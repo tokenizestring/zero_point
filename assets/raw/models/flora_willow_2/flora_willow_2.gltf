@@ -1,0 +1,292 @@
+{
+ "asset": {
+  "generator": "zero point flora",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bark",
+   "doubleSided": false,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "leaf",
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 5
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 5
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "flora_willow_2_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "flora_willow_2_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_bark_diff_2k.png",
+   "uri": "../flora_willow_0/flora_willow_bark_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_bark_nor_gl_2k.png",
+   "uri": "../flora_willow_0/flora_willow_bark_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_bark_arm_2k.png",
+   "uri": "../flora_willow_0/flora_willow_bark_arm_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_leaf_diff_2k.png",
+   "uri": "../flora_willow_0/flora_willow_leaf_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_leaf_nor_gl_2k.png",
+   "uri": "../flora_willow_0/flora_willow_leaf_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_willow_leaf_arm_2k.png",
+   "uri": "../flora_willow_0/flora_willow_leaf_arm_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 3495,
+   "max": [
+    5.045957088470459,
+    6.970637321472168,
+    3.117736577987671
+   ],
+   "min": [
+    -2.4722163677215576,
+    -0.44999998807907104,
+    -3.7188339233398438
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 3495,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 3495,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 11610,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 16671,
+   "max": [
+    6.26296329498291,
+    8.640374183654785,
+    4.3544921875
+   ],
+   "min": [
+    -3.052286386489868,
+    1.8605254888534546,
+    -4.491215229034424
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 16671,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 16671,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 37908,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 41940,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 41940,
+   "byteOffset": 41940,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 27960,
+   "byteOffset": 83880,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 23220,
+   "byteOffset": 111840,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 200052,
+   "byteOffset": 135060,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 200052,
+   "byteOffset": 335112,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 133368,
+   "byteOffset": 535164,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 75816,
+   "byteOffset": 668532,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 744348,
+   "uri": "flora_willow_2.bin"
+  }
+ ]
+}
