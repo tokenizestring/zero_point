@@ -17,6 +17,8 @@ water ps_main ps_5_0 water_ps
 water underwater_ps ps_5_0 underwater_ps
 particles vs_main vs_5_0 particles_vs
 particles ps_main ps_5_0 particles_ps
+decals vs_main vs_5_0 decals_vs
+decals ps_main ps_5_0 decals_ps
 gbuffer ps_main ps_5_0 gbuffer_ps
 gbuffer ps_alpha ps_5_0 gbuffer_alpha_ps
 shadow vs_main vs_5_0 shadow_vs
