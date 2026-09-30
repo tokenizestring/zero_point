@@ -492,7 +492,13 @@ namespace zp
 
 		if (distance > 1.5f)
 		{
-			blocked = world.trace(listener_position, source, {}, structures::contents_solid).fraction < 0.97f ? audio_occlusion_wall : 0.0f;
+			const auto toward{ offset / distance };
+			const auto reach{ std::min(distance, audio_occlusion_reach) };
+			const auto tail{ std::min(reach, distance - reach) };
+			const auto near_wall{ world.trace(listener_position, listener_position + toward * reach, {}, structures::contents_solid).fraction < (distance > reach ? 1.0f : 0.97f) };
+			const auto far_wall{ tail > 1.0f && world.trace(source - toward * tail, source, {}, structures::contents_solid).fraction < 0.97f };
+
+			blocked = near_wall || far_wall ? audio_occlusion_wall : 0.0f;
 
 			for (auto sample{ 1u }; terrain.enabled && sample < samples; sample++)
 			{
@@ -642,7 +648,15 @@ namespace zp
 
 					X3DAudioCalculate(spatial, &listener, &emitter, X3DAUDIO_CALCULATE_MATRIX | X3DAUDIO_CALCULATE_LPF_DIRECT | X3DAUDIO_CALCULATE_DOPPLER, &settings);
 
-					const auto blocked{ occlusion(state.position) };
+					state.recheck -= delta;
+
+					if (state.recheck <= 0.0f)
+					{
+						state.blocked = occlusion(state.position);
+						state.recheck = audio_drone_recheck * (1.0f + 0.25f * static_cast<std::float_t>(index));
+					}
+
+					const auto blocked{ state.blocked };
 					const auto shadow{ std::sin(pi / 6.0f * settings.LPFDirectCoefficient) * 2.0f };
 					const XAUDIO2_FILTER_PARAMETERS filter{ LowPassFilter, std::min(2.0f * std::sin(pi * std::min(air_cutoff(distance), 7350.0f) / 44100.0f) * shadow * mathematics.lerp(1.0f, audio_occlusion_muffle, blocked), muffle), 1.0f };
 					const std::float_t send[2] = { audio_reverb_send, audio_reverb_send };
@@ -919,7 +933,8 @@ namespace zp
 			coast_timer = 0.5f;
 		}
 
-		const std::float_t targets[structures::ambience_count] = { island * (1.0f - night) * (1.0f - coast * 0.7f) * 0.5f, island * night * (1.0f - coast * 0.5f) * 0.45f, island * (0.1f + town * 0.45f + night * 0.18f), island * (0.16f + mathematics.saturate((height - 10.0f) / 90.0f) * 0.5f + night * 0.08f), island * coast * 0.85f };
+		const auto& mood{ biome_moods[terrain.enabled ? terrain.biome(player.state.position.x, player.state.position.z) : static_cast<std::uint32_t>(structures::biome_meadow)] };
+		const std::float_t targets[structures::ambience_count] = { island * (1.0f - night) * (1.0f - coast * 0.7f) * 0.5f * mood.x, island * night * (1.0f - coast * 0.5f) * 0.45f * mood.y, island * (0.1f + town * 0.45f + night * 0.18f), island * std::min(0.16f + mathematics.saturate((height - 10.0f) / 90.0f) * 0.5f + night * 0.08f + mood.z, 0.85f), island * coast * 0.85f };
 
 		const auto hushed{ (player.state.flags & structures::movement_underwater) ? audio_underwater_duck : 1.0f };
 
