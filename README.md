@@ -12,9 +12,12 @@ You wake up on the shore of a large abandoned island with nothing but your hands
 
 | | |
 |---|---|
+| ![The main street of the ruined town](docs/screenshots/village_street.jpg) | ![Inside a fir forest](docs/screenshots/fir_forest.jpg) |
+| ![A crafted scrap rifle on the beach](docs/screenshots/scrap_rifle.jpg) | ![Inside a player built base](docs/screenshots/base_interior.jpg) |
+| ![The hand drawn island map](docs/screenshots/ink_map.jpg) | ![The view from the summit](docs/screenshots/summit_view.jpg) |
 | ![On the flat wagon behind the locomotive](docs/screenshots/train_ride_day.jpg) | ![A railway stop on the north coast](docs/screenshots/railway_stop.jpg) |
 
-More screenshots will be added as the world fills in.
+The train in these shots is still a set of placeholder boxes. More screenshots will be added as the world fills in.
 
 ## What is in the game so far
 
