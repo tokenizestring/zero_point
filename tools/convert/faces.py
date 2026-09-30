@@ -127,35 +127,6 @@ def triangulate(sizes, corners, with_faces=False):
     return corners[corner_triangles], corner_triangles
 
 
-def position_map(data, size):
-    triangles, corner_triangles = triangulate(data["sizes"], data["corners"])
-    uv = data["uv"][corner_triangles]
-    covered, owner, weights = texels.rasterize(uv, size)
-    positions = numpy.zeros((size * size, 3))
-    positions[covered] = texels.interpolate(data["points"][triangles], owner, weights)
-    mask = numpy.zeros(size * size, dtype=bool)
-    mask[covered] = True
-    filled = texels.fill(positions.reshape(size, size, 3), mask.reshape(size, size))
-    return filled, mask.reshape(size, size)
-
-
-def sample_map(image, uv):
-    height, width = image.shape[:2]
-    x = numpy.clip(uv[:, 0] * width - 0.5, 0.0, width - 1.001)
-    y = numpy.clip(uv[:, 1] * height - 0.5, 0.0, height - 1.001)
-    x0 = numpy.floor(x).astype(numpy.int64)
-    y0 = numpy.floor(y).astype(numpy.int64)
-    fx = (x - x0)[:, None]
-    fy = (y - y0)[:, None]
-    return image[y0, x0] * (1 - fx) * (1 - fy) + image[y0, x0 + 1] * fx * (1 - fy) + image[y0 + 1, x0] * (1 - fx) * fy + image[y0 + 1, x0 + 1] * fx * fy
-
-
-def vertex_uv(data):
-    result = numpy.zeros((len(data["points"]), 2))
-    result[data["corners"]] = data["uv"]
-    return result
-
-
 def kernel(points, center, radii):
     q = (points - numpy.asarray(center)) / numpy.asarray(radii)
     t = numpy.clip(1.0 - numpy.sum(q * q, axis=1), 0.0, 1.0)
@@ -193,6 +164,14 @@ def apply_morphs(points, normals, morphs, origin):
             q = points - origin
             weight = texels.smoothstep(z_top, z_full, q[:, 2]) * texels.smoothstep(y_limit + 0.02, y_limit - 0.02, q[:, 1]) * free
             moved[:, 0] -= q[:, 0] * amount * weight
+            continue
+        if kind == "neck":
+            z_chin, slope, top, full, factors, y_center = entry[1:7]
+            q = points - origin
+            below = q[:, 2] - (z_chin + (q[:, 1] + 0.11) * slope)
+            weight = texels.smoothstep(top, full, below)
+            moved[:, 0] -= q[:, 0] * (1.0 - factors[0]) * weight
+            moved[:, 1] -= (q[:, 1] - y_center) * (1.0 - factors[1]) * weight
             continue
         if kind == "squash":
             z_pivot, z_fade, factor, y_limit = entry[1:5]
@@ -370,23 +349,28 @@ male_morphs = [
 
 female_morphs = [
     ("squash", 0.047, -0.035, 0.9, -0.02),
-    ("taper", 0.09, -0.02, 0.09, 0.01),
-    ("scale", (0.0, -0.09, 0.06), (0.1, 0.09, 0.11), (0.96, 1.0, 1.0), (0.0, -0.09, 0.06)),
-    ("move", (0.055, -0.035, 0.0), (0.035, 0.045, 0.035), (-0.002, 0.0, 0.003)),
+    ("taper", 0.09, -0.02, 0.13, 0.01),
+    ("scale", (0.0, -0.09, 0.06), (0.1, 0.09, 0.11), (0.945, 1.0, 1.0), (0.0, -0.09, 0.06)),
+    ("move", (0.055, -0.035, 0.0), (0.035, 0.045, 0.035), (-0.0042, 0.0, 0.003)),
+    ("move", (0.0, -0.128, 0.096), (0.009, 0.012, 0.02), (0.0, -0.0013, 0.0)),
+    ("move", (0.0135, -0.115, 0.09), (0.008, 0.012, 0.018), (-0.0012, 0.0012, 0.0)),
+    ("inflate", (0.0, -0.127, 0.0335), (0.02, 0.012, 0.0075), 0.0012),
+    ("inflate", (0.0, -0.125, 0.0205), (0.02, 0.012, 0.0085), 0.0014),
     ("scale", (0.0, -0.115, -0.005), (0.035, 0.035, 0.035), (0.88, 1.0, 1.0), (0.0, -0.115, 0.0)),
     ("move", (0.03, -0.11, 0.125), (0.035, 0.022, 0.02), (0.0, 0.003, 0.0006)),
     ("move", (0.0, -0.119, 0.12), (0.022, 0.018, 0.016), (0.0, 0.0028, 0.0)),
     ("move", (0.0, -0.1, 0.17), (0.07, 0.04, 0.045), (0.0, -0.003, 0.0)),
-    ("scale", (0.0, -0.13, 0.075), (0.03, 0.05, 0.055), (0.78, 0.84, 0.88), (0.0, -0.119, 0.105)),
+    ("scale", (0.0, -0.13, 0.075), (0.03, 0.05, 0.055), (0.78, 0.9, 0.88), (0.0, -0.119, 0.105)),
     ("move", (0.0, -0.146, 0.062), (0.016, 0.02, 0.016), (0.0, 0.0025, 0.0022)),
     ("move", (0.0, -0.136, 0.082), (0.012, 0.015, 0.016), (0.0, 0.0012, 0.0)),
     ("move", (0.016, -0.125, 0.05), (0.012, 0.015, 0.012), (-0.002, 0.0, 0.0)),
     ("move", (0.0, -0.127, 0.034), (0.024, 0.016, 0.01), (0.0, -0.0016, 0.001)),
     ("move", (0.0, -0.124, 0.02), (0.024, 0.016, 0.01), (0.0, -0.0014, -0.0005)),
-    ("move", (0.05, -0.085, 0.08), (0.03, 0.03, 0.024), (0.0018, -0.0025, 0.0018)),
-    ("move", (0.048, -0.078, 0.035), (0.028, 0.028, 0.022), (-0.0025, 0.0018, 0.0)),
+    ("move", (0.05, -0.085, 0.08), (0.034, 0.034, 0.03), (0.002, -0.0028, 0.0016)),
+    ("move", (0.048, -0.078, 0.035), (0.028, 0.028, 0.022), (-0.0012, 0.0008, 0.0)),
+    ("inflate", (0.04, -0.1, 0.058), (0.028, 0.03, 0.028), 0.0012),
     ("lid", (0.032, -0.105, 0.104), (0.017, 0.012, 0.007), (0.0, 0.0, -0.0009)),
-    ("scale", (0.0, 0.0, -0.06), (0.09, 0.09, 0.07), (0.88, 0.88, 1.0), (0.0, 0.0, -0.06)),
+    ("neck", -0.022, 0.33, -0.004, -0.034, (0.86, 0.91), -0.012),
     ("move", (0.0, -0.065, -0.05), (0.025, 0.03, 0.03), (0.0, 0.004, 0.0)),
     ("scale", (0.075, 0.0, 0.08), (0.025, 0.03, 0.035), (0.9, 0.9, 0.9), (0.075, 0.0, 0.08)),
 ]
@@ -520,33 +504,97 @@ def boundary_loops(sizes, corners):
     return loops
 
 
-def closed_triangles(data):
+def rim_directions(data, loops, fallback, passes=6):
+    starts = corner_starts(data["sizes"])
+    rim = set(vertex for loop in loops for vertex in loop)
+    neighbours = {}
+    for start, size in zip(starts, data["sizes"]):
+        ring = data["corners"][start:start + size]
+        for k in range(size):
+            a = int(ring[k])
+            b = int(ring[(k + 1) % size])
+            if a in rim:
+                neighbours.setdefault(a, set()).add(b)
+            if b in rim:
+                neighbours.setdefault(b, set()).add(a)
+    points = data["points"]
+    result = {}
+    for loop in loops:
+        raw = []
+        for vertex in loop:
+            inner = [n for n in neighbours.get(vertex, ()) if n not in rim]
+            direction = points[vertex] - numpy.mean(points[inner], axis=0) if inner else fallback
+            length = float(numpy.linalg.norm(direction))
+            direction = direction / length if length > 1e-9 else fallback
+            if direction @ fallback < 0.25:
+                direction = direction + fallback * (0.25 - direction @ fallback)
+                direction = direction / numpy.linalg.norm(direction)
+            raw.append(direction)
+        smooth = numpy.array(raw)
+        for iteration in range(passes):
+            smooth = (numpy.roll(smooth, 1, axis=0) + smooth * 2.0 + numpy.roll(smooth, -1, axis=0)) * 0.25
+        smooth = smooth / numpy.maximum(numpy.linalg.norm(smooth, axis=1), 1e-9)[:, None]
+        for vertex, direction in zip(loop, smooth):
+            result[vertex] = direction
+    return result
+
+
+def closed_triangles(data, drop=None, follow=False):
     triangles, corner_triangles = triangulate(data["sizes"], data["corners"])
-    points = data["points"].copy()
-    extra = []
-    for loop in boundary_loops(data["sizes"], data["corners"]):
-        center = points[loop].mean(axis=0)
-        index = len(points) + len(extra)
-        extra.append(center)
-        for k in range(len(loop)):
-            extra_triangle = (loop[(k + 1) % len(loop)], loop[k], index)
-            triangles = numpy.vstack([triangles, numpy.array(extra_triangle)[None, :]])
-    if extra:
-        points = numpy.vstack([points, numpy.array(extra)])
-    return points, triangles
+    points = [p for p in data["points"]]
+    added = []
+    loops = boundary_loops(data["sizes"], data["corners"])
+    directions = {}
+    if drop is not None and follow:
+        reach = float(numpy.linalg.norm(drop))
+        directions = rim_directions(data, loops, numpy.asarray(drop, dtype=numpy.float64) / reach)
+    for loop in loops:
+        ring = list(loop)
+        if drop is not None:
+            lower = []
+            for vertex in ring:
+                lower.append(len(points))
+                points.append(points[vertex] + (directions[vertex] * reach if vertex in directions else drop))
+            for k in range(len(ring)):
+                a = ring[k]
+                b = ring[(k + 1) % len(ring)]
+                c = lower[(k + 1) % len(ring)]
+                d = lower[k]
+                added.append((b, a, d))
+                added.append((b, d, c))
+            ring = lower
+        center = numpy.mean([points[vertex] for vertex in ring], axis=0)
+        index = len(points)
+        points.append(center)
+        for k in range(len(ring)):
+            added.append((ring[(k + 1) % len(ring)], ring[k], index))
+    if added:
+        triangles = numpy.vstack([triangles, numpy.array(added, dtype=triangles.dtype)])
+    return numpy.array(points), triangles
 
 
-def head_level_set(data, low, high, cut, voxel=0.001, blend=0.016):
+def head_graft(data, low, high, point, normal, scale, voxel=0.001, reach=0.06):
     import anatomy
-    points, triangles = closed_triangles(data)
+    point = numpy.asarray(point, dtype=numpy.float64)
+    normal = numpy.asarray(normal, dtype=numpy.float64)
+    low = numpy.asarray(low, dtype=numpy.float64) - numpy.array([0.0, 0.0, reach])
+    high = numpy.asarray(high, dtype=numpy.float64)
+    points, triangles = closed_triangles(data, -normal * reach, True)
     grid = anatomy.openvdb.FloatGrid.createLevelSetFromPolygons(points.astype(numpy.float32), triangles=triangles.astype(numpy.uint32), transform=anatomy.openvdb.createLinearTransform(voxelSize=voxel), halfWidth=24.0)
     sampler = anatomy.dense_sampler(grid, low, high, voxel)
+    rim = numpy.concatenate([data["points"][loop] for loop in boundary_loops(data["sizes"], data["corners"])])
+    center = rim.mean(axis=0)
 
-    def distance(query):
-        return anatomy.smax(sampler(query), cut(query), 0.01)
+    def weight(query):
+        height = (query - point) @ normal
+        radial = query - center - numpy.outer((query - center) @ normal, normal)
+        near = texels.smoothstep(0.105 * scale, 0.08 * scale, numpy.linalg.norm(radial, axis=1))
+        rise = texels.smoothstep(-0.04 * scale, -0.0075 * scale, height)
+        return rise * (near + (1.0 - near) * texels.smoothstep(-0.0075 * scale, 0.015 * scale, height))
 
-    result = anatomy.custom("Bip01 Head", distance, numpy.asarray(low), numpy.asarray(high), blend)
+    result = anatomy.shape("custom", "Bip01 Head", 0.0, "graft", function=sampler, low=low, high=high, weight=weight)
     result.data["sampler"] = sampler
+    print("HEAD graft rim height mm", numpy.round(numpy.percentile((rim - point) @ normal, [0, 50, 100]) * 1000.0, 1))
     return result
 
 
