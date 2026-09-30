@@ -477,6 +477,8 @@ namespace zp
 
 			particles.impact(structures::surface_flesh, point, direction * -1.0f);
 
+			marks.bleed(point, direction);
+
 			mixer.play(structures::sound_hit_flesh, point, 1.0f, 0.9f + random() * 0.2f);
 
 			if (actor.dead)
@@ -488,6 +490,8 @@ namespace zp
 		else if (hit.hit)
 		{
 			particles.impact(hit.surface, hit.end - direction * 0.03f, hit.normal);
+
+			marks.impact(hit, direction, item_definitions[item].damage, client.connected());
 
 			mixer.play(hit.surface == structures::surface_metal ? structures::sound_hit_metal : (hit.surface == structures::surface_wood ? structures::sound_hit_wood : (hit.surface == structures::surface_concrete || hit.surface == structures::surface_rock ? structures::sound_hit_rock : structures::sound_hit_soft)), hit.end, 0.7f, 1.1f + random() * 0.2f);
 
