@@ -6,7 +6,6 @@ from mathutils.bvhtree import BVHTree
 
 import texels
 import headtex
-import faces
 
 atlas_size = 2048
 column = 1.0 / 8.0
@@ -21,12 +20,12 @@ tiles = {
 }
 
 palettes = {
-    "female": {"root": (0.17, 0.11, 0.068), "mid": (0.29, 0.195, 0.12), "tip": (0.45, 0.33, 0.21), "body": (0.13, 0.088, 0.06), "band": (0.2, 0.17, 0.13)},
-    "male": {"root": (0.105, 0.076, 0.056), "mid": (0.17, 0.122, 0.086), "tip": (0.29, 0.215, 0.15), "body": (0.085, 0.062, 0.047), "band": (0.2, 0.17, 0.13)},
+    "female": {"root": (0.17, 0.11, 0.068), "mid": (0.29, 0.195, 0.12), "tip": (0.45, 0.33, 0.21), "body": (0.15, 0.1, 0.07), "band": (0.2, 0.17, 0.13)},
+    "male": {"root": (0.105, 0.076, 0.056), "mid": (0.17, 0.122, 0.086), "tip": (0.29, 0.215, 0.15), "body": (0.125, 0.09, 0.066), "band": (0.2, 0.17, 0.13)},
 }
 
 
-def strand_tile(layers, rect, count, rng, palette, length=(0.75, 1.0), wave=0.02, clumps=5, thickness=(1.1, 1.9), spread=0.84, curl=0.0, fade=0.85, stagger=0.0):
+def strand_tile(layers, rect, count, rng, palette, length=(0.75, 1.0), wave=0.02, clumps=5, thickness=(1.1, 1.9), spread=0.84, curl=0.0, fade=0.85, stagger=0.0, rooted=0.35):
     size = atlas_size
     u0, v0, u1, v1 = rect
     x0 = u0 * size
@@ -50,13 +49,13 @@ def strand_tile(layers, rect, count, rng, palette, length=(0.75, 1.0), wave=0.02
         across = across + wave * (numpy.sin(t * rng.uniform(2.0, 7.0) * math.pi + rng.uniform(0.0, 6.28)) * t + rng.normal(0.0, 0.3) * t)
         if curl > 0.0:
             across = across + curl * numpy.sin(t * rng.uniform(5.0, 9.0) * math.pi + rng.uniform(0.0, 6.28))
-        begin = rng.uniform(0.0, stagger) if rng.random() < 0.65 else 0.0
+        begin = rng.uniform(0.0, stagger) if rng.random() >= rooted else 0.0
         along = begin + t * (reach - begin)
         tone = rng.uniform(0.75, 1.25)
         shade = root[None, :] + (mid - root)[None, :] * texels.smoothstep(0.0, 0.45, along)[:, None]
         shade = shade + (tip - shade) * texels.smoothstep(0.45, 1.0, along)[:, None]
         thick = rng.uniform(thickness[0], thickness[1])
-        alpha = (1.0 - fade * t ** 2.2) * thick
+        alpha = (1.0 - fade * t ** 2.2) * thick * (0.25 + 0.75 * texels.smoothstep(0.0, 0.08, t))
         points.append(numpy.stack([x0 + numpy.clip(across, 0.03, 0.97) * width, y0 + (0.004 + along * 0.992) * height], axis=1))
         values.append(numpy.concatenate([alpha[:, None], shade * tone, (across - start)[:, None] * 0.0 + rng.uniform(-1.0, 1.0)], axis=1))
     points = numpy.concatenate(points)
@@ -155,9 +154,12 @@ def hair_atlas(name, directory, prefix, seed=3):
     layers = {"weight": numpy.zeros((size, size)), "color": numpy.zeros((size, size, 3)), "side": numpy.zeros((size, size))}
     long_counts = (150, 120, 95, 70, 48, 30)
     for index, rect in enumerate(tiles["long"]):
-        strand_tile(layers, rect, long_counts[index], rng, palette, length=(0.7, 1.0) if index < 4 else (0.45, 1.0), wave=0.012 + 0.006 * index, clumps=4 + index, thickness=(1.2, 2.0), fade=0.8, stagger=0.035)
+        strand_tile(layers, rect, long_counts[index], rng, palette, length=(0.7, 1.0) if index < 4 else (0.45, 1.0), wave=0.012 + 0.006 * index, clumps=4 + index, thickness=(1.2, 2.0), fade=0.8, stagger=0.07, rooted=0.2)
     for index, rect in enumerate(tiles["short"]):
-        strand_tile(layers, rect, (70, 55, 42, 30)[index], rng, palette, length=(0.55, 1.0), wave=0.03 + 0.01 * index, clumps=5, thickness=(1.3, 2.1), fade=0.75, stagger=0.14)
+        if name == "female":
+            strand_tile(layers, rect, (66, 54, 44, 34)[index], rng, palette, length=(0.6, 1.0), wave=0.03, clumps=7, thickness=(1.0, 1.5), spread=0.92, fade=0.85, stagger=0.55, rooted=0.0)
+        else:
+            strand_tile(layers, rect, (70, 55, 42, 30)[index], rng, palette, length=(0.55, 1.0), wave=0.03 + 0.01 * index, clumps=5, thickness=(1.3, 2.1), fade=0.75, stagger=0.14)
     for index, rect in enumerate(tiles["wisp"]):
         strand_tile(layers, rect, (14, 8)[index], rng, palette, length=(0.5, 1.0), wave=0.05, clumps=3, thickness=(1.2, 1.8), spread=0.7, fade=0.7)
     body = dict(palette)
@@ -589,14 +591,14 @@ class head_space:
         self.name = name
         self.skin = surface(points, triangles)
         self.follow = self.skin if everything is None else surface(points, everything)
-        centers = self.skin.points[self.skin.triangles].mean(axis=1)
+        centers = self.follow.points[self.follow.triangles].mean(axis=1)
         local = self.local(centers)
         above = headtex.hairline(local, scalps[name])
         ear = headtex.soft(local, (0.078, 0.004, 0.08), (0.018, 0.026, 0.032), True, 1.0)
         outer = numpy.linalg.norm(local - numpy.array([0.0, -0.01, 0.1]), axis=1) > 0.06
-        keep = (above > -0.02) & (ear < 0.35) & outer
-        used, remap = numpy.unique(self.skin.triangles[keep], return_inverse=True)
-        self.scalp = surface(self.skin.points[used], remap.reshape(-1, 3))
+        keep = (above > -0.02) & (ear < 0.35) & outer & (local[:, 2] > -0.06)
+        used, remap = numpy.unique(self.follow.triangles[keep], return_inverse=True)
+        self.scalp = surface(self.follow.points[used], remap.reshape(-1, 3))
 
     def local(self, points):
         return (numpy.asarray(points, dtype=numpy.float64) - self.head_now) / self.scale
@@ -608,8 +610,19 @@ class head_space:
         return headtex.hairline(self.local(points), scalps[self.name])
 
 
-def scalp_roots(space, count, spacing, rng, margin=0.002):
-    points, normals = space.scalp.sample(count * 8, lambda centers: (space.inside(centers) > margin).astype(numpy.float64), rng)
+def scalp_roots(space, count, spacing, rng, margin=0.002, limit=None, region=None):
+    def density(centers):
+        depth = space.inside(centers)
+        chosen = depth > margin
+        if limit is not None:
+            chosen &= depth < limit
+        if region is not None:
+            chosen &= region(space.local(centers))
+        return chosen.astype(numpy.float64)
+
+    points, normals = space.scalp.sample(count * 8, density, rng)
+    if not len(points):
+        return points, normals
     kept = thin(points, spacing * space.scale, rng)
     return points[kept], normals[kept]
 
@@ -642,18 +655,37 @@ def flow_path(space, root, target, step, limit, stop, height, rng, wander=0.0):
 
 def female_hair(sheet, space, rng):
     s = space.scale
-    tie = space.world((0.0, 0.098, 0.022))
-    ring = 0.014 * s
-    axis = numpy.array([0.0, 0.55, -0.83])
-    layers = ((300, 0.013, 0.029, (0.0012, 0.0022), 0.02, 0, 0.0), (220, 0.016, 0.023, (0.003, 0.0045), 0.05, 2, 0.0), (130, 0.022, 0.015, (0.0045, 0.0085), 0.14, 4, 0.0))
-    for count, spacing, width, lift, wander, tile_bias, bow in layers:
-        roots, normals = scalp_roots(space, count, spacing, rng)
+    anchor, outward, anchor_index, anchor_weights = space.scalp.closest(space.world((0.0, 0.112, 0.03)))
+    tie = anchor + outward * 0.004 * s
+    ring = 0.013 * s
+    axis = outward * 0.8 + numpy.array([0.0, 0.0, -0.6])
+    axis /= numpy.linalg.norm(axis)
+    edge_roots, edge_normals = scalp_roots(space, 520, 0.004, rng, -0.006, 0.005)
+    for root in edge_roots:
+        base = rng.uniform(0.0003, 0.0009) * s
+
+        def height(t, base=base):
+            return base * (0.4 + 0.6 * min(t * 3.0, 1.0))
+
+        path, path_normals = flow_path(space, root, tie, 0.0085 * s, int(rng.integers(4, 7)), 0.03 * s, height, rng, 0.12)
+        if len(path) < 3:
+            continue
+        widths = numpy.full(len(path), rng.uniform(0.0075, 0.0105) * s)
+        sheet.ribbon(path, numpy.array(path_normals), widths, pick("short", rng), {"Bip01 Head": 1.0}, 0.0)
+    layers = (
+        (380, 0.0054, 0.0125, (0.0005, 0.0012), 0.05, 1, 0.0, 0.007, 0.024),
+        (300, 0.012, 0.03, (0.001, 0.002), 0.02, 0, 0.0, 0.015, None),
+        (220, 0.016, 0.024, (0.0026, 0.004), 0.05, 2, 0.0, 0.015, None),
+        (130, 0.022, 0.016, (0.004, 0.0075), 0.12, 4, 0.0, 0.02, None),
+    )
+    for count, spacing, width, lift, wander, tile_bias, bow, margin, limit in layers:
+        roots, normals = scalp_roots(space, count, spacing, rng, margin, limit)
         for root in roots:
             base = rng.uniform(lift[0], lift[1]) * s
             extra = rng.uniform(0.0, lift[1]) * s
 
             def height(t, base=base, extra=extra):
-                return base + extra * math.sin(math.pi * t) * 0.6
+                return base * min(t * 9.0, 1.0) + extra * math.sin(math.pi * t) * 0.6
 
             path, path_normals = flow_path(space, root, tie, 0.012 * s, 30, 0.03 * s, height, rng, wander)
             if len(path) < 2:
@@ -668,60 +700,83 @@ def female_hair(sheet, space, rng):
             t = numpy.linspace(0.0, 1.0, steps)
             widths = width * s * (1.0 - 0.72 * t ** 1.6) * rng.uniform(0.8, 1.2)
             sheet.ribbon(path, numpy.array(path_normals), widths, pick("long", rng, tile_bias), {"Bip01 Head": 1.0}, bow)
-    knot = tie + axis * 0.03 * s
-    radii = numpy.array([0.035, 0.031, 0.033]) * s
-    for strand in range(84):
-        pole = rng.normal(0.0, 1.0, 3)
+    across = numpy.cross(axis, numpy.array([0.0, 0.0, 1.0]))
+    across /= numpy.linalg.norm(across)
+    upward = numpy.cross(across, axis)
+    knot = tie + axis * 0.019 * s
+    radii = (0.034 * s, 0.031 * s, 0.025 * s)
+    for strand in range(76):
+        lean = rng.normal(0.0, 0.3, 2)
+        pole = axis + across * lean[0] + upward * lean[1]
         pole /= numpy.linalg.norm(pole)
-        start = numpy.cross(pole, rng.normal(0.0, 1.0, 3))
-        start /= numpy.linalg.norm(start)
-        side = numpy.cross(pole, start)
-        arc = rng.uniform(1.0, 2.7)
-        puff = rng.uniform(0.84, 1.1)
-        samples = 7
+        first = numpy.cross(pole, upward)
+        first /= numpy.linalg.norm(first)
+        second = numpy.cross(pole, first)
+        latitude = rng.uniform(-0.3, 1.3)
+        begin = rng.uniform(0.0, 2.0 * math.pi)
+        arc = rng.uniform(2.0, 4.6)
+        puff = rng.uniform(0.9, 1.08)
+        samples = 9
         path = []
         path_normals = []
         for k in range(samples):
-            angle = arc * k / (samples - 1)
-            direction = start * math.cos(angle) + side * math.sin(angle)
-            path.append(knot + direction * radii * puff)
-            outward = direction / radii
-            path_normals.append(outward / numpy.linalg.norm(outward))
-        widths = rng.uniform(0.014, 0.024) * s * (1.0 - 0.3 * numpy.linspace(0.0, 1.0, samples) ** 2)
-        sheet.ribbon(path, numpy.array(path_normals), widths, pick("long", rng, 1.5), {"Bip01 Head": 1.0}, 0.1)
-    for strand in range(18):
-        direction = rng.normal(0.0, 1.0, 3)
-        direction[2] = -abs(direction[2]) - 0.4
-        direction[1] = abs(direction[1]) * 0.6
+            angle = begin + arc * k / (samples - 1)
+            direction = (first * math.cos(angle) + second * math.sin(angle)) * math.cos(latitude) + pole * math.sin(latitude)
+            parts = (direction @ across, direction @ upward, direction @ axis)
+            path.append(knot + (across * parts[0] * radii[0] + upward * parts[1] * radii[1] + axis * parts[2] * radii[2]) * puff)
+            facing = across * parts[0] / radii[0] + upward * parts[1] / radii[1] + axis * parts[2] / radii[2]
+            path_normals.append(facing / numpy.linalg.norm(facing))
+        widths = rng.uniform(0.013, 0.021) * s * (1.0 - 0.25 * numpy.linspace(0.0, 1.0, samples) ** 2)
+        sheet.ribbon(path, numpy.array(path_normals), widths, pick("long", rng, 1.0), {"Bip01 Head": 1.0}, 0.12)
+    for strand in range(9):
+        spread = rng.uniform(0.0, 2.0 * math.pi)
+        direction = across * math.cos(spread) * 0.8 + upward * (-abs(math.sin(spread)) - 0.3) + axis * rng.uniform(0.1, 0.6)
         direction /= numpy.linalg.norm(direction)
-        root = knot + direction * radii * 0.9
-        heading = direction + numpy.array([rng.normal(0.0, 0.25), rng.uniform(0.0, 0.3), -rng.uniform(0.4, 1.1)])
-        heading /= numpy.linalg.norm(heading)
-        length = rng.uniform(0.045, 0.09) * s
+        parts = (direction @ across, direction @ upward, direction @ axis)
+        root = knot + across * parts[0] * radii[0] + upward * parts[1] * radii[1] + axis * parts[2] * radii[2]
+        length = rng.uniform(0.03, 0.06) * s
         samples = 6
         t = numpy.linspace(0.0, 1.0, samples)
-        path = root[None, :] + heading[None, :] * (length * t)[:, None] + numpy.array([0.0, 0.0, -1.0])[None, :] * (length * 0.35 * t * t)[:, None] + rng.normal(0.0, 0.0012, (samples, 3)) * s * t[:, None]
-        across = numpy.cross(heading, numpy.array([0.0, 0.0, 1.0]))
-        outward = numpy.cross(across, heading)
-        outward /= max(numpy.linalg.norm(outward), 1e-9)
-        widths = rng.uniform(0.009, 0.015) * s * (1.0 - 0.55 * t ** 1.5)
-        sheet.ribbon(path, numpy.tile(outward, (samples, 1)), widths, pick("wisp", rng) if rng.random() < 0.5 else pick("long", rng, 4.5), {"Bip01 Head": 1.0}, 0.0)
-    band_rows = 10
+        curl = numpy.cross(direction, numpy.array([0.0, 0.0, 1.0])) * rng.uniform(-0.35, 0.35)
+        path = root[None, :] + direction[None, :] * (length * t)[:, None] + numpy.array([0.0, 0.0, -1.0])[None, :] * (length * 0.55 * t * t)[:, None] + curl[None, :] * (length * t * t)[:, None]
+        side = numpy.cross(direction, numpy.array([0.0, 0.0, 1.0]))
+        facing = numpy.cross(side, direction)
+        facing /= max(numpy.linalg.norm(facing), 1e-9)
+        widths = rng.uniform(0.006, 0.011) * s * (1.0 - 0.6 * t ** 1.5)
+        sheet.ribbon(path, numpy.tile(facing, (samples, 1)), widths, pick("wisp", rng), {"Bip01 Head": 1.0}, 0.0)
+    band_rows = 12
     for index in range(band_rows):
         a0 = 2.0 * math.pi * index / band_rows
         a1 = 2.0 * math.pi * (index + 1) / band_rows
-        u = numpy.cross(axis, numpy.array([1.0, 0.0, 0.0]))
-        u /= numpy.linalg.norm(u)
-        v = numpy.cross(axis, u)
-        r = 0.0165 * s
-        p0 = tie + (u * math.cos(a0) + v * math.sin(a0)) * r
-        p1 = tie + (u * math.cos(a1) + v * math.sin(a1)) * r
-        sheet.quad([p0 - axis * 0.007 * s, p1 - axis * 0.007 * s, p1 + axis * 0.007 * s, p0 + axis * 0.007 * s], tiles["band"][0], {"Bip01 Head": 1.0})
+        r = 0.0155 * s
+        p0 = tie + axis * 0.004 * s + (across * math.cos(a0) + upward * math.sin(a0)) * r
+        p1 = tie + axis * 0.004 * s + (across * math.cos(a1) + upward * math.sin(a1)) * r
+        sheet.quad([p0 - axis * 0.004 * s, p1 - axis * 0.004 * s, p1 + axis * 0.004 * s, p0 + axis * 0.004 * s], tiles["band"][0], {"Bip01 Head": 1.0})
+    fringe, fringe_normals = scalp_roots(space, 190, 0.0075, rng, -0.004, 0.007, lambda local: local[:, 1] < 0.035)
+    for root in fringe:
+        location, normal, index, weights = space.scalp.closest(root)
+        back = tie - location
+        back -= normal * (back @ normal)
+        back /= max(numpy.linalg.norm(back), 1e-9)
+        heading = back + numpy.cross(normal, back) * rng.normal(0.0, 0.5)
+        heading /= numpy.linalg.norm(heading)
+        length = rng.uniform(0.012, 0.028) * s
+        samples = 4
+        path = []
+        path_normals = []
+        point = location
+        for k in range(samples):
+            near, current, near_index, near_weights = space.follow.closest(point)
+            path.append(near + current * (0.0006 + 0.0012 * k / (samples - 1)) * s)
+            path_normals.append(current)
+            point = near + heading * length / (samples - 1)
+        widths = numpy.full(samples, rng.uniform(0.005, 0.009) * s)
+        sheet.ribbon(path, numpy.array(path_normals), widths, pick("wisp", rng), {"Bip01 Head": 1.0}, 0.0)
     for side in (1.0, -1.0):
-        for strand in range(5):
-            root_local = numpy.array([side * rng.uniform(0.045, 0.066), rng.uniform(-0.085, -0.05), rng.uniform(0.128, 0.158)])
+        for strand in range(3):
+            root_local = numpy.array([side * rng.uniform(0.05, 0.066), rng.uniform(-0.085, -0.06), rng.uniform(0.135, 0.158)])
             location, normal, index, weights = space.scalp.closest(space.world(root_local))
-            length = rng.uniform(0.09, 0.15) * s
+            length = rng.uniform(0.07, 0.12) * s
             samples = 10
             path = []
             path_normals = []
@@ -740,21 +795,21 @@ def female_hair(sheet, space, rng):
                     candidate = near + near_normal * clearance
                 path.append(candidate)
                 path_normals.append(near_normal)
-            widths = rng.uniform(0.008, 0.014) * s * (1.0 - 0.5 * numpy.linspace(0.0, 1.0, samples) ** 2)
-            sheet.ribbon(path, numpy.array(path_normals), widths, pick("wisp", rng) if rng.random() < 0.6 else pick("long", rng, 5), {"Bip01 Head": 1.0}, 0.0)
-    roots, normals = scalp_roots(space, 46, 0.02, rng)
+            widths = rng.uniform(0.005, 0.009) * s * (1.0 - 0.6 * numpy.linspace(0.0, 1.0, samples) ** 2)
+            sheet.ribbon(path, numpy.array(path_normals), widths, pick("wisp", rng), {"Bip01 Head": 1.0}, 0.0)
+    roots, normals = scalp_roots(space, 24, 0.028, rng)
     for root, normal in zip(roots, normals):
         location, normal, index, weights = space.scalp.closest(root)
         direction = tie - location
         direction -= normal * (direction @ normal)
         direction /= max(numpy.linalg.norm(direction), 1e-9)
         side = numpy.cross(normal, direction)
-        heading = direction + side * rng.normal(0.0, 0.5) + normal * rng.uniform(0.15, 0.55)
+        heading = direction + side * rng.normal(0.0, 0.4) + normal * rng.uniform(0.04, 0.2)
         heading /= numpy.linalg.norm(heading)
-        length = rng.uniform(0.025, 0.06) * s
+        length = rng.uniform(0.016, 0.034) * s
         samples = 5
-        path = [location + normal * 0.004 * s + heading * length * (k / (samples - 1)) + normal * 0.004 * s * (k / (samples - 1)) ** 2 for k in range(samples)]
-        widths = numpy.full(samples, rng.uniform(0.006, 0.011) * s)
+        path = [location + normal * 0.004 * s + heading * length * (k / (samples - 1)) - normal * 0.003 * s * (k / (samples - 1)) ** 2 for k in range(samples)]
+        widths = numpy.full(samples, rng.uniform(0.004, 0.007) * s)
         sheet.ribbon(path, numpy.tile(normal, (samples, 1)), widths, pick("wisp", rng), {"Bip01 Head": 1.0}, 0.0)
 
 
@@ -799,8 +854,29 @@ def male_hair(sheet, space, rng):
                 path.append(near + current * (0.0009 * s + lift * t ** 1.3))
                 path_normals.append(current)
                 point = near + direction * length / (samples - 1)
-            widths = rng.uniform(width_range[0], width_range[1]) * s * (1.0 - 0.35 * numpy.linspace(0.0, 1.0, samples) ** 2)
-            sheet.ribbon(path, numpy.array(path_normals), widths, pick(group, rng, bias), {"Bip01 Head": 1.0}, bow)
+            widths = rng.uniform(width_range[0], width_range[1]) * s * (1.0 - 0.35 * numpy.linspace(0.0, 1.0, samples) ** 2) * (0.5 + 0.5 * edge)
+            tile = pick("wisp", rng) if edge < 0.4 and rng.random() < 0.8 else pick(group, rng, bias)
+            sheet.ribbon(path, numpy.array(path_normals), widths, tile, {"Bip01 Head": 1.0}, bow)
+    fringe, fringe_normals = scalp_roots(space, 130, 0.009, rng, -0.004, 0.004)
+    for root in fringe:
+        location, normal, index, weights = space.scalp.closest(root)
+        away = location - crown
+        away -= normal * (away @ normal)
+        away /= max(numpy.linalg.norm(away), 1e-9)
+        heading = away + numpy.cross(normal, away) * rng.normal(0.0, 0.6)
+        heading /= numpy.linalg.norm(heading)
+        length = rng.uniform(0.008, 0.018) * s
+        samples = 3
+        path = []
+        path_normals = []
+        point = location - heading * length * 0.4
+        for k in range(samples):
+            near, current, near_index, near_weights = space.follow.closest(point)
+            path.append(near + current * (0.0006 + 0.0014 * k / (samples - 1)) * s)
+            path_normals.append(current)
+            point = near + heading * length / (samples - 1)
+        widths = numpy.full(samples, rng.uniform(0.005, 0.008) * s)
+        sheet.ribbon(path, numpy.array(path_normals), widths, pick("wisp", rng), {"Bip01 Head": 1.0}, 0.0)
 
 
 def nearest_weights(body, stored, names):
@@ -845,7 +921,7 @@ def body_patch(sheet, body, lookup, density, count, spacing, direction, length_r
     return len(kept)
 
 
-def body_hair(sheet, body, lookup, skeleton, figure_scale, name, rng):
+def body_hair(sheet, body, lookup, skeleton, figure_scale, name, rng, exclude=None):
     joints = skeleton["joints"]
     s = figure_scale
     pelvis = numpy.asarray(joints["Bip01 Pelvis"])
@@ -857,10 +933,12 @@ def body_hair(sheet, body, lookup, skeleton, figure_scale, name, rng):
         t = numpy.clip((centers[:, 2] - bottom) / (top - bottom), 0.0, 1.0)
         half = 0.012 * s + (half_top - 0.012 * s) * t ** 0.8
         inside = (numpy.abs(centers[:, 0]) < half) & (centers[:, 2] > bottom) & (centers[:, 2] < top) & (centers[:, 1] < pelvis[1] - 0.03 * s)
+        if exclude is not None:
+            inside &= ~exclude(centers)
         return inside * (0.35 + 0.65 * numpy.sin(numpy.pi * t) ** 0.5)
 
     counts = {}
-    counts["pubic"] = body_patch(sheet, body, lookup, pubic, 190 if name == "male" else 150, 0.0062 * s, lambda p: numpy.array([-0.35 * numpy.sign(p[0]), 0.0, -1.0]), (0.014, 0.026), (0.013, 0.02), (0.002, 0.006), "curl", rng, s)
+    counts["pubic"] = body_patch(sheet, body, lookup, pubic, 84 if name == "male" else 70, 0.0088 * s, lambda p: numpy.array([-0.35 * numpy.sign(p[0]), 0.0, -1.0]), (0.012, 0.022), (0.011, 0.017), (0.0015, 0.0045), "curl", rng, s)
     if name == "male":
         for side in (1.0, -1.0):
             shoulder = numpy.asarray(joints["Bip01 L UpperArm"]) * numpy.array([side, 1.0, 1.0])
