@@ -810,6 +810,11 @@ namespace zp
 				mixer.play(sound, { x, y, z }, volume, pitch * (0.94f + mixer.random() * 0.12f));
 			}
 		}
+
+		else if (message.type == structures::message_marks)
+		{
+			marks.receive(reader);
+		}
 	}
 	/*
 	//=====================================================================================
@@ -915,9 +920,9 @@ namespace zp
 					{
 						structures::vec3_s seat{};
 
-						const auto platform{ (flags & structures::movement_riding) ? train.aboard({ px, py, pz }, time, seat) : 0u };
+						const auto carrier{ (flags & structures::movement_riding) ? train.aboard({ px, py, pz }, time, seat) : 0u };
 
-						remote.samples[remote.count % std::size(remote.samples)] = { time, { px, py, pz }, { vx, vy, vz }, yaw, pitch, flags, platform, seat };
+						remote.samples[remote.count % std::size(remote.samples)] = { time, { px, py, pz }, { vx, vy, vz }, yaw, pitch, flags, carrier, seat };
 
 						remote.count++;
 					}
@@ -1445,6 +1450,8 @@ namespace zp
 		}
 
 		remotes.clear();
+
+		marks.clear();
 	}
 	/*
 	//=====================================================================================
