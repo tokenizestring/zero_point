@@ -1,0 +1,292 @@
+{
+ "asset": {
+  "generator": "zero point flora",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bark",
+   "doubleSided": false,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "leaf",
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 5
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 5
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "flora_oak_0_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "flora_oak_0_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_bark_diff_2k.png",
+   "uri": "flora_oak_bark_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_bark_nor_gl_2k.png",
+   "uri": "flora_oak_bark_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_bark_arm_2k.png",
+   "uri": "flora_oak_bark_arm_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_leaf_diff_2k.png",
+   "uri": "flora_oak_leaf_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_leaf_nor_gl_2k.png",
+   "uri": "flora_oak_leaf_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_oak_leaf_arm_2k.png",
+   "uri": "flora_oak_leaf_arm_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 5969,
+   "max": [
+    7.111266136169434,
+    14.123880386352539,
+    7.057984352111816
+   ],
+   "min": [
+    -6.9862213134765625,
+    -0.6371585130691528,
+    -7.695938587188721
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 5969,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 5969,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 20280,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 15795,
+   "max": [
+    9.029189109802246,
+    14.545401573181152,
+    8.37267017364502
+   ],
+   "min": [
+    -8.163003921508789,
+    2.3346972465515137,
+    -8.316128730773926
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 15795,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 15795,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 34572,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 71628,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 71628,
+   "byteOffset": 71628,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 47752,
+   "byteOffset": 143256,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 40560,
+   "byteOffset": 191008,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 189540,
+   "byteOffset": 231568,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 189540,
+   "byteOffset": 421108,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 126360,
+   "byteOffset": 610648,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 69144,
+   "byteOffset": 737008,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 806152,
+   "uri": "flora_oak_0.bin"
+  }
+ ]
+}
