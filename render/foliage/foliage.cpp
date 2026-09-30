@@ -180,7 +180,17 @@ namespace zp
 	{
 		if (species_index < species.size())
 		{
-			instances.push_back({ position, yaw, scale, species_index });
+			instances.push_back({ position, yaw, scale, species_index, 0.0f, 0.0f });
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void foliage_c::add_bent(std::uint32_t species_index, structures::vec3_s position, std::float_t yaw, std::float_t scale, std::float_t bend, std::float_t slope)
+	{
+		if (species_index < species.size())
+		{
+			instances.push_back({ position, yaw, scale, species_index, bend, slope });
 		}
 	}
 	/*
@@ -295,8 +305,9 @@ namespace zp
 	void foliage_c::push(std::uint32_t bucket_index, std::uint32_t index, std::float_t fade)
 	{
 		const auto& instance{ instances[index] };
+		const auto bent{ species[instance.species].sway < 0.0f };
 
-		buckets[bucket_index].items.push_back({ { instance.position.x, instance.position.y, instance.position.z, instance.yaw }, { instance.scale, mathematics.hash_float(index) * two_pi, species[instance.species].sway, fade } });
+		buckets[bucket_index].items.push_back({ { instance.position.x, instance.position.y, instance.position.z, instance.yaw }, { instance.scale, bent ? instance.bend : mathematics.hash_float(index) * two_pi, bent ? -2.0f - instance.slope : species[instance.species].sway, fade } });
 		buckets[bucket_index].fading = buckets[bucket_index].fading || fade != 0.0f;
 	}
 	/*

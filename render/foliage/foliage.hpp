@@ -46,6 +46,7 @@ namespace zp
 		bool add_shadow(std::uint32_t species_index, const char* model_name);
 		std::uint32_t bucket(const structures::model_s* model, bool impostor);
 		void add(std::uint32_t species_index, structures::vec3_s position, std::float_t yaw, std::float_t scale);
+		void add_bent(std::uint32_t species_index, structures::vec3_s position, std::float_t yaw, std::float_t scale, std::float_t bend, std::float_t slope);
 		void build(structures::vec3_s minimum, structures::vec3_s maximum);
 		void select(structures::vec3_s camera, const structures::vec4_s* planes, std::uint32_t plane_count, bool shadow_pass);
 		void push(std::uint32_t bucket_index, std::uint32_t index, std::float_t fade);
