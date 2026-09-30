@@ -145,6 +145,8 @@ namespace zp
 				server.send_hit(arrow.owner, victim, damage, headshot, server.clients[victim].alive == false, start + direction * distance);
 			}
 
+			marks.bleed(start + direction * distance, direction);
+
 			arrow.damage = -1.0f;
 		}
 
@@ -162,6 +164,8 @@ namespace zp
 			combat.kill_marker = actor.dead ? 1.0f : combat.kill_marker;
 
 			particles.impact(structures::surface_flesh, point, direction * -1.0f);
+
+			marks.bleed(point, direction);
 
 			mixer.play(structures::sound_hit_flesh, point, 1.0f, 1.0f + random() * 0.2f);
 
