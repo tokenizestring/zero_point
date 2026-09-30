@@ -67,6 +67,7 @@ class sprig_c:
         self.layer = self.bm.verts.layers.float_color.new("tint")
         self.matrix = Matrix.Identity(4)
         self.lite = False
+        self.front = False
 
     @contextmanager
     def place(self, matrix):
@@ -113,7 +114,7 @@ class sprig_c:
         rows = max(6, style["rows"] // 3) if self.lite else style["rows"]
         columns = (-1.0, -0.4, 0.4, 1.0) if self.lite else style["columns"]
         outline = style["outline"]
-        facing = (self.matrix.to_3x3() @ Vector((0.0, 0.0, 1.0))).z >= 0.0
+        facing = self.front or (self.matrix.to_3x3() @ Vector((0.0, 0.0, 1.0))).z >= 0.0
         base, tip = style["front"] if facing else style["back"]
         rough = style["rough"] if facing else style["back_rough"]
         vein_color = style["vein"]
@@ -166,6 +167,23 @@ class sprig_c:
         for row in range(rows):
             for column in range(len(columns) - 1):
                 self.bm.faces.new((grid[row][column], grid[row][column + 1], grid[row + 1][column + 1], grid[row + 1][column]))
+
+    def needle(self, base, direction, up, length, width, color_base, color_tip, rough=0.5):
+        direction = direction.normalized()
+        side = direction.cross(up)
+        if side.length < 1e-5:
+            side = kit.any_perpendicular(direction)
+        side = side.normalized() * width * 0.5
+        lift = up.normalized() * width * 0.2
+        bend = up.normalized() * length * 0.05
+        middle = kit.mix(color_base, color_tip, 0.45) + (rough,)
+        first = self.vert(base - side, tuple(color_base) + (rough,))
+        second = self.vert(base + side, tuple(color_base) + (rough,))
+        third = self.vert(base + direction * length * 0.5 + side * 0.9 + bend + lift, middle)
+        fourth = self.vert(base + direction * length + bend * 1.6, tuple(color_tip) + (rough,))
+        fifth = self.vert(base + direction * length * 0.5 - side * 0.9 + bend + lift, middle)
+        self.bm.faces.new((first, second, third, fifth))
+        self.bm.faces.new((fifth, third, fourth))
 
     def blob(self, center, radii, color_top, color_bottom=None, rough=0.5, segments=10, rings=6, axis=None):
         color_bottom = color_top if color_bottom is None else color_bottom
@@ -220,6 +238,20 @@ class sprig_c:
         for index in range(count - 1):
             self.bm.faces.new((rows[index][0], rows[index][1], rows[index + 1][1], rows[index + 1][0]))
             self.bm.faces.new((rows[index][1], rows[index][2], rows[index + 1][2], rows[index + 1][1]))
+
+    def slab(self, width, height, columns, rows, shade):
+        grid = []
+        for row in range(rows + 1):
+            v = row / rows
+            line = []
+            for column in range(columns + 1):
+                u = column / columns
+                red, green, blue, rough, lift = shade(u, v)
+                line.append(self.vert(Vector((u * width - width * 0.5, v * height, lift)), (red, green, blue, rough)))
+            grid.append(line)
+        for row in range(rows):
+            for column in range(columns):
+                self.bm.faces.new((grid[row][column], grid[row][column + 1], grid[row + 1][column + 1], grid[row + 1][column]))
 
     def bounds(self):
         xs = [vert.co.x for vert in self.bm.verts]
