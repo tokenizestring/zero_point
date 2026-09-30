@@ -472,6 +472,7 @@ namespace zp
 				if (minimum.y <= top)
 				{
 					const std::uint32_t triangles[2][3] = { { 0u, 2u, 1u }, { 1u, 2u, 3u } };
+					const auto surface{ layer_surfaces[std::min(ground(corners[0].x + 0.5f, corners[0].z + 0.5f), terrain_layer_count - 1u)] };
 
 					for (const auto& triangle : triangles)
 					{
@@ -521,7 +522,7 @@ namespace zp
 							}
 						}
 
-						world.clip_planes(planes, count, -1, structures::surface_grass, start, end, extents, result);
+						world.clip_planes(planes, count, -1, surface, start, end, extents, result);
 					}
 				}
 			}
