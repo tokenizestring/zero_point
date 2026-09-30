@@ -1,0 +1,272 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "wheelset"
+  }
+ ],
+ "materials": [
+  {
+   "name": "rail_steel",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  },
+  {
+   "name": "loco_black",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "wheelset",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_normal.png",
+   "uri": "../_library/rail_steel_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_orm.png",
+   "uri": "../_library/rail_steel_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_albedo.png",
+   "uri": "../_library/rail_steel_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_normal.png",
+   "uri": "../_library/loco_black_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_orm.png",
+   "uri": "../_library/loco_black_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_albedo.png",
+   "uri": "../_library/loco_black_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 910,
+   "max": [
+    0.815000057220459,
+    0.5074794292449951,
+    0.5074794292449951
+   ],
+   "min": [
+    -0.815000057220459,
+    -0.5074794292449951,
+    -0.5074794292449951
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 910,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 910,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 3840,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 1922,
+   "max": [
+    0.9300000071525574,
+    0.5074794292449951,
+    0.5074794292449951
+   ],
+   "min": [
+    -0.9300000071525574,
+    -0.5074794292449951,
+    -0.5074794292449951
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 1922,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 1922,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 4752,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 10920,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10920,
+   "byteOffset": 10920,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7280,
+   "byteOffset": 21840,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7680,
+   "byteOffset": 29120,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 23064,
+   "byteOffset": 36800,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 23064,
+   "byteOffset": 59864,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 15376,
+   "byteOffset": 82928,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9504,
+   "byteOffset": 98304,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 107808,
+   "uri": "train_wheelset.bin"
+  }
+ ]
+}
