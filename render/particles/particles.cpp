@@ -114,15 +114,15 @@ namespace zp
 		const auto first{ pool.size() };
 		const auto outward{ normal * 2.2f + structures::vec3_s{ 0.0f, 1.2f, 0.0f } };
 
+		auto debris{ particle_kinds[structures::particle_chip].color };
+		auto haze{ particle_kinds[structures::particle_dust].color };
+
 		if (surface == structures::surface_wood)
 		{
 			emit(structures::particle_chip, position, outward, 1.4f, 7u, false);
 			emit(structures::particle_dust, position, normal * 0.6f, 0.3f, 2u, false);
 
-			for (auto index{ first + 7u }; index < pool.size(); index++)
-			{
-				pool[index].color = { 0.4f, 0.3f, 0.2f, 0.35f };
-			}
+			haze = { 0.4f, 0.3f, 0.2f, 0.35f };
 		}
 
 		else if (surface == structures::surface_rock || surface == structures::surface_concrete)
@@ -130,15 +130,15 @@ namespace zp
 			emit(structures::particle_chip, position, outward, 1.6f, 6u, false);
 			emit(structures::particle_dust, position, normal * 0.8f, 0.4f, 4u, false);
 
-			for (auto index{ first }; index < first + 6u && index < pool.size(); index++)
-			{
-				pool[index].color = { 0.38f, 0.37f, 0.35f, 1.0f };
-			}
+			debris = { 0.38f, 0.37f, 0.35f, 1.0f };
 		}
 
-		else if (surface == structures::surface_metal)
+		else if (surface == structures::surface_metal || surface == structures::surface_grate)
 		{
 			emit(structures::particle_spark, position, normal * 3.0f, 2.4f, 10u, false);
+			emit(structures::particle_dust, position, normal * 0.4f, 0.15f, 1u, false);
+
+			haze = { 0.3f, 0.3f, 0.3f, 0.3f };
 		}
 
 		else if (surface == structures::surface_flesh)
@@ -146,9 +146,30 @@ namespace zp
 			emit(structures::particle_blood, position, normal * 1.4f, 0.9f, 9u, false);
 		}
 
+		else if (surface == structures::surface_sand)
+		{
+			emit(structures::particle_dust, position, normal * 1.4f + structures::vec3_s{ 0.0f, 0.6f, 0.0f }, 0.7f, 7u, false);
+
+			haze = { 0.78f, 0.7f, 0.52f, 0.55f };
+		}
+
+		else if (surface == structures::surface_dirt || surface == structures::surface_grass || surface == structures::surface_gravel)
+		{
+			emit(structures::particle_chip, position, outward * 0.8f, 1.3f, 5u, false);
+			emit(structures::particle_dust, position, normal * 0.9f, 0.45f, 4u, false);
+
+			debris = { 0.19f, 0.14f, 0.1f, 1.0f };
+			haze = { 0.34f, 0.28f, 0.22f, 0.5f };
+		}
+
 		else
 		{
 			emit(structures::particle_dust, position, normal * 0.7f, 0.4f, 4u, false);
+		}
+
+		for (auto index{ first }; index < pool.size(); index++)
+		{
+			pool[index].color = pool[index].kind == structures::particle_chip ? debris : (pool[index].kind == structures::particle_dust ? haze : pool[index].color);
 		}
 	}
 	/*
