@@ -39,6 +39,12 @@ namespace zp
 		std::float_t waking = 0.0f;
 		std::float_t leaving = 0.0f;
 		std::float_t warm_clock = 0.0f;
+		std::double_t trace_clock = 0.0;
+		std::double_t trace_last = 0.0;
+		std::double_t trace_worst = 0.0;
+		std::double_t trace_spent[4]{};
+		std::double_t trace_parts[6]{};
+		std::uint32_t trace_frames = 0u;
 		bool show_debug = false;
 		bool paused = false;
 		bool alive = false;
@@ -66,6 +72,8 @@ namespace zp
 		void update_player_actor();
 		structures::vec3_s third_person_camera();
 		void update_fly_camera();
+		void stage_marks();
+		void trace(std::double_t began, std::double_t updated, std::double_t waited, std::double_t drawn);
 		void draw_debug_overlay();
 	};
 

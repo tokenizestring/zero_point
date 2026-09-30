@@ -325,6 +325,16 @@ namespace zp
 					options.ride_test = true;
 				}
 
+				else if (std::strcmp(current, "--impacts") == 0)
+				{
+					options.impact_test = true;
+				}
+
+				else if (std::strcmp(current, "--trace") == 0)
+				{
+					options.trace = true;
+				}
+
 				else if (std::strcmp(current, "--goal") == 0 && next[0])
 				{
 					options.goal_step = static_cast<std::uint32_t>(std::atoi(next));
@@ -491,6 +501,11 @@ namespace zp
 			if (particles.create() == false)
 			{
 				logger.write("application: particles unavailable");
+			}
+
+			if (decals.create() == false)
+			{
+				logger.write("application: decals unavailable");
 			}
 
 			if (weather.create() == false)
@@ -749,6 +764,8 @@ namespace zp
 
 		particles.destroy();
 
+		decals.destroy();
+
 		weather.destroy();
 
 		atmosphere.destroy();
@@ -886,6 +903,19 @@ namespace zp
 	*/
 	void application_c::frame_world()
 	{
+		const auto began{ platform.time() };
+
+		auto stamp{ began };
+
+		const auto lap = [&](std::uint32_t part)
+			{
+				const auto now{ platform.time() };
+
+				trace_parts[part] += now - stamp;
+
+				stamp = now;
+			};
+
 		client.update(delta);
 
 		train.advance(delta);
@@ -963,10 +993,14 @@ namespace zp
 			platform.input.pressed[VK_LBUTTON] = false;
 		}
 
+		lap(0u);
+
 		if (live)
 		{
 			update_game();
 		}
+
+		lap(1u);
 
 		client.flush(delta);
 
@@ -1001,20 +1035,30 @@ namespace zp
 				viewmodel.update(delta);
 			}
 
+			lap(2u);
+
 			building.effects(delta);
 
 			harvest.fell(delta);
 
 			train.update(delta);
 
+			marks.expire();
+
 			particles.update(delta);
+
+			lap(3u);
 
 			weather.update(delta);
 
 			atmosphere.update(delta);
+
+			lap(4u);
 		}
 
 		mixer.update(delta);
+
+		lap(5u);
 
 		if (platform.minimized)
 		{
@@ -1023,7 +1067,11 @@ namespace zp
 
 		else
 		{
+			const auto updated{ platform.time() };
+
 			gpu.wait_for_frame();
+
+			const auto waited{ platform.time() };
 
 			if (overture)
 			{
@@ -1117,6 +1165,8 @@ namespace zp
 
 			canvas.end(gpu.backbuffer_rtv);
 
+			const auto drawn{ platform.time() };
+
 			frame_index++;
 
 			if (options.capture[0] && frame_index == options.frames)
@@ -1129,6 +1179,11 @@ namespace zp
 			}
 
 			gpu.present();
+
+			if (options.trace)
+			{
+				trace(began, updated, waited, drawn);
+			}
 		}
 
 		if (leaving > 0.0f)
@@ -1196,6 +1251,11 @@ namespace zp
 
 			chart.grave = { fell.x, fell.z };
 			chart.grave_marked = true;
+		}
+
+		if (options.impact_test && frame_index == 5u)
+		{
+			stage_marks();
 		}
 
 		const auto charted{ chart.open };
@@ -1852,6 +1912,85 @@ namespace zp
 			{
 				fly_position.y -= speed;
 			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void application_c::stage_marks()
+	{
+		const auto origin{ options.camera_set ? fly_position : player.eye };
+		const auto yaw{ options.camera_set ? fly_yaw : player.yaw };
+		const auto pitch{ options.camera_set ? fly_pitch : player.pitch };
+		const auto ahead{ mathematics.flat_forward(yaw) };
+		const structures::vec3_s side{ ahead.z, 0.0f, -ahead.x };
+		const structures::vec3_s fine{ 0.01f, 0.01f, 0.01f };
+
+		for (auto shot{ 0u }; shot < 24u; shot++)
+		{
+			const auto direction{ mathematics.forward_from_angles(yaw + (static_cast<std::float_t>(shot % 6u) - 2.5f) * 0.045f, pitch + (static_cast<std::float_t>(shot / 6u) - 1.5f) * 0.045f) };
+
+			marks.impact(world.trace(origin, origin + direction * 60.0f, fine, structures::contents_solid), direction, 40.0f + 14.0f * static_cast<std::float_t>(shot % 5u), false);
+		}
+
+		for (auto step{ 0u }; step < 15u; step++)
+		{
+			const auto left{ (step & 1u) != 0u };
+			const auto spot{ origin + ahead * (1.4f + 0.72f * static_cast<std::float_t>(step)) - side * (left ? 0.9f : 0.7f) };
+			const auto ground{ world.trace(spot, spot - structures::vec3_s{ 0.0f, 8.0f, 0.0f }, fine, structures::contents_solid) };
+			const auto normal{ marks.unpack(marks.pack(ground.normal)) };
+
+			if (ground.hit)
+			{
+				marks.add(structures::mark_print_mud + (step / 5u) % 3u, left ? 0u : 1u, ground.end, normal, marks.aim(normal, ahead), 128u, marks.now(), false);
+			}
+		}
+
+		for (auto drop{ 0u }; drop < 6u; drop++)
+		{
+			const auto spot{ origin + ahead * (1.8f + 1.0f * static_cast<std::float_t>(drop)) + side * 0.9f };
+			const auto ground{ world.trace(spot, spot - structures::vec3_s{ 0.0f, 8.0f, 0.0f }, fine, structures::contents_solid) };
+			const auto normal{ marks.unpack(marks.pack(ground.normal)) };
+
+			if (ground.hit)
+			{
+				marks.add(drop == 5u ? structures::mark_blood_pool : (drop % 2u ? structures::mark_blood_drip : structures::mark_blood_spatter), drop, ground.end, normal, marks.aim(normal, ahead), static_cast<std::uint8_t>(40u * drop), marks.now() - (drop == 5u ? 60.0 : (drop >= 3u ? 400.0 : 0.0)), false);
+			}
+		}
+
+		logger.write("marks: staged %u", marks.count);
+	}
+	/*
+	//=====================================================================================
+	*/
+	void application_c::trace(std::double_t began, std::double_t updated, std::double_t waited, std::double_t drawn)
+	{
+		const auto presented{ platform.time() };
+
+		trace_spent[0] += updated - began;
+		trace_spent[1] += waited - updated;
+		trace_spent[2] += drawn - waited;
+		trace_spent[3] += presented - drawn;
+		trace_worst = std::max(trace_worst, trace_last > 0.0 ? presented - trace_last : 0.0);
+		trace_last = presented;
+		trace_frames++;
+
+		if (presented - trace_clock >= 1.0)
+		{
+			char line[384]{};
+
+			profiler.interval(line, sizeof(line));
+
+			const auto scale{ 1000.0 / static_cast<std::double_t>(std::max(trace_frames, 1u)) };
+
+			logger.write("trace: %6.1f s | state %u | %5.1f fps | worst %6.1f ms | update %.2f (net %.2f game %.2f actors %.2f world %.2f sky %.2f sound %.2f) wait %.2f draw %.2f present %.2f | %s | decals %u", static_cast<std::double_t>(elapsed), state, static_cast<std::double_t>(trace_frames) / std::max(presented - trace_clock, 0.001), trace_worst * 1000.0, trace_spent[0] * scale, trace_parts[0] * scale, trace_parts[1] * scale, trace_parts[2] * scale, trace_parts[3] * scale, trace_parts[4] * scale, trace_parts[5] * scale, trace_spent[1] * scale, trace_spent[2] * scale, trace_spent[3] * scale, line, decals.drawn);
+
+			std::fill(std::begin(trace_spent), std::end(trace_spent), 0.0);
+			std::fill(std::begin(trace_parts), std::end(trace_parts), 0.0);
+
+			trace_clock = presented;
+			trace_worst = 0.0;
+			trace_frames = 0u;
 		}
 	}
 	/*
