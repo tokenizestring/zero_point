@@ -723,6 +723,10 @@ namespace zp
 		gpu.context->OMSetRenderTargets(0u, nullptr, nullptr);
 
 		profiler.mark(structures::profile_models);
+
+		decals.render();
+
+		profiler.mark(structures::profile_decals);
 	}
 	/*
 	//=====================================================================================
