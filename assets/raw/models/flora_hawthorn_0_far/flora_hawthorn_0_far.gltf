@@ -1,0 +1,292 @@
+{
+ "asset": {
+  "generator": "zero point flora",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bark",
+   "doubleSided": false,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "leaf",
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 5
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 5
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "flora_hawthorn_0_far_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "flora_hawthorn_0_far_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_bark_diff_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_bark_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_bark_nor_gl_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_bark_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_bark_arm_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_bark_arm_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_leaf_diff_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_leaf_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_leaf_nor_gl_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_leaf_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_hawthorn_leaf_arm_2k.png",
+   "uri": "../flora_hawthorn_0/flora_hawthorn_leaf_arm_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 944,
+   "max": [
+    4.1024017333984375,
+    3.7426185607910156,
+    1.6962558031082153
+   ],
+   "min": [
+    -0.32433658838272095,
+    -0.4046061336994171,
+    -1.7133501768112183
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 944,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 944,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 2862,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 1928,
+   "max": [
+    4.814910411834717,
+    4.514930725097656,
+    2.315868616104126
+   ],
+   "min": [
+    -0.59137362241745,
+    0.8413777351379395,
+    -2.323848247528076
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 1928,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 1928,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 2892,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 11328,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 11328,
+   "byteOffset": 11328,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7552,
+   "byteOffset": 22656,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 5724,
+   "byteOffset": 30208,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 23136,
+   "byteOffset": 35932,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 23136,
+   "byteOffset": 59068,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 15424,
+   "byteOffset": 82204,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 5784,
+   "byteOffset": 97628,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 103412,
+   "uri": "flora_hawthorn_0_far.bin"
+  }
+ ]
+}
