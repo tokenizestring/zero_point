@@ -51,6 +51,8 @@ namespace zp
 
 			particles.impact(structures::surface_flesh, origin + direction * (best_along - 0.1f), direction * -1.0f);
 
+			marks.bleed(origin + direction * best_along, direction);
+
 			mixer.play(structures::sound_hit_flesh, origin + direction * best_along, 1.0f, 0.9f + mixer.random() * 0.2f);
 			mixer.play(actor.dead ? structures::sound_zombie_groan : structures::sound_zombie_snarl, actor.position + structures::vec3_s{ 0.0f, 1.6f, 0.0f }, 0.95f, actor.dead ? 0.8f : 0.95f + mixer.random() * 0.15f);
 
