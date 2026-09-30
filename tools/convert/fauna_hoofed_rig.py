@@ -5,7 +5,16 @@ import fauna_hoofed_field as fields
 smooth = fields.smoothstep
 
 
+def snap(k, top, bottom, names):
+    along = fields.unit(k[bottom] - k[top])
+    normal = fields.unit(fields.lateral - along * float(fields.lateral @ along))
+    for name in names:
+        k[name] = k[name] - normal * float((k[name] - k[top]) @ normal)
+
+
 def quadruped(k, tail, extra=()):
+    snap(k, "shoulder", "fetlock_f", ("elbow", "carpus"))
+    snap(k, "hip", "fetlock_h", ("stifle", "hock"))
     bones = [("root", None, (0.0, 0.0, 0.0))]
 
     def add(name, parent, position):
@@ -153,6 +162,9 @@ def weights(model, blueprint):
             strength = numpy.interp(travel, marks[:len(limb["grip"])], limb["grip"])
             body = numpy.isin(part, ["body", "rump"]) & here
             pull = strength * smooth(1.0, 0.35, distance / radius) * smooth(0.015, 0.07, numpy.abs(points[:, 0])) * body
+            if "mass" in limb:
+                low, high, front, back, amount = limb["mass"]
+                pull = numpy.maximum(pull, amount * smooth(high, low, points[:, 2]) * smooth(0.025, 0.085, numpy.abs(points[:, 0])) * smooth(front[0], front[1], points[:, 1]) * smooth(back[1], back[0], points[:, 1]) * body)
             leg = (part == limb["name"]) & here
             ramp = smooth(-1.5, 2.0, level)
             pull = numpy.where(leg, numpy.maximum(strength * smooth(1.0, 0.35, distance / radius), ramp), pull)
@@ -183,6 +195,8 @@ def weights(model, blueprint):
             result[index, slot[bone]] = 1.0
     for extra in rig.get("extra", ()):
         result = extra(result, slot, points, part, coord, model)
+    anchored = numpy.flatnonzero(model["anchor"] >= 0)
+    result[anchored] = result[model["anchor"][anchored]]
     total = result.sum(axis=1)
     if (total < 1e-6).any():
         missing = numpy.flatnonzero(total < 1e-6)
