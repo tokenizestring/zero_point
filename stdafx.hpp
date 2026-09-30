@@ -63,6 +63,7 @@
 #include "render/grass/grass.hpp"
 #include "render/water/water.hpp"
 #include "render/particles/particles.hpp"
+#include "render/decals/decals.hpp"
 #include "render/weather/weather.hpp"
 #include "render/builder/builder.hpp"
 #include "render/sky/sky.hpp"
@@ -92,6 +93,7 @@
 #include "game/weapons/weapons.hpp"
 #include "game/viewmodel/viewmodel.hpp"
 #include "game/train/train.hpp"
+#include "game/marks/marks.hpp"
 
 #include "net/transport/transport.hpp"
 #include "net/server/server.hpp"
