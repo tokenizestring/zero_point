@@ -200,9 +200,9 @@ def sheet_rows(extent, head, scale=1.0):
 
 def detail_rows(marks, scale=1.0):
     head = marks["eye"] * numpy.array([0.0, 1.0, 1.0]) * scale + numpy.array([0.0, -0.06, -0.04]) * scale
-    profile = {"target": tuple(head), "direction": (1.0, 0.0, 0.0), "ortho": 0.72 * scale, "resolution": (900, 800)}
-    face = {"target": tuple(head), "direction": (0.0, -1.0, 0.0), "ortho": 0.6 * scale, "resolution": (700, 800)}
-    above = {"target": tuple(head), "direction": (0.0, -0.45, 1.0), "ortho": 0.6 * scale, "resolution": (700, 800)}
+    profile = {"target": tuple(head), "direction": (1.0, 0.0, 0.0), "ortho": 0.62 * scale, "resolution": (1100, 900)}
+    face = {"target": tuple(head), "direction": (0.35, -1.0, 0.1), "ortho": 0.5 * scale, "resolution": (800, 900)}
+    above = {"target": tuple(head), "direction": (0.0, -1.0, 0.0), "ortho": 0.5 * scale, "resolution": (500, 900)}
     fore = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * scale), "direction": (1.0, 0.0, 0.0), "ortho": 0.98 * scale, "resolution": (560, 900)}
     fore_front = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * scale), "direction": (0.0, -1.0, 0.0), "ortho": 0.98 * scale, "resolution": (560, 900)}
     hind = {"target": (0.0, float(marks["hock"][1]) * scale - 0.08 * scale, 0.52 * scale), "direction": (1.0, 0.0, 0.0), "ortho": 1.15 * scale, "resolution": (640, 900)}
