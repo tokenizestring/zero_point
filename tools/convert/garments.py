@@ -32,7 +32,6 @@ def female_fields(points, setup):
     landmarks = setup["figure"]["landmarks"]
     pelvis = numpy.asarray(joints["Bip01 Pelvis"])
     chest = numpy.asarray(joints["Bip01 Spine2"])
-    neck = numpy.asarray(joints["Bip01 Neck"])
     shoulder = numpy.asarray(joints["Bip01 L UpperArm"])
     x = numpy.abs(points[:, 0])
     y = points[:, 1]
@@ -48,7 +47,7 @@ def female_fields(points, setup):
     z_front = low_front + (side_z - low_front) * u ** 0.85
     z_back = low_back + (side_z - low_back) * u ** 2.4
     back = smooth(-0.03 * s, 0.05 * s, y - pelvis[1])
-    opening = z_front * (1.0 - back) + z_back * back - 0.25 * smooth(gusset * 1.35, gusset * 0.7, x)
+    opening = z_front * (1.0 - back) + z_back * back - 0.022 * s * smooth(gusset * 1.35, gusset * 0.7, x)
     waist = top - z
     leg = z - opening
     briefs = numpy.minimum(numpy.minimum(waist, leg), 0.27 * s - x)
@@ -56,19 +55,23 @@ def female_fields(points, setup):
     fold = lower_center[2] - radii[2]
     band_low = fold - 0.034 * s
     nipple = landmarks["nipple_l"][2]
-    open_top = neck[2] + 0.08
-    inner = 0.068 * s
-    outer = 0.106 * s
-    flank = 0.152 * s
+    inner = 0.08 * s
+    outer = 0.118 * s
+    flank = 0.155 * s
     behind = smooth(-0.02 * s, 0.04 * s, y - chest[1])
-    center_top = (nipple + 0.064 * s) * (1.0 - behind) + (chest[2] + 0.085 * s) * behind
-    side_top = shoulder[2] - (0.125 - 0.02 * behind) * s
-    scoop = center_top + (open_top - center_top) * smooth(0.018 * s, inner, x) ** 2.6
-    armhole = side_top + (open_top - side_top) * smooth(flank, outer, x) ** 1.7
-    upper = numpy.where(x < (inner + outer) * 0.5, scoop, armhole)
+    center_top = (nipple + 0.062 * s) * (1.0 - behind) + (chest[2] + 0.075 * s) * behind
+    depth = (0.1 - 0.055 * behind) * s
+    crown = center_top + depth
+    neckline = numpy.where(z >= crown, x / inner - 1.0, numpy.sqrt((x / inner) ** 2 + (numpy.clip(crown - z, 0.0, None) / depth) ** 2) - 1.0) * inner
+    side_top = shoulder[2] - (0.118 - 0.02 * behind) * s
+    rise = 0.095 * s
+    reach = flank - outer
+    peak = side_top + rise
+    armhole = numpy.where(x >= flank, (side_top - z) / rise, numpy.where(z >= peak, (outer - x) / reach, numpy.sqrt((numpy.clip(flank - x, 0.0, None) / reach) ** 2 + (numpy.clip(peak - z, 0.0, None) / rise) ** 2) - 1.0)) * reach
+    upper = numpy.minimum(neckline, armhole)
     band = z - band_low
-    bra = numpy.minimum(numpy.minimum(band, upper - z), 0.205 * s - x)
-    return {"briefs": {"inside": briefs, "band": waist, "hem": leg}, "bra": {"inside": bra, "band": band, "hem": upper - z}}
+    bra = numpy.minimum(numpy.minimum(band, upper), 0.205 * s - x)
+    return {"briefs": {"inside": briefs, "band": waist, "hem": leg}, "bra": {"inside": bra, "band": band, "hem": upper}}
 
 
 fields_of = {"male": male_fields, "female": female_fields}
@@ -158,7 +161,8 @@ def gradient(shapes, points, epsilon=2e-5):
     return value, slope / numpy.maximum(numpy.linalg.norm(slope, axis=1), 1e-9)[:, None]
 
 
-def membrane(points, triangles, shapes, clearance, pinned, iterations=16):
+def membrane(points, triangles, shapes, clearance, pinned, iterations=44):
+    shapes = [item for item in shapes if item.label != "nipple"]
     edges = numpy.unique(numpy.sort(numpy.concatenate([triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]]), axis=1), axis=0)
     points = points.copy()
     for iteration in range(iterations):
@@ -173,6 +177,12 @@ def membrane(points, triangles, shapes, clearance, pinned, iterations=16):
         for settle in range(2):
             value, normal = gradient(shapes, points)
             points = points + normal * numpy.clip(clearance - value, 0.0, 0.004)[:, None]
+    for settle in range(12):
+        value, normal = gradient(shapes, points)
+        short = numpy.clip(clearance - value, 0.0, 0.003)
+        if float(short.max()) < 1e-5:
+            break
+        points = points + normal * short[:, None]
     value, normal = gradient(shapes, points)
     print("GARMENT clearance min", round(float(value.min()) * 1000.0, 2), "mm mean", round(float(value.mean()) * 1000.0, 2), "mm")
     return points
