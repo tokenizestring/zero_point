@@ -25,6 +25,8 @@ The train in these shots is still a set of placeholder boxes. More screenshots w
 - A 9.4 square kilometre island (4608 m terrain, 1 m height samples) shaped by noise and hydraulic erosion, with continuous level of detail
 - 13 named places (a ruined town, villages, farms, a harbour, a quarry, a signal post on the summit), roads, and a 10 km closed railway loop
 - A freight train on a fixed timetable that you can climb onto, walk around on and ride, and that will kill you if you stand on the track
+- Twelve biomes (beach, dunes, marsh, meadow, farmland, woodland, pinewood, heath, moor and more), roads that follow the terrain, and level crossings where they meet the railway
+- Bullet holes, blood and footprints that are kept on the server and shown to everyone nearby (the textures for them are still being made)
 - Day and night cycle with a procedural sky, weather (overcast, rain, storms with lightning), an ocean you can swim and dive in
 - Buildings modelled in Blender with interiors, collision and loot spots
 
@@ -56,25 +58,25 @@ Counted on 30 September 2026. Build output, the portable Blender install and bin
 
 | Language | Files | Lines |
 |---|---:|---:|
-| C++ source (.cpp) | 70 | 40,467 |
-| C++ headers (.hpp) | 61 | 8,832 |
-| HLSL shaders | 17 | 3,631 |
-| Python asset tools | 49 | 33,035 |
+| C++ source (.cpp) | 73 | 41,869 |
+| C++ headers (.hpp) | 63 | 9,135 |
+| HLSL shaders | 18 | 3,753 |
+| Python asset tools | 73 | 40,876 |
 | Batch | 1 | 135 |
-| **Total** | **198** | **86,100** |
+| **Total** | **228** | **95,768** |
 
 | Part of the game | Files | Lines of C++ |
 |---|---:|---:|
-| Gameplay (`game`) | 36 | 14,137 |
-| Renderer (`render`) | 46 | 8,824 |
-| Engine core (`core`) | 8 | 8,034 |
-| Asset baker (`tools/baker`) | 14 | 6,870 |
-| Networking (`net`) | 12 | 6,081 |
+| Gameplay (`game`) | 38 | 14,741 |
+| Renderer (`render`) | 48 | 9,159 |
+| Engine core (`core`) | 8 | 8,360 |
+| Asset baker (`tools/baker`) | 15 | 7,088 |
+| Networking (`net`) | 12 | 6,286 |
 | Interface (`ui`) | 6 | 3,522 |
-| Audio (`audio`) | 2 | 1,097 |
+| Audio (`audio`) | 2 | 1,112 |
 | Utilities (`utils`) | 4 | 588 |
 
-Other numbers: 263 texture sets, 180 sounds, 13 landmarks, 10 km of railway, 60 Hz simulation, up to 500 players per server.
+Other numbers: 276 texture sets, 180 sounds, 13 landmarks, 10 km of railway, 8 roads and tracks, 60 Hz simulation, up to 500 players per server.
 
 ## Building
 
