@@ -959,15 +959,98 @@ def make_rust():
     save_set("rust_iron", albedo, rough, occlusion, 1.0, height=flakes * 0.0003, gradient=(out["gx"] * 0.8, out["gy"] * 0.8))
 
 
+edge_strips = 3
+edge_rows = 340
+edge_depth = 0.68
+
+
+def make_platform_edge():
+    seed = 6400
+    tile = 2.0
+    u = grid_u / size
+    strip = np.clip(np.floor(grid_v / edge_rows), 0, edge_strips - 1).astype(np.int64)
+    across = np.clip((grid_v - strip * edge_rows) / edge_rows, 0.0, 1.0)
+    rng = np.random.default_rng(seed)
+    offsets = np.array([0.0, 0.25, 0.125])[strip]
+    slab = np.floor((u + offsets) * 2.0).astype(np.int64) % 2 + strip * 2
+    along = ((u + offsets) * 2.0) % 1.0
+    joint = sstep(0.011, 0.004, np.minimum(along, 1.0 - along))
+    base = mix(linear(138, 122, 112), linear(116, 104, 98), unit(field(seed + 1, 2.0, 40.0, 2.0)))
+    base = tint(base, rng.uniform(0.86, 1.08, edge_strips * 2)[slab])
+    dark, light, pink = kit.granite_grains(seed + 2)
+    albedo = tint(base, 1.0 - 0.4 * dark)
+    albedo = mix(albedo, linear(206, 200, 190), light * 0.25)
+    albedo = mix(albedo, linear(172, 120, 106), pink * 0.3)
+    band = sstep(0.085, 0.073, np.abs(across - 0.5)) * (strip < 2)
+    wear = cover(field(seed + 5, 3.0, 120.0, 1.7, 2.0, 1.0), 0.5, 0.35)
+    scuff = cover(field(seed + 6, 12.0, 400.0, 1.4), 0.3, 0.3)
+    paint = band * np.clip(1.0 - 0.95 * wear - 0.4 * scuff, 0.0, 1.0)
+    albedo = mix(albedo, linear(214, 210, 196) * (0.9 + 0.1 * unit(field(seed + 9, 8.0, 200.0)))[:, :, None], paint * 0.92)
+    nose = sstep(0.16, 0.02, across)
+    albedo = mix(albedo, albedo * 1.14, nose * 0.5)
+    crust, orange, black = kit.lichens(seed + 10, 1.0 - paint, 1.4)
+    albedo = kit.apply_lichen(albedo, seed + 11, crust, orange, black)
+    dirt = cover(field(seed + 8, 1.5, 20.0, 2.2), 0.35, 0.5)
+    albedo = mix(albedo, albedo * np.array([0.62, 0.58, 0.52]), dirt * 0.45)
+    back = sstep(0.8, 1.0, across)
+    albedo = mix(albedo, albedo * np.array([0.6, 0.62, 0.5]), back * 0.5)
+    moss = joint * cover(field(seed + 12, 4.0, 60.0, 1.8), 0.4, 0.3)
+    albedo = mix(albedo, linear(38, 33, 28), joint * 0.85)
+    albedo = mix(albedo, linear(70, 86, 40), moss * 0.7)
+    grain = field(seed + 13, 30.0, 500.0, 1.3)
+    height = -joint * 0.006 + paint * 0.0004 + grain * 0.0004 - dark * 0.0004 + moss * 0.003
+    rough = 0.84 - 0.12 * nose - 0.18 * paint + 0.06 * dirt
+    occlusion = 1.0 - 0.6 * joint - 0.2 * cavity(height, 2.0, 0.0012)
+    gx, gy = gradient_of(height, (tile / size, edge_depth / edge_rows))
+    save_set("platform_edge", albedo, rough, occlusion, tile, gradient=(gx, gy))
+
+
+def edge_uv(x, across, strip, shift=0.0):
+    return (x / 2.0 + shift, (strip * edge_rows + 3.0 + min(max(across, 0.0), 1.0) * (edge_rows - 6.0)) / size)
+
+
 painted_sets = {
     "painted_wood_white": (linear(226, 224, 214), linear(150, 148, 142), 1720),
-    "painted_wood_bauxite": (linear(122, 58, 44), linear(140, 136, 128), 1740),
+    "painted_wood_bauxite": (linear(98, 38, 28), linear(118, 108, 98), 1740),
 }
 
 
 def make_painted(name):
     paint, primer, seed = painted_sets[name]
     kit.make_painted(name, paint, primer, seed)
+    swatches[name] = kit.swatches[name]
+
+
+def make_bauxite():
+    name = "painted_wood_bauxite"
+    paint, primer, seed = painted_sets[name]
+    tile = 1.0
+    boards = kit.board_layout(np.random.default_rng(seed), tile, 0.09, 0.16)
+    index, across, lengthwise, edge_distance, joint, width_px = kit.board_fields(seed + 1, boards, 2.5, 0.0)
+    late, knot, fibre = kit.grain_pattern(seed + 2, lengthwise, across, index, width_px, 6.0, 0.35, len(boards))
+    wood = tint(flat(linear(112, 104, 94)), 0.9 + 0.1 * fibre)
+    wood = mix(wood, wood * 0.6, late * 0.6)
+    tone = np.random.default_rng(seed + 3).uniform(0.8, 1.06, len(boards))[index]
+    dusty = mix(flat(paint), flat(linear(142, 104, 90)), 0.34)
+    coat = mix(flat(paint), dusty, unit(field(seed + 4, 1.2, 8.0, 2.3)) * 0.55)
+    coat = tint(coat, tone * (0.94 + 0.08 * unit(field(seed + 5, 4.0, 200.0, 1.6, 0.3, 1.0))))
+    flake_field = 1.25 * field(seed + 12, 1.5, 9.0, 2.3) + 0.7 * field(seed + 6, 8.0, 260.0, 1.6, 3.0, 1.0) + 0.3 * field(seed + 7, 40.0, 450.0, 1.3, 4.0, 1.0) + 0.25 * late
+    under = cover(flake_field, 0.1, 0.025)
+    bare = cover(flake_field, 0.06, 0.025)
+    alligator = kit.cracks(seed + 8, 22, 0.9, 0.8)
+    albedo = mix(coat, flat(primer) * (0.9 + 0.1 * unit(speckle(seed + 9, 1.0)))[:, :, None], under)
+    albedo = mix(albedo, wood, bare)
+    edge = np.clip(under * (1.0 - under) * 4.0 + bare * (1.0 - bare) * 4.0, 0.0, 1.0)
+    albedo = mix(albedo, albedo * 0.72, edge * 0.5)
+    albedo = mix(albedo, albedo * 0.6, alligator * (1.0 - bare) * 0.6)
+    grime = cover(field(seed + 10, 1.5, 40.0, 2.0, 1.0, 3.0), 0.4, 0.5)
+    albedo = tint(albedo, 1.0 - 0.34 * grime)
+    albedo = mix(albedo, linear(10, 9, 8), joint)
+    height = 0.0003 * (1.0 - bare) + 0.00015 * (1.0 - under) + edge * 0.0002 - late * bare * 0.0005 - alligator * 0.0002 - joint * 0.004
+    height += sstep(0.0, 4.0, edge_distance) * 0.001 + fibre * 0.00005
+    rough = mix(mix(0.58 + 0.08 * unit(field(seed + 11, 3.0, 60.0)), 0.7, under), 0.86, bare) + 0.1 * grime
+    occlusion = 1.0 - 0.7 * joint - 0.3 * cavity(height, 1.5, 0.0004)
+    kit.save(name, albedo, rough, occlusion, height, tile, 1.0, extra={"kind": "boards", "boards": boards})
     swatches[name] = kit.swatches[name]
 
 
@@ -983,9 +1066,10 @@ makers = {
     "wagon_grey": make_wagon_grey,
     "coach_livery": make_coach_livery,
     "painted_wood_white": lambda: make_painted("painted_wood_white"),
-    "painted_wood_bauxite": lambda: make_painted("painted_wood_bauxite"),
+    "painted_wood_bauxite": make_bauxite,
     "rail_signs": make_signs,
     "leather_brown": make_leather,
+    "platform_edge": make_platform_edge,
 }
 
 rail_catalog = {
@@ -1001,6 +1085,7 @@ rail_catalog = {
     "coach_livery": {"tile": 2.0, "kind": "zoned"},
     "rail_signs": {"tile": 1.0, "kind": "atlas"},
     "leather_brown": {"tile": 0.6, "kind": "local"},
+    "platform_edge": {"tile": 2.0, "kind": "strips"},
 }
 
 
@@ -1554,7 +1639,7 @@ def audit(path, document, limit=None):
     print("AUDIT", os.path.basename(path), "tris", triangles, "markers", markers, "materials", len(materials), materials, "bounds", blender_low, blender_high, "problems", problems if problems else "none", flush=True)
     for name, count in parts.items():
         print("  PART", name, count, flush=True)
-    return triangles, markers, materials, problems
+    return {"triangles": triangles, "markers": markers, "materials": materials, "problems": problems, "low": blender_low, "high": blender_high}
 
 
 def remap(geo, function):
@@ -1897,9 +1982,10 @@ def lathe_uv(profile, segments, v_values, repeats, phase=0.0):
     return Geo(points, faces, uvs)
 
 
-def wheelset(b, key, y, radius, spokes=10, body="loco_black", balance=False, disc=False, back=0.68, axle_radius=0.075, hub_radius=0.12, hub_out=0.05, segments=48, journal=0.0):
+def wheelset(b, key, y, radius, spokes=10, body="loco_black", balance=False, disc=False, back=0.68, axle_radius=0.075, hub_radius=0.12, hub_out=0.05, segments=48, journal=0.0, height=None):
     part = b.part(key, 40.0)
-    b.origin(key, V(0.0, y, radius))
+    axle_z = radius if height is None else height
+    b.origin(key, V(0.0, y, axle_z))
     rim = radius - 0.07
     b0, b1 = rail_rows["bright"]
     tread = [(radius + 0.028, 0.0), (radius + 0.028, 0.012), (radius + 0.004, 0.032), (radius, 0.040), (radius - 0.0043, 0.125), (radius - 0.010, 0.135)]
@@ -1907,7 +1993,7 @@ def wheelset(b, key, y, radius, spokes=10, body="loco_black", balance=False, dis
     rng = b.rng
     for side in (-1.0, 1.0):
         turn = rng.uniform(0.0, tau)
-        matrix = Matrix.Translation(V(side * back, y, radius)) @ Matrix.Rotation(side * math.pi * 0.5, 4, 'Y') @ Matrix.Rotation(turn, 4, 'Z')
+        matrix = Matrix.Translation(V(side * back, y, axle_z)) @ Matrix.Rotation(side * math.pi * 0.5, 4, 'Y') @ Matrix.Rotation(turn, 4, 'Z')
         emit(part, lathe_uv(tread, segments, tread_v, 2.0), "rail_steel", matrix, "texture", True)
         emit(part, kit.geo_lathe([(radius - 0.010, 0.135), (rim, 0.135), (rim, 0.0), (radius + 0.028, 0.0)], segments), body, matrix, "given", True)
         emit(part, kit.geo_lathe([(0.0, -0.02), (hub_radius, -0.02), (hub_radius, 0.135 + hub_out), (hub_radius * 0.62, 0.135 + hub_out + 0.012), (hub_radius * 0.62, 0.135 + hub_out + 0.03), (0.0, 0.135 + hub_out + 0.03)], 28), body, matrix, "given", True)
@@ -1925,7 +2011,7 @@ def wheelset(b, key, y, radius, spokes=10, body="loco_black", balance=False, dis
                 outline += [(math.cos(0.62 - 1.24 * s / 4) * rim * 0.62, math.sin(0.62 - 1.24 * s / 4) * rim * 0.62) for s in range(5)]
                 emit(part, kit.geo_slab(V(0.0, 0.0, 0.0), V(1.0, 0.0, 0.0), V(0.0, 1.0, 0.0), V(0.0, 0.0, 1.0), outline, [], 0.035, 0.1), body, matrix, "box", False)
     reach = max(back - 0.02, journal)
-    emit(part, kit.geo_lathe([(axle_radius, -reach), (axle_radius, reach)], 12), body, Matrix.Translation(V(0.0, y, radius)) @ Matrix.Rotation(math.pi * 0.5, 4, 'Y'), "given", True)
+    emit(part, kit.geo_lathe([(0.0, -reach), (axle_radius * 0.8, -reach), (axle_radius, -reach + 0.01), (axle_radius, reach - 0.01), (axle_radius * 0.8, reach), (0.0, reach)], 14), body, Matrix.Translation(V(0.0, y, axle_z)) @ Matrix.Rotation(math.pi * 0.5, 4, 'Y'), "given", True)
     return part
 
 
@@ -2048,4 +2134,94 @@ def slab(part, low, high, top, side, bottom=True, top_origin=None, scale=1.0):
     points = [V(lo.x, lo.y, hi.z), V(hi.x, lo.y, hi.z), V(hi.x, hi.y, hi.z), V(lo.x, hi.y, hi.z)]
     planar(part, Geo(points, [(0, 1, 2, 3)]), top, top_origin if top_origin is not None else V(0.0, 0.0, 0.0), V(1.0, 0.0, 0.0), V(0.0, 1.0, 0.0), None, False, scale)
     block(part, side, lo, hi, 0.0, "box", None, ("top",) if bottom else ("top", "bottom"))
+
+
+def plank_breaks(a0, a1, width, stops=()):
+    marks = sorted(set([a0, a1] + [value for value in stops if a0 + 0.02 < value < a1 - 0.02]))
+    breaks = [a0]
+    for start, end in zip(marks, marks[1:]):
+        count = max(1, int(round((end - start) / width)))
+        for index in range(1, count + 1):
+            breaks.append(start + (end - start) * index / count)
+    return breaks
+
+
+def plank_wall(part, name, frame, a0, a1, b0, b1, d0, d1, width=0.15, holes=(), gap=0.004, vertical=True, top=None, mapping="board", bevel=0.0):
+    if vertical:
+        breaks = plank_breaks(a0, a1, width, [value for hole in holes for value in hole[:2]])
+    else:
+        breaks = plank_breaks(b0, b1, width, [value for hole in holes for value in hole[2:]])
+    for start, end in zip(breaks, breaks[1:]):
+        middle = (start + end) * 0.5
+        limit = b1
+        if vertical and top is not None:
+            limit = top(middle)
+        pieces = [(b0, limit) if vertical else (a0, a1)]
+        for hole in holes:
+            across = hole[:2] if vertical else hole[2:]
+            span = hole[2:] if vertical else hole[:2]
+            if not (across[0] < middle < across[1]):
+                continue
+            clipped = []
+            for low, high in pieces:
+                if span[1] <= low or span[0] >= high:
+                    clipped.append((low, high))
+                    continue
+                if span[0] > low + 0.01:
+                    clipped.append((low, span[0]))
+                if span[1] < high - 0.01:
+                    clipped.append((span[1], high))
+            pieces = clipped
+        for low, high in pieces:
+            if high - low < 0.01:
+                continue
+            if vertical:
+                kit.frame_block(part, name, frame, start + gap * 0.5, end - gap * 0.5, low, high, d0, d1, bevel, mapping)
+            else:
+                kit.frame_block(part, name, frame, low, high, start + gap * 0.5, end - gap * 0.5, d0, d1, bevel, mapping)
+
+
+def frame_zoned(part, name, frame, a0, a1, b0, b1, d0, d1, base, shift=0.0):
+    geo = kit.geo_box(abs(a1 - a0), abs(d1 - d0), abs(b1 - b0))
+    matrix = kit.frame_matrix(frame) @ Matrix.Translation(V((a0 + a1) * 0.5, (d0 + d1) * 0.5, (b0 + b1) * 0.5))
+    zoned(part, geo, name, base, matrix, False, shift)
+
+
+def crate(part, rng, center, size3, yaw=0.0, name="timber_planks_weathered", batten="timber_beam"):
+    sx, sy, sz = size3
+    matrix = Matrix.Translation(center) @ Matrix.Rotation(yaw, 4, 'Z')
+    t = 0.018
+    rows = max(2, int(round(sz / 0.14)))
+    for sign in (-1.0, 1.0):
+        for row in range(rows):
+            z0 = sz * row / rows + 0.002
+            z1 = sz * (row + 1) / rows - 0.002
+            kit.local_block(part, name, matrix, sign * sx * 0.5, sign * (sx * 0.5 - t), -sy * 0.5, sy * 0.5, z0, z1, 0.0, "board")
+            kit.local_block(part, name, matrix, -sx * 0.5 + t, sx * 0.5 - t, sign * sy * 0.5, sign * (sy * 0.5 - t), z0, z1, 0.0, "board")
+    lids = max(2, int(round(sy / 0.14)))
+    for row in range(lids):
+        y0 = -sy * 0.5 + sy * row / lids + 0.002
+        y1 = -sy * 0.5 + sy * (row + 1) / lids - 0.002
+        kit.local_block(part, name, matrix, -sx * 0.5, sx * 0.5, y0, y1, sz, sz + t, 0.0, "board")
+    kit.local_block(part, name, matrix, -sx * 0.5 + t, sx * 0.5 - t, -sy * 0.5 + t, sy * 0.5 - t, 0.0, t, 0.0, "board")
+    for cx in (-1.0, 1.0):
+        for cy in (-1.0, 1.0):
+            kit.local_block(part, batten, matrix, cx * (sx * 0.5 - 0.05), cx * sx * 0.5, cy * sy * 0.5, cy * (sy * 0.5 + 0.015), 0.0, sz + t, 0.0, "board")
+            kit.local_block(part, batten, matrix, cx * sx * 0.5, cx * (sx * 0.5 + 0.015), cy * (sy * 0.5 - 0.05), cy * (sy * 0.5 + 0.015), 0.0, sz + t, 0.0, "board")
+    for cy in (-1.0, 1.0):
+        kit.local_block(part, batten, matrix, -sx * 0.5, sx * 0.5, cy * (sy * 0.5 - 0.06), cy * (sy * 0.5 - 0.01), sz + t, sz + t + 0.015, 0.0, "board")
+
+
+def drum(part, position, radius=0.29, height=0.88, name="rust_iron", segments=20, tilt=None):
+    profile = [(0.0, 0.0), (radius, 0.0), (radius, height * 0.33 - 0.015), (radius + 0.012, height * 0.33), (radius, height * 0.33 + 0.015), (radius, height * 0.66 - 0.015), (radius + 0.012, height * 0.66), (radius, height * 0.66 + 0.015), (radius, height), (radius - 0.02, height), (radius - 0.02, height - 0.02), (0.0, height - 0.02)]
+    matrix = Matrix.Translation(position) if tilt is None else Matrix.Translation(position) @ tilt
+    emit(part, kit.geo_lathe(profile, segments), name, matrix, "given", True)
+
+
+def churn(part, position, name="rust_iron", scale=1.0):
+    profile = [(0.0, 0.0), (0.17, 0.0), (0.18, 0.02), (0.18, 0.04), (0.17, 0.05), (0.15, 0.42), (0.105, 0.56), (0.1, 0.62), (0.125, 0.66), (0.125, 0.7), (0.11, 0.71), (0.105, 0.74), (0.04, 0.76), (0.0, 0.76)]
+    emit(part, kit.geo_lathe([(r * scale, z * scale) for r, z in profile], 18), name, Matrix.Translation(position), "given", True)
+    for sign in (-1.0, 1.0):
+        path = [position + V(sign * 0.15 * scale, 0.0, 0.44 * scale), position + V(sign * 0.2 * scale, 0.0, 0.47 * scale), position + V(sign * 0.2 * scale, 0.0, 0.56 * scale), position + V(sign * 0.12 * scale, 0.0, 0.58 * scale)]
+        pipe(part, name, path, 0.008 * scale, 6, 0.02)
 
