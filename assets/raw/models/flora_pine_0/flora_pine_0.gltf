@@ -1,0 +1,292 @@
+{
+ "asset": {
+  "generator": "zero point flora",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bark",
+   "doubleSided": false,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  },
+  {
+   "name": "leaf",
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicRoughnessTexture": {
+     "index": 5
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 4
+   },
+   "occlusionTexture": {
+    "index": 5
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "flora_pine_0_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "flora_pine_0_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_bark_diff_2k.png",
+   "uri": "flora_pine_bark_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_bark_nor_gl_2k.png",
+   "uri": "flora_pine_bark_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_bark_arm_2k.png",
+   "uri": "flora_pine_bark_arm_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_leaf_diff_2k.png",
+   "uri": "flora_pine_leaf_diff_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_leaf_nor_gl_2k.png",
+   "uri": "flora_pine_leaf_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "flora_pine_leaf_arm_2k.png",
+   "uri": "flora_pine_leaf_arm_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1419,
+   "max": [
+    2.2080740928649902,
+    15.595394134521484,
+    3.037703037261963
+   ],
+   "min": [
+    -2.907471179962158,
+    -0.5063643455505371,
+    -2.2218642234802246
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1419,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1419,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 4629,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 14142,
+   "max": [
+    5.342513084411621,
+    16.330158233642578,
+    5.43402099609375
+   ],
+   "min": [
+    -5.329862594604492,
+    9.84963607788086,
+    -5.401642322540283
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 14142,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 14142,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 28284,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 17028,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 17028,
+   "byteOffset": 17028,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 11352,
+   "byteOffset": 34056,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9258,
+   "byteOffset": 45408,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 169704,
+   "byteOffset": 54668,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 169704,
+   "byteOffset": 224372,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 113136,
+   "byteOffset": 394076,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 56568,
+   "byteOffset": 507212,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987,
+   "wrapS": 10497,
+   "wrapT": 10497
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 563780,
+   "uri": "flora_pine_0.bin"
+  }
+ ]
+}
