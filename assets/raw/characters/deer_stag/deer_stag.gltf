@@ -1,0 +1,665 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    40
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "jaw",
+   "translation": [
+    0,
+    -0.04979819059371948,
+    0.017472386360168457
+   ]
+  },
+  {
+   "name": "ear_l",
+   "translation": [
+    0.05118527635931969,
+    -0.04229456186294556,
+    0.09276020526885986
+   ]
+  },
+  {
+   "name": "ear_r",
+   "translation": [
+    -0.05118527635931969,
+    -0.04229456186294556,
+    0.09276020526885986
+   ]
+  },
+  {
+   "children": [
+    0,
+    1,
+    2
+   ],
+   "name": "head",
+   "translation": [
+    0,
+    -0.08700001239776611,
+    0.156000018119812
+   ]
+  },
+  {
+   "children": [
+    3
+   ],
+   "name": "neck_03",
+   "translation": [
+    0,
+    -0.09860002994537354,
+    0.17680001258850098
+   ]
+  },
+  {
+   "children": [
+    4
+   ],
+   "name": "neck_02",
+   "translation": [
+    0,
+    -0.10439997911453247,
+    0.18720000982284546
+   ]
+  },
+  {
+   "children": [
+    5
+   ],
+   "name": "neck_01",
+   "translation": [
+    0,
+    -0.30000001192092896,
+    -0.14000004529953003
+   ]
+  },
+  {
+   "name": "hoof_f_l",
+   "translation": [
+    0,
+    -0.026000022888183594,
+    -0.07000000029802322
+   ]
+  },
+  {
+   "children": [
+    7
+   ],
+   "name": "pastern_f_l",
+   "translation": [
+    -0.00976341962814331,
+    -0.007056117057800293,
+    -0.2796577215194702
+   ]
+  },
+  {
+   "children": [
+    8
+   ],
+   "name": "cannon_l",
+   "translation": [
+    -0.010180778801441193,
+    -0.059960782527923584,
+    -0.30023908615112305
+   ]
+  },
+  {
+   "children": [
+    9
+   ],
+   "name": "radius_l",
+   "translation": [
+    -0.007055804133415222,
+    0.19001692533493042,
+    -0.17010319232940674
+   ]
+  },
+  {
+   "children": [
+    10
+   ],
+   "name": "humerus_l",
+   "translation": [
+    0.06000000238418579,
+    -0.20500001311302185,
+    -0.23500001430511475
+   ]
+  },
+  {
+   "children": [
+    11
+   ],
+   "name": "scapula_l",
+   "translation": [
+    0.054999999701976776,
+    -0.14499999582767487,
+    0.039999961853027344
+   ]
+  },
+  {
+   "name": "hoof_f_r",
+   "translation": [
+    0,
+    -0.026000022888183594,
+    -0.07000000029802322
+   ]
+  },
+  {
+   "children": [
+    13
+   ],
+   "name": "pastern_f_r",
+   "translation": [
+    0.00976341962814331,
+    -0.007056117057800293,
+    -0.2796577215194702
+   ]
+  },
+  {
+   "children": [
+    14
+   ],
+   "name": "cannon_r",
+   "translation": [
+    0.010180778801441193,
+    -0.059960782527923584,
+    -0.30023908615112305
+   ]
+  },
+  {
+   "children": [
+    15
+   ],
+   "name": "radius_r",
+   "translation": [
+    0.007055804133415222,
+    0.19001692533493042,
+    -0.17010319232940674
+   ]
+  },
+  {
+   "children": [
+    16
+   ],
+   "name": "humerus_r",
+   "translation": [
+    -0.06000000238418579,
+    -0.20500001311302185,
+    -0.23500001430511475
+   ]
+  },
+  {
+   "children": [
+    17
+   ],
+   "name": "scapula_r",
+   "translation": [
+    -0.054999999701976776,
+    -0.14499999582767487,
+    0.039999961853027344
+   ]
+  },
+  {
+   "children": [
+    6,
+    12,
+    18
+   ],
+   "name": "spine_03",
+   "translation": [
+    0,
+    -0.2199999988079071,
+    -0.014999985694885254
+   ]
+  },
+  {
+   "name": "ribs_l",
+   "translation": [
+    0.1599999964237213,
+    -0.12000000476837158,
+    -0.16500002145767212
+   ]
+  },
+  {
+   "name": "ribs_r",
+   "translation": [
+    -0.1599999964237213,
+    -0.12000000476837158,
+    -0.16500002145767212
+   ]
+  },
+  {
+   "children": [
+    19,
+    20,
+    21
+   ],
+   "name": "spine_02",
+   "translation": [
+    0,
+    -0.18000000715255737,
+    -0.014999985694885254
+   ]
+  },
+  {
+   "children": [
+    22
+   ],
+   "name": "spine_01",
+   "translation": [
+    0,
+    -0.07000000774860382,
+    -0.004999995231628418
+   ]
+  },
+  {
+   "name": "hoof_h_l",
+   "translation": [
+    0,
+    -0.02799999713897705,
+    -0.07000000029802322
+   ]
+  },
+  {
+   "children": [
+    24
+   ],
+   "name": "pastern_h_l",
+   "translation": [
+    -0.0018849670886993408,
+    -0.014998376369476318,
+    -0.3400173485279083
+   ]
+  },
+  {
+   "children": [
+    25
+   ],
+   "name": "metatarsus_l",
+   "translation": [
+    -0.00156392902135849,
+    0.2700124680995941,
+    -0.25513043999671936
+   ]
+  },
+  {
+   "children": [
+    26
+   ],
+   "name": "tibia_l",
+   "translation": [
+    -0.001551106572151184,
+    -0.17001411318778992,
+    -0.29485219717025757
+   ]
+  },
+  {
+   "children": [
+    27
+   ],
+   "name": "femur_l",
+   "translation": [
+    0.10000000149011612,
+    0.1599999964237213,
+    -0.09000003337860107
+   ]
+  },
+  {
+   "name": "hoof_h_r",
+   "translation": [
+    0,
+    -0.02799999713897705,
+    -0.07000000029802322
+   ]
+  },
+  {
+   "children": [
+    29
+   ],
+   "name": "pastern_h_r",
+   "translation": [
+    0.0018849670886993408,
+    -0.014998376369476318,
+    -0.3400173485279083
+   ]
+  },
+  {
+   "children": [
+    30
+   ],
+   "name": "metatarsus_r",
+   "translation": [
+    0.00156392902135849,
+    0.2700124680995941,
+    -0.25513043999671936
+   ]
+  },
+  {
+   "children": [
+    31
+   ],
+   "name": "tibia_r",
+   "translation": [
+    0.001551106572151184,
+    -0.17001411318778992,
+    -0.29485219717025757
+   ]
+  },
+  {
+   "children": [
+    32
+   ],
+   "name": "femur_r",
+   "translation": [
+    -0.10000000149011612,
+    0.1599999964237213,
+    -0.09000003337860107
+   ]
+  },
+  {
+   "name": "tail_03",
+   "translation": [
+    0,
+    0.019999980926513672,
+    -0.059999942779541016
+   ]
+  },
+  {
+   "children": [
+    34
+   ],
+   "name": "tail_02",
+   "translation": [
+    0,
+    0.0350000262260437,
+    -0.019999980926513672
+   ]
+  },
+  {
+   "children": [
+    35
+   ],
+   "name": "tail_01",
+   "translation": [
+    0,
+    0.38499996066093445,
+    -0.04500007629394531
+   ]
+  },
+  {
+   "children": [
+    23,
+    28,
+    33,
+    36
+   ],
+   "name": "hips",
+   "translation": [
+    0,
+    0.27000001072883606,
+    1.1050000190734863
+   ]
+  },
+  {
+   "children": [
+    37
+   ],
+   "name": "root",
+   "rotation": [
+    -0.7071067690849304,
+    0,
+    0,
+    0.7071067690849304
+   ]
+  },
+  {
+   "mesh": 0,
+   "name": "deer_stag",
+   "skin": 0
+  },
+  {
+   "children": [
+    39,
+    38
+   ],
+   "name": "deer_rig"
+  }
+ ],
+ "materials": [
+  {
+   "name": "deer_stag",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "deer_stag",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "JOINTS_0": 3,
+      "WEIGHTS_0": 4
+     },
+     "indices": 5,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "deer_stag_normal.png",
+   "uri": "deer_stag_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "deer_stag_orm.png",
+   "uri": "deer_stag_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "deer_stag_albedo.png",
+   "uri": "deer_stag_albedo.png"
+  }
+ ],
+ "skins": [
+  {
+   "inverseBindMatrices": 6,
+   "joints": [
+    38,
+    37,
+    23,
+    22,
+    19,
+    6,
+    5,
+    4,
+    3,
+    0,
+    1,
+    2,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    20,
+    21,
+    28,
+    27,
+    26,
+    25,
+    24,
+    33,
+    32,
+    31,
+    30,
+    29,
+    36,
+    35,
+    34
+   ],
+   "name": "deer_rig"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 7017,
+   "max": [
+    0.36961355805397034,
+    2.3331615924835205,
+    1.1619013547897339
+   ],
+   "min": [
+    -0.36961355805397034,
+    0,
+    -0.7241639494895935
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 7017,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 7017,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5121,
+   "count": 7017,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 7017,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5123,
+   "count": 34167,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 39,
+   "type": "MAT4"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 84204,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 84204,
+   "byteOffset": 84204,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 56136,
+   "byteOffset": 168408,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 28068,
+   "byteOffset": 224544,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 112272,
+   "byteOffset": 252612,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 68334,
+   "byteOffset": 364884,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2496,
+   "byteOffset": 433220
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 435716,
+   "uri": "deer_stag.bin"
+  }
+ ]
+}
