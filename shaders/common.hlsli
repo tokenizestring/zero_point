@@ -59,13 +59,36 @@ float3 foliage_rotate(float3 direction, float yaw)
 	return float3(direction.x * cosine + direction.z * sine, direction.y, -direction.x * sine + direction.z * cosine);
 }
 
+float foliage_turn(float3 position, float4 params)
+{
+	return params.z < -0.5 ? params.y * position.z * params.x : 0.0;
+}
+
 float3 foliage_transform(float3 position, float4 placement, float4 params, float time_value)
 {
 	float3 local = position * params.x;
-	float bend = local.y * local.y * params.z;
-	float3 sway = float3(sin(time_value * 1.3 + params.y) + 0.35 * sin(time_value * 3.1 + params.y * 2.3), 0.0, cos(time_value * 0.97 + params.y * 1.7)) * bend;
+	float3 result;
 
-	return foliage_rotate(local, placement.w) + sway + placement.xyz;
+	[branch] if (params.z < -0.5)
+	{
+		float sine, cosine;
+
+		sincos(params.y * local.z, sine, cosine);
+
+		float3 along = abs(params.y) > 0.00001 ? float3((1.0 - cosine) / params.y, 0.0, sine / params.y) : float3(0.0, 0.0, local.z);
+
+		result = foliage_rotate(along + float3(local.x * cosine, local.y + (-2.0 - params.z) * local.z, -local.x * sine), placement.w) + placement.xyz;
+	}
+
+	else
+	{
+		float bend = local.y * local.y * params.z;
+		float3 sway = float3(sin(time_value * 1.3 + params.y) + 0.35 * sin(time_value * 3.1 + params.y * 2.3), 0.0, cos(time_value * 0.97 + params.y * 1.7)) * bend;
+
+		result = foliage_rotate(local, placement.w) + sway + placement.xyz;
+	}
+
+	return result;
 }
 
 cbuffer object_constants : register(b1)
