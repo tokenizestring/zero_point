@@ -1,0 +1,252 @@
+{
+ "space": "model space in metres: X right, Y forward (vehicle front), Z up, origin on the rail top under the vehicle middle",
+ "gauge": 1.435,
+ "coupling_gap": 0.4,
+ "buffer_height": 1.05,
+ "coupler_height": 1.0,
+ "buffer_spacing": 1.72,
+ "step_treads": {
+  "rise_max": 0.43,
+  "run": 0.28,
+  "outer_edge_from_centre": 1.38
+ },
+ "vehicles": {
+  "train_locomotive": {
+   "model": "train_locomotive",
+   "far_model": "train_locomotive_far",
+   "length_over_buffers": 8.0,
+   "wheelbase": 2.8,
+   "width": 2.6,
+   "roof_height": 3.695,
+   "deck_height": 1.3,
+   "width_over_steps": 2.76,
+   "buffer_height": 1.05,
+   "coupler_height": 1.0,
+   "axles": [
+    {
+     "y": 1.4,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": 0.0,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -1.4,
+     "height": 0.48,
+     "radius": 0.48
+    }
+   ],
+   "triangles": 53284,
+   "triangles_far": 662,
+   "bounds_min": [
+    -1.4,
+    -4.0,
+    0.08
+   ],
+   "bounds_max": [
+    1.4,
+    4.0,
+    3.744
+   ],
+   "horn": [
+    0.0,
+    -0.63,
+    3.69
+   ],
+   "exhaust": [
+    0.0,
+    2.0,
+    3.42
+   ],
+   "tail_lamp": [
+    0.0,
+    -2.635,
+    3.48
+   ],
+   "headlights": [
+    [
+     -0.4,
+     2.645,
+     2.63
+    ],
+    [
+     0.4,
+     2.645,
+     2.63
+    ]
+   ]
+  },
+  "train_wagon_flat": {
+   "model": "train_wagon_flat",
+   "far_model": "train_wagon_flat_far",
+   "length_over_buffers": 7.0,
+   "wheelbase": 3.1,
+   "width": 2.5,
+   "roof_height": 1.71,
+   "deck_height": 1.27,
+   "width_over_steps": 2.76,
+   "buffer_height": 1.05,
+   "coupler_height": 1.0,
+   "axles": [
+    {
+     "y": 1.55,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -1.55,
+     "height": 0.48,
+     "radius": 0.48
+    }
+   ],
+   "triangles": 27436,
+   "triangles_far": 660,
+   "bounds_min": [
+    -1.4,
+    -3.5,
+    0.08
+   ],
+   "bounds_max": [
+    1.4,
+    3.5,
+    2.256
+   ]
+  },
+  "train_wagon_open": {
+   "model": "train_wagon_open",
+   "far_model": "train_wagon_open_far",
+   "length_over_buffers": 7.0,
+   "wheelbase": 3.1,
+   "width": 2.5,
+   "roof_height": 2.52,
+   "deck_height": 1.27,
+   "width_over_steps": 2.76,
+   "buffer_height": 1.05,
+   "coupler_height": 1.0,
+   "axles": [
+    {
+     "y": 1.55,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -1.55,
+     "height": 0.48,
+     "radius": 0.48
+    }
+   ],
+   "triangles": 25262,
+   "triangles_far": 694,
+   "bounds_min": [
+    -1.4,
+    -3.5,
+    0.03
+   ],
+   "bounds_max": [
+    1.4,
+    3.5,
+    2.538
+   ]
+  },
+  "train_wagon_box": {
+   "model": "train_wagon_box",
+   "far_model": "train_wagon_box_far",
+   "length_over_buffers": 7.0,
+   "wheelbase": 3.1,
+   "width": 2.5,
+   "roof_height": 3.63,
+   "deck_height": 1.27,
+   "width_over_steps": 2.76,
+   "buffer_height": 1.05,
+   "coupler_height": 1.0,
+   "axles": [
+    {
+     "y": 1.55,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -1.55,
+     "height": 0.48,
+     "radius": 0.48
+    }
+   ],
+   "triangles": 28060,
+   "triangles_far": 794,
+   "bounds_min": [
+    -1.4,
+    -3.5,
+    0.08
+   ],
+   "bounds_max": [
+    1.4,
+    3.5,
+    3.76
+   ]
+  },
+  "train_coach": {
+   "model": "train_coach",
+   "far_model": "train_coach_far",
+   "length_over_buffers": 12.0,
+   "wheelbase": 6.0,
+   "width": 2.6,
+   "roof_height": 3.64,
+   "deck_height": 1.27,
+   "width_over_steps": 2.76,
+   "buffer_height": 1.05,
+   "coupler_height": 1.0,
+   "axles": [
+    {
+     "y": 4.0,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": 2.0,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -2.0,
+     "height": 0.48,
+     "radius": 0.48
+    },
+    {
+     "y": -4.0,
+     "height": 0.48,
+     "radius": 0.48
+    }
+   ],
+   "triangles": 41304,
+   "triangles_far": 638,
+   "bounds_min": [
+    -1.4,
+    -6.0,
+    0.08
+   ],
+   "bounds_max": [
+    1.4,
+    6.0,
+    3.77
+   ],
+   "bogie_centres": [
+    3.0,
+    -3.0
+   ],
+   "bogie_wheelbase": 2.0
+  }
+ },
+ "wheelset": {
+  "model": "train_wheelset",
+  "far_model": "train_wheelset_far",
+  "origin": "axle centre, axle along X",
+  "wheel_radius": 0.48,
+  "flange_radius": 0.508,
+  "back_to_back": 1.36,
+  "triangles": 2864,
+  "triangles_far": 236
+ }
+}
