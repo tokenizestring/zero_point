@@ -1,0 +1,383 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "platform"
+  }
+ ],
+ "materials": [
+  {
+   "name": "granite_rubble",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  },
+  {
+   "name": "platform_edge",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  },
+  {
+   "name": "granite_ashlar",
+   "normalTexture": {
+    "index": 6
+   },
+   "occlusionTexture": {
+    "index": 7
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 8
+    },
+    "metallicRoughnessTexture": {
+     "index": 7
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "platform",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    },
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11,
+     "material": 2
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  },
+  {
+   "sampler": 0,
+   "source": 6
+  },
+  {
+   "sampler": 0,
+   "source": 7
+  },
+  {
+   "sampler": 0,
+   "source": 8
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "granite_rubble_normal.png",
+   "uri": "../_library/granite_rubble_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_rubble_orm.png",
+   "uri": "../_library/granite_rubble_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_rubble_albedo.png",
+   "uri": "../_library/granite_rubble_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "platform_edge_normal.png",
+   "uri": "../_library/platform_edge_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "platform_edge_orm.png",
+   "uri": "../_library/platform_edge_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "platform_edge_albedo.png",
+   "uri": "../_library/platform_edge_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_normal.png",
+   "uri": "../_library/granite_ashlar_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_orm.png",
+   "uri": "../_library/granite_ashlar_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_albedo.png",
+   "uri": "../_library/granite_ashlar_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 96,
+   "max": [
+    6,
+    1.7000000476837158,
+    1.9199999570846558
+   ],
+   "min": [
+    -6,
+    -1,
+    -2
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 96,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 96,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 144,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 4,
+   "max": [
+    6,
+    1.7000000476837158,
+    2
+   ],
+   "min": [
+    -6,
+    1.7000000476837158,
+    1.3200000524520874
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 6,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 28,
+   "max": [
+    6,
+    1.7000000476837158,
+    2
+   ],
+   "min": [
+    -6,
+    1.5700000524520874,
+    -2
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 28,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 28,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5123,
+   "count": 42,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 1152,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1152,
+   "byteOffset": 1152,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 768,
+   "byteOffset": 2304,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 3072,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 3360,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 3408,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 32,
+   "byteOffset": 3456,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 12,
+   "byteOffset": 3488,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 336,
+   "byteOffset": 3500,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 336,
+   "byteOffset": 3836,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 224,
+   "byteOffset": 4172,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 84,
+   "byteOffset": 4396,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 4480,
+   "uri": "rail_platform_far.bin"
+  }
+ ]
+}
