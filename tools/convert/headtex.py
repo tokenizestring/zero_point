@@ -263,17 +263,6 @@ def paint_scalp(sheet, rgb, inside, spec, rng):
     return rgb * (1.0 - inside[:, None]) + painted * inside[:, None]
 
 
-def inpaint(sheet, rgb, hole, radius_detail=6):
-    image = sheet.image(rgb)
-    mask_image = sheet.image(1.0 - hole).reshape(sheet.size, sheet.size)
-    known = (mask_image > 0.5) & sheet.mask
-    filled = texels.fill(image, known)
-    detail = image - texels.gaussian(image, radius_detail)
-    detail_source = texels.fill(detail * known[:, :, None], known)
-    result = sheet.sample(filled)
-    return result
-
-
 def micro_height(sheet, spec, rng):
     local = sheet.local.astype(numpy.float64)
     position = sheet.position.astype(numpy.float64)
@@ -358,7 +347,7 @@ hairlines = {
 looks = {
     "male": {
         "micro": 0.7,
-        "tan": (1.0, 0.985, 0.955),
+        "tan": (0.98, 0.95, 0.92),
         "sun": 0.55,
         "stubble": 7000,
         "stubble_color": (0.03, 0.022, 0.017),
@@ -377,16 +366,16 @@ looks = {
         "lip_lines": 0.000018,
         "hair": None,
         "scalp_tint": (0.085, 0.062, 0.048),
-        "hairline_strokes": 3200,
-        "grade": (0.74, 1.12),
+        "hairline_strokes": 5200,
+        "grade": (0.84, 1.08),
         "relight": 0.5,
         "freckles": 0.0,
-        "roughness_bias": 0.0,
+        "roughness_bias": 0.05,
     },
     "female": {
         "micro": 0.5,
-        "tan": (0.98, 0.94, 0.9),
-        "grade": (0.88, 0.97),
+        "tan": (0.89, 0.825, 0.77),
+        "grade": (0.88, 0.93),
         "relight": 0.4,
         "sun": 0.5,
         "stubble": 0,
@@ -396,13 +385,15 @@ looks = {
             ([(0.017, -0.119, 0.052), (0.023, -0.114, 0.037), (0.028, -0.109, 0.022)], 0.0012, 0.00007),
         ],
         "lip_lines": 0.000014,
-        "hair": {"center": hairlines["female"]["center"], "line": hairlines["female"]["line"], "root": (0.13, 0.085, 0.052), "tip": (0.3, 0.2, 0.125), "flow": (0.0, 0.098, 0.022), "strands": 60000, "length": (0.008, 0.02)},
-        "brows": [(0.011, 0.1152, 0.0056), (0.02, 0.1182, 0.0054), (0.029, 0.121, 0.0048), (0.037, 0.1224, 0.004), (0.045, 0.1214, 0.003), (0.053, 0.1174, 0.0018)],
-        "brow_color": (0.11, 0.078, 0.056),
-        "brow_strokes": 2600,
+        "hair": {"center": hairlines["female"]["center"], "line": hairlines["female"]["line"], "root": (0.12, 0.08, 0.05), "tip": (0.24, 0.16, 0.1), "flow": (0.0, 0.105, 0.03), "strands": 60000, "length": (0.008, 0.02), "wisps": 5200},
+        "brows": [(0.0105, 0.1148, 0.0064), (0.02, 0.118, 0.0066), (0.029, 0.1208, 0.006), (0.037, 0.1222, 0.005), (0.045, 0.1212, 0.0038), (0.0535, 0.1172, 0.0024)],
+        "brow_color": (0.105, 0.074, 0.054),
+        "brow_strokes": 4200,
         "freckles": 1.0,
         "lip_tint": (0.62, 0.3, 0.28),
-        "roughness_bias": -0.02,
+        "contour": 0.6,
+        "seam_roughness": 0.6,
+        "roughness_bias": 0.05,
     },
 }
 
@@ -530,10 +521,10 @@ def head_maps(root, name, data, head_now, scale, directory, prefix, size=4096, o
     position = sheet.position.astype(numpy.float64)
     if look["hair"] is not None:
         spec = look["hair"]
-        above = hairline(local, spec) + (texels.noise(position, 90.0, 51, 2) - 0.5) * 0.007
-        scalp = texels.smoothstep(-0.004, 0.004, above)
+        above = hairline(local, spec) + (texels.noise(position, 90.0, 51, 2) - 0.5) * 0.008
+        scalp = texels.smoothstep(-0.004, 0.013, above)
         luminance = luma(rgb)
-        face_zone = 1.0 - scalp
+        face_zone = 1.0 - texels.smoothstep(-0.007, 0.006, above)
         middle = soft(local, (0.0, -0.1, 0.07), (0.05, 0.05, 0.04), False) > 0.5
         skin_reference = numpy.median(luminance[middle & (eyes > 0.03) & (lips < 0.1)])
         warmth = rgb[:, 0] / numpy.maximum(rgb[:, 1], 1e-4)
@@ -541,6 +532,8 @@ def head_maps(root, name, data, head_now, scale, directory, prefix, size=4096, o
         nostril = soft(local, (0.0, -0.128, 0.052), (0.018, 0.012, 0.008), False) > 0.3
         protected = (eyes < 0.024) | inner | nostril | (lips > 0.2)
         hairness = texels.smoothstep(0.66, 0.46, luminance / skin_reference) * texels.smoothstep(2.7, 2.2, warmth) * (~protected)
+        around_ear = soft(local, (0.078, 0.004, 0.08), (0.032, 0.042, 0.048), True) > 0.22
+        hairness = numpy.maximum(hairness, texels.smoothstep(0.62, 0.44, luminance / skin_reference) * around_ear * (~protected))
         hairness = numpy.clip(texels.grid_fill(position, hairness, numpy.ones(len(hairness)), 0.002 * scale, (1,), 0.0)[:, 0] * 2.4, 0.0, 1.0)
         brows_old = soft(local, (0.035, -0.105, 0.121), (0.03, 0.03, 0.011), True) * texels.smoothstep(0.85, 0.6, luminance / skin_reference) * (eyes > 0.021)
         brows_old = numpy.clip(texels.grid_fill(position, brows_old, numpy.ones(len(brows_old)), 0.0015 * scale, (1,), 0.0)[:, 0] * 1.6, 0.0, 1.0)
@@ -557,44 +550,53 @@ def head_maps(root, name, data, head_now, scale, directory, prefix, size=4096, o
         face_region = face_zone * (eyes > 0.0205) * (1.0 - lips)
         low = texels.grid_fill(position, luminance, face_region > 0.5, 0.006 * scale, (1, 2, 4), 0.5)[:, 0]
         reference = numpy.median(luminance[middle & (eyes > 0.03)])
-        flatten = numpy.clip(reference / numpy.maximum(low, 1e-4), 0.75, 1.3) ** 0.2
+        flatten = numpy.clip(reference / numpy.maximum(low, 1e-4), 0.75, 1.3) ** 0.12
         rgb = rgb * (1.0 + (flatten[:, None] - 1.0) * face_region[:, None])
         blurred = sheet.sample(texels.gaussian(sheet.image(rgb), 2)).astype(numpy.float64)
-        rgb = rgb + (blurred - rgb) * (0.15 * face_region)[:, None]
+        rgb = rgb + (blurred - rgb) * (0.06 * face_region)[:, None]
         rgb = paint_scalp(sheet, rgb, scalp, spec, rng)
-        fringe = numpy.exp(-((above + 0.003) / 0.007) ** 2) * (eyes > 0.03)
+        fringe = numpy.exp(-((above + 0.001) / 0.008) ** 2) * (eyes > 0.03)
         flow = tangent_toward(sheet.normal.astype(numpy.float64), numpy.asarray(spec["flow"])[None, :] - local)
-        cover = hair_strokes(sheet, fringe, spec.get("wisps", 2800), flow, (0.004, 0.012), 0.8, (0.15, 0.5), 0.35, 0.5, scale, rng)
+        cover = hair_strokes(sheet, fringe, spec.get("wisps", 2800), flow, (0.004, 0.013), 0.8, (0.25, 0.65), 0.35, 0.5, scale, rng)
         wisp_tone = texels.to_linear(numpy.asarray(spec["root"])) * 1.25
         rgb = rgb * (1.0 - cover[:, None] * 0.8) + wisp_tone[None, :] * (cover[:, None] * 0.8)
         height += -0.00004 * scalp
     if neck is not None:
         rgb = neck_relight(sheet, rgb, neck, eyes, look.get("relight", 0.0))
-        collar = texels.smoothstep(0.034 * scale, 0.008 * scale, (position - numpy.asarray(neck[0])) @ numpy.asarray(neck[1]))
-        calm = texels.grid_fill(position, rgb, numpy.ones(len(rgb)), 0.004 * scale, (1, 2), 0.2)
-        grain = 1.0 + (texels.noise(position, 700.0, 3, 3) - 0.5) * 0.06
-        rgb = rgb + (calm * grain[:, None] - rgb) * collar[:, None]
+        collar = texels.smoothstep(0.05 * scale, 0.02 * scale, (position - numpy.asarray(neck[0])) @ numpy.asarray(neck[1]))
     if look.get("scalp_tint"):
-        above = hairline(local, hairlines[name])
-        scalp = texels.smoothstep(-0.008, 0.006, above)
+        above = hairline(local, hairlines[name]) + (texels.noise(position, 110.0, 53, 2) - 0.5) * 0.009
+        scalp = texels.smoothstep(-0.011, 0.009, above)
         luminance = luma(rgb)
         level = numpy.median(luminance[scalp > 0.9]) if (scalp > 0.9).any() else 0.2
         tone = texels.to_linear(numpy.asarray(look["scalp_tint"]))
         tinted = tone[None, :] * numpy.clip(luminance / max(level, 1e-3), 0.4, 1.8)[:, None]
         rgb = rgb + (tinted - rgb) * (scalp * 0.86)[:, None]
-        edge = numpy.exp(-((above + 0.002) / 0.0075) ** 2) * (eyes > 0.03)
+        edge = numpy.exp(-((above + 0.003) / 0.0105) ** 2) * (eyes > 0.03)
         field = tangent_toward(sheet.normal.astype(numpy.float64), numpy.tile(numpy.array([0.0, 0.35, 1.0]), (len(local), 1)))
         cover = hair_strokes(sheet, edge, look.get("hairline_strokes", 0), field, (0.003, 0.008), 0.8, (0.25, 0.6), 0.2, 0.5, scale, rng)
         rgb = rgb * (1.0 - cover[:, None] * 0.85) + tone[None, :] * (cover[:, None] * 0.85)
     if look.get("brows"):
         field, along, center = brow_field(sheet, look["brows"])
+        field = field * (0.5 + 0.5 * texels.smoothstep(0.28, 0.62, texels.noise(position, 1100.0, 57, 2))) * (0.62 + 0.38 * texels.smoothstep(0.0, 0.3, along))
         brow_tone = texels.to_linear(numpy.asarray(look["brow_color"]))
-        rgb = rgb * (1.0 - field[:, None] * 0.12) + (rgb * 0.6 + brow_tone * 0.4) * (field[:, None] * 0.12)
-        cover = hair_strokes(sheet, field, look["brow_strokes"], brow_direction(sheet, along), (0.003, 0.006), 0.7, (0.3, 0.7), 0.15, 0.65, scale, rng)
-        rgb = rgb * (1.0 - cover[:, None] * 0.8) + brow_tone * (cover[:, None] * 0.8)
+        rgb = rgb * (1.0 - field[:, None] * 0.3) + (rgb * 0.45 + brow_tone * 0.55) * (field[:, None] * 0.3)
+        cover = hair_strokes(sheet, field, look["brow_strokes"], brow_direction(sheet, along), (0.003, 0.0065), 0.75, (0.35, 0.8), 0.15, 0.6, scale, rng)
+        rgb = rgb * (1.0 - cover[:, None] * 0.88) + brow_tone * (cover[:, None] * 0.88)
     face_skin = (eyes > 0.0205).astype(numpy.float64)
     tan = numpy.asarray(look["tan"])
     rgb = rgb * (1.0 + (tan[None, :] - 1.0) * face_skin[:, None])
+    contour = look.get("contour", 0.0)
+    if contour > 0.0:
+        hollow = soft(local, (0.047, -0.08, 0.037), (0.02, 0.03, 0.018), True) * 0.9
+        socket = soft(local, (0.03, -0.1, 0.109), (0.02, 0.02, 0.0075), True) * 0.8
+        flank = soft(local, (0.0115, -0.118, 0.085), (0.005, 0.015, 0.02), True) * 0.7
+        temple = soft(local, (0.06, -0.06, 0.12), (0.015, 0.03, 0.03), True) * 0.4
+        under = soft(local, (0.04, -0.07, -0.012), (0.03, 0.04, 0.012), True) * 0.5
+        shade = numpy.clip(hollow + socket + flank + temple + under, 0.0, 1.0) * face_skin * contour
+        rgb = rgb * (1.0 - shade[:, None] * numpy.array([0.1, 0.14, 0.15]))
+        ridge = numpy.clip(soft(local, (0.0, -0.136, 0.086), (0.004, 0.015, 0.025), False) + soft(local, (0.05, -0.088, 0.078), (0.016, 0.02, 0.01), True) * 0.7, 0.0, 1.0) * face_skin * contour
+        rgb = rgb * (1.0 + ridge[:, None] * 0.06)
     burn = sunburn(local) * look["sun"] * face_skin
     red = numpy.array([0.62, 0.26, 0.2])
     rgb = rgb + (red[None, :] * luma(rgb)[:, None] / luma(red[None, :])[0] - rgb) * (burn * 0.3)[:, None]
@@ -642,10 +644,10 @@ def head_maps(root, name, data, head_now, scale, directory, prefix, size=4096, o
     roughness = roughness - 0.08 * numpy.clip(tzone, 0.0, 1.0) - 0.1 * lips
     roughness = roughness * (1.0 - margin) + 0.12 * margin
     roughness = roughness + 0.1 * beard
-    roughness = roughness * (1.0 - scalp) + 0.62 * scalp
+    roughness = roughness * (1.0 - scalp) + 0.84 * scalp
     roughness = numpy.clip(roughness + look["roughness_bias"], 0.08, 0.9)
     roughness = roughness * (1.0 - collar) + look.get("seam_roughness", 0.62) * collar
     ambient = numpy.ones(len(local)) if occlusion is None else sheet.sample(occlusion[:, :, None])[:, 0]
-    orm = numpy.stack([numpy.clip(0.35 + 0.65 * ambient, 0.0, 1.0), roughness, numpy.zeros(len(local))], axis=1)
+    orm = numpy.stack([numpy.clip(0.3 + 0.7 * ambient, 0.0, 1.0), roughness, numpy.zeros(len(local))], axis=1)
     save_image(os.path.join(directory, prefix + "_head_orm.png"), sheet.image(orm), 'Non-Color')
     return sheet
