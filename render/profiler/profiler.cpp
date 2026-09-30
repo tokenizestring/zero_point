@@ -105,12 +105,37 @@ namespace zp
 			for (auto section{ 0u }; section < structures::profile_count; section++)
 			{
 				totals[section] += static_cast<std::double_t>(values[section + 1u] - values[section]) * scale;
+				recent[section] += static_cast<std::double_t>(values[section + 1u] - values[section]) * scale;
 			}
 
 			frame_total += static_cast<std::double_t>(values[structures::profile_count] - values[0]) * scale;
+			recent_total += static_cast<std::double_t>(values[structures::profile_count] - values[0]) * scale;
 
 			samples++;
+			recent_samples++;
 		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void profiler_c::interval(char* line, std::size_t size)
+	{
+		const auto count{ static_cast<std::double_t>(std::max(recent_samples, 1u)) };
+
+		auto length{ std::snprintf(line, size, "gpu %.2f", recent_total / count) };
+
+		for (auto section{ 0u }; section < structures::profile_count && length > 0 && static_cast<std::size_t>(length) < size; section++)
+		{
+			if (recent[section] / count >= 0.2)
+			{
+				length += std::snprintf(line + length, size - static_cast<std::size_t>(length), " %s %.1f", profile_names[section], recent[section] / count);
+			}
+		}
+
+		std::fill(std::begin(recent), std::end(recent), 0.0);
+
+		recent_total = 0.0;
+		recent_samples = 0u;
 	}
 	/*
 	//=====================================================================================
