@@ -27,6 +27,8 @@ namespace zp
 
 		particles.clear();
 
+		marks.clear();
+
 		spawns.clear();
 		depots.clear();
 		objectives.clear();
@@ -2173,20 +2175,27 @@ namespace zp
 
 			else
 			{
-				build_road(path);
+				build_road(path, static_cast<std::uint32_t>(&path - paths.data()));
 			}
 		}
 	}
 	/*
 	//=====================================================================================
 	*/
-	void maps_c::build_road(const structures::route_path_s& path)
+	void maps_c::build_road(const structures::route_path_s& path, std::uint32_t order)
 	{
 		const auto half{ path.width * 0.5f };
 		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+		const auto lift{ road_lift + static_cast<std::float_t>(order) * road_lift_step };
+		const auto first_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
+		const auto first_index{ static_cast<std::uint32_t>(builder.indices.size()) };
+		const std::float_t offsets[4] = { half + road_skirt, half, -half, -half - road_skirt };
+		const std::float_t drops[4] = { road_skirt_drop, 0.0f, 0.0f, road_skirt_drop };
+		const std::float_t leans[4] = { 0.35f, 0.0f, 0.0f, -0.35f };
 
-		auto left{ 0u };
-		auto right{ 0u };
+		auto travelled{ 0.0f };
+
+		std::uint32_t previous_ring[4]{};
 
 		builder.set_material(track_materials[path.width >= 6.0f ? structures::track_material_asphalt : structures::track_material_dirt]);
 
@@ -2197,14 +2206,21 @@ namespace zp
 			const auto& next{ path.points[std::min(index + 1u, count - 1u)] };
 			const auto along{ mathematics.normalize(structures::vec3_s{ next.x - previous.x, 0.0f, next.z - previous.z }) };
 			const structures::vec3_s side{ along.z, 0.0f, -along.x };
-			const structures::vec3_s surface{ point.x, point.y + road_lift, point.z };
-			const auto new_left{ builder.add_vertex(surface + side * half, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f }) };
-			const auto new_right{ builder.add_vertex(surface - side * half, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f }) };
+			const structures::vec3_s surface{ point.x, point.y + lift, point.z };
 
-			if (index)
+			std::uint32_t ring[4]{};
+
+			travelled += mathematics.length(structures::vec3_s{ point.x - previous.x, 0.0f, point.z - previous.z });
+
+			for (auto corner{ 0u }; corner < 4u; corner++)
 			{
-				builder.add_triangle(left, right, new_right);
-				builder.add_triangle(left, new_right, new_left);
+				ring[corner] = builder.add_vertex(surface + side * offsets[corner] - structures::vec3_s{ 0.0f, drops[corner], 0.0f }, mathematics.normalize(structures::vec3_s{ 0.0f, 1.0f, 0.0f } + side * leans[corner]), { offsets[corner] / road_tile, travelled / road_tile });
+			}
+
+			for (auto strip{ 0u }; strip < 3u && index; strip++)
+			{
+				builder.add_triangle(previous_ring[strip], previous_ring[strip + 1u], ring[strip + 1u]);
+				builder.add_triangle(previous_ring[strip], ring[strip + 1u], ring[strip]);
 			}
 
 			if (index % 4u == 0u && index + 4u < count)
@@ -2216,9 +2232,104 @@ namespace zp
 				terrain.mask_rectangle({ (point.x + ahead.x) * 0.5f, 0.0f, (point.z + ahead.z) * 0.5f }, half + 0.6f, mathematics.length(structures::vec3_s{ ahead.x - point.x, 0.0f, ahead.z - point.z }) * 0.5f + 0.5f, std::atan2(ahead.x - point.x, ahead.z - point.z));
 			}
 
-			left = new_left;
-			right = new_right;
+			std::copy(std::begin(ring), std::end(ring), std::begin(previous_ring));
 		}
+
+		builder.compute_tangents(first_vertex, first_index);
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool maps_c::on_crossing(structures::vec3_s point)
+	{
+		for (const auto& path : paths)
+		{
+			if (path.kind == structures::route_road)
+			{
+				const auto reach{ path.width * 0.5f + crossing_overhang };
+
+				for (auto index{ 0u }; index + 1u < path.points.size(); index++)
+				{
+					const auto& from{ path.points[index] };
+					const structures::vec2_s span{ path.points[index + 1u].x - from.x, path.points[index + 1u].z - from.z };
+
+					if (std::fabs(point.x - from.x) < crossing_search && std::fabs(point.z - from.z) < crossing_search)
+					{
+						const auto along{ mathematics.saturate(((point.x - from.x) * span.x + (point.z - from.z) * span.y) / std::max(span.x * span.x + span.y * span.y, 0.0001f)) };
+
+						if (mathematics.length(structures::vec2_s{ point.x - from.x - span.x * along, point.z - from.z - span.y * along }) < reach)
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool maps_c::lay_panels(const structures::route_path_s& path)
+	{
+		const auto panel{ models.find("rail_track") };
+		const auto plain{ panel ? foliage.add_species("rail_track", "rail_track_far", rail_panel_near, rail_panel_far, rail_panel_shadow, rail_panel_sway) : UINT32_MAX };
+		const auto weedy{ plain != UINT32_MAX && models.find("rail_track_weeds") ? foliage.add_species("rail_track_weeds", "rail_track_weeds_far", rail_panel_near, rail_panel_far, rail_panel_shadow, rail_panel_sway) : plain };
+
+		if (plain != UINT32_MAX && path.points.size() > 2u)
+		{
+			const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+			const auto segments{ path.closed ? count : count - 1u };
+
+			std::vector<std::float_t> reach(static_cast<std::size_t>(segments) + 1u, 0.0f);
+
+			for (auto index{ 0u }; index < segments; index++)
+			{
+				reach[index + 1u] = reach[index] + mathematics.distance(path.points[index], path.points[(index + 1u) % count]);
+			}
+
+			const auto total{ reach.back() };
+			const auto span{ panel->bounds_max.z - panel->bounds_min.z };
+			const auto pieces{ std::max(1u, static_cast<std::uint32_t>(std::round(total / std::max(span, 1.0f)))) };
+			const auto scale{ total / (static_cast<std::float_t>(pieces) * std::max(span, 1.0f)) };
+			const auto length{ span * scale };
+
+			const auto sample = [&](std::float_t along)
+				{
+					const auto wrapped{ path.closed ? std::fmod(std::fmod(along, total) + total, total) : std::clamp(along, 0.0f, total) };
+					const auto upper{ std::upper_bound(reach.begin(), reach.end(), wrapped) };
+					const auto index{ static_cast<std::size_t>(std::clamp<std::ptrdiff_t>(upper - reach.begin() - 1, 0, static_cast<std::ptrdiff_t>(segments) - 1)) };
+					const auto gap{ reach[index + 1u] - reach[index] };
+
+					return mathematics.lerp(path.points[index], path.points[(index + 1u) % count], gap > 0.0001f ? (wrapped - reach[index]) / gap : 0.0f);
+				};
+
+			for (auto piece{ 0u }; piece < pieces; piece++)
+			{
+				const auto start{ static_cast<std::float_t>(piece) * length };
+				const auto first{ sample(start) };
+				const auto last{ sample(start + length) };
+				const auto head{ sample(start + 1.0f) - first };
+				const auto tail{ last - sample(start + length - 1.0f) };
+				const auto chord{ last - first };
+				const auto turn{ mathematics.angle_difference(std::atan2(head.x, head.z), std::atan2(tail.x, tail.z)) };
+				const auto bend{ turn / length };
+				const auto reached{ -panel->bounds_min.z * scale };
+				const auto heading{ std::atan2(chord.x, chord.z) - turn * 0.5f };
+				const auto slope{ (last.y - first.y) / length };
+				const auto arc{ std::fabs(bend) > 0.00001f ? structures::vec3_s{ (1.0f - std::cos(bend * reached)) / bend, 0.0f, std::sin(bend * reached) / bend } : structures::vec3_s{ 0.0f, 0.0f, reached } };
+				const auto origin{ first + rotate_yaw(arc, heading) + structures::vec3_s{ 0.0f, slope * reached + rail_head - panel->bounds_max.y * scale, 0.0f } };
+
+				foliage.add_bent(mathematics.hash_float(piece * 7919u + 13u) < rail_panel_weeds ? weedy : plain, origin, heading + bend * reached, scale, bend, slope);
+			}
+
+			logger.write("maps: %u track panels of %.2f m on a %.0f m line", pieces, length, total);
+
+			return true;
+		}
+
+		return false;
 	}
 	/*
 	//=====================================================================================
@@ -2227,6 +2338,7 @@ namespace zp
 	{
 		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
 		const auto limit{ path.closed ? count + 1u : count };
+		const auto paneled{ lay_panels(path) };
 
 		auto travelled{ 0.0f };
 		auto next_sleeper{ 0.0f };
@@ -2249,14 +2361,14 @@ namespace zp
 
 			builder.set_material(track_materials[structures::track_material_ballast]);
 
-			for (auto corner{ 0u }; corner < 4u; corner++)
+			for (auto corner{ 0u }; corner < 4u && paneled == false; corner++)
 			{
 				ring[corner] = builder.add_vertex(point + side * offsets[corner] + up * lifts[corner], mathematics.normalize(up + side * (corner == 0u ? -0.35f : (corner == 3u ? 0.35f : 0.0f))), { 0.0f, 0.0f });
 			}
 
 			if (step)
 			{
-				for (auto strip{ 0u }; strip < 3u; strip++)
+				for (auto strip{ 0u }; strip < 3u && paneled == false; strip++)
 				{
 					builder.add_triangle(previous_ring[strip], previous_ring[strip + 1u], ring[strip + 1u]);
 					builder.add_triangle(previous_ring[strip], ring[strip + 1u], ring[strip]);
@@ -2272,16 +2384,24 @@ namespace zp
 
 				builder.set_material(track_materials[structures::track_material_rail]);
 
-				for (auto rail{ -1.0f }; rail <= 1.0f; rail += 2.0f)
+				for (auto rail{ -1.0f }; rail <= 1.0f && paneled == false; rail += 2.0f)
 				{
 					builder.box_faces(middle + across * (rail * rail_gauge * 0.5f) + up * (rail_head - 0.075f), { 0.07f, 0.15f, length + 0.02f }, rotation, 0x07u);
 				}
 
 				builder.set_material(track_materials[structures::track_material_sleeper]);
 
-				for (; next_sleeper < travelled + length; next_sleeper += rail_sleeper_spacing)
+				for (; next_sleeper < travelled + length && paneled == false; next_sleeper += rail_sleeper_spacing)
 				{
 					builder.box_faces(from + forward * (next_sleeper - travelled) + up * (rail_head - 0.22f), { 2.6f, 0.14f, 0.24f }, rotation, 0x37u);
+				}
+
+				if (on_crossing(middle))
+				{
+					for (const auto offset : crossing_boards)
+					{
+						builder.box_faces(middle + across * offset + up * (rail_head - crossing_board_sink - crossing_board_depth * 0.5f), { crossing_board_width, crossing_board_depth, length + 0.02f }, rotation, 0x37u);
+					}
 				}
 
 				if (step % 2u == 0u)

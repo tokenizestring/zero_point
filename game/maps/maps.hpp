@@ -53,8 +53,10 @@ namespace zp
 		bool place_building(const char* model_name, structures::vec3_s position, std::float_t yaw);
 		void load_routes();
 		void build_routes();
-		void build_road(const structures::route_path_s& path);
+		void build_road(const structures::route_path_s& path, std::uint32_t order);
 		void build_rail(const structures::route_path_s& path);
+		bool on_crossing(structures::vec3_s point);
+		bool lay_panels(const structures::route_path_s& path);
 		bool on_route(std::float_t x, std::float_t z);
 		std::float_t route_gap(std::float_t x, std::float_t z);
 		void build_hamlet(const structures::world_site_s& site);
