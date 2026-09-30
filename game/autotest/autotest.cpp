@@ -388,7 +388,7 @@ namespace zp
 			}
 		}
 
-		logger.write("autotest: frame %llu phase %u pos %.0f %.0f %.0f | health %.0f food %.0f water %.0f | structures %zu | hits %u damage %u heard %u |%s", frame, phase, player.state.position.x, player.state.position.y, player.state.position.z, survival.vitals.health, survival.vitals.calories, survival.vitals.hydration, building.placed.size(), client.hits_confirmed, client.damage_dealt, client.shots_heard, line);
+		logger.write("autotest: frame %llu phase %u pos %.0f %.0f %.0f | health %.0f food %.0f water %.0f | structures %zu | hits %u damage %u heard %u | marks %u (%zd guessed, %u drawn) |%s", frame, phase, player.state.position.x, player.state.position.y, player.state.position.z, survival.vitals.health, survival.vitals.calories, survival.vitals.hydration, building.placed.size(), client.hits_confirmed, client.damage_dealt, client.shots_heard, marks.count, std::count_if(marks.ring.begin(), marks.ring.end(), [](const structures::mark_s& mark) { return mark.live && mark.guessed; }), decals.drawn, line);
 	}
 	/*
 	//=====================================================================================
