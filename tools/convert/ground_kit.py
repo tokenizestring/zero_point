@@ -39,11 +39,9 @@ def unit(field, low=1.0, high=99.0):
     return numpy.clip((field - a) / max(b - a, 1e-9), 0.0, 1.0).astype(numpy.float32)
 
 
-def blend(a, b, t):
-    t = numpy.asarray(t, dtype=numpy.float32)
-    if numpy.ndim(a) > numpy.ndim(t) or numpy.ndim(b) > numpy.ndim(t):
-        t = t[..., None]
-    return a * (1.0 - t) + b * t
+def tint(a, b, t):
+    t = numpy.asarray(t, dtype=numpy.float32)[..., None]
+    return (a * (1.0 - t) + b * t).astype(numpy.float32)
 
 
 def vary(rng, colors, value=0.12, hue=0.05):
@@ -318,7 +316,7 @@ def frames(spine, side=None):
     return tangent, side.astype(numpy.float32), numpy.cross(tangent, side).astype(numpy.float32)
 
 
-def paths(rng, start, heading, length, steps, curl=0.0, wobble=0.0, waves=1.5):
+def paths(rng, start, heading, length, steps, curl=0.0, wobble=0.0, waves=1.5, anchor=None):
     count = len(start)
     t = numpy.linspace(0.0, 1.0, steps, dtype=numpy.float32)[None, :]
     curl = numpy.broadcast_to(numpy.asarray(curl, dtype=numpy.float32), (count,))
@@ -327,9 +325,42 @@ def paths(rng, start, heading, length, steps, curl=0.0, wobble=0.0, waves=1.5):
     step = (numpy.broadcast_to(numpy.asarray(length, dtype=numpy.float32), (count,)) / (steps - 1))[:, None]
     x = numpy.cumsum(numpy.cos(angle) * step, axis=1) - numpy.cos(angle) * step
     y = numpy.cumsum(numpy.sin(angle) * step, axis=1) - numpy.sin(angle) * step
-    x -= x.mean(axis=1, keepdims=True)
-    y -= y.mean(axis=1, keepdims=True)
+    if anchor is None:
+        x -= x.mean(axis=1, keepdims=True)
+        y -= y.mean(axis=1, keepdims=True)
+    else:
+        pivot = int(round(anchor * (steps - 1)))
+        x -= x[:, pivot:pivot + 1].copy()
+        y -= y[:, pivot:pivot + 1].copy()
     return numpy.stack([start[:, 0:1] + x, start[:, 1:2] + y], axis=-1).astype(numpy.float32)
+
+
+def streams(rng, start, flow, extent, length, steps, sway=0.2, drift=0.03):
+    count = len(start)
+    step = numpy.broadcast_to(numpy.asarray(length, dtype=numpy.float64), (count,)) / (steps - 1)
+    points = numpy.empty((count, steps, 2), dtype=numpy.float32)
+    position = numpy.asarray(start, dtype=numpy.float64).copy()
+    turn = rng.normal(0.0, sway, count)
+    for index in range(steps):
+        points[:, index] = position
+        turn = turn + rng.normal(0.0, drift, count)
+        heading = sample(flow, position[:, 0], position[:, 1], extent)
+        angle = numpy.arctan2(heading[:, 1], heading[:, 0]) + turn
+        position = position + step[:, None] * numpy.stack([numpy.cos(angle), numpy.sin(angle)], axis=1)
+    return points
+
+
+def upright(base, heading, length, steps, lean, bend):
+    count = len(base)
+    t = numpy.linspace(0.0, 1.0, steps, dtype=numpy.float32)[None, :]
+    tilt = numpy.asarray(lean, dtype=numpy.float32)[:, None] + numpy.asarray(bend, dtype=numpy.float32)[:, None] * t ** 1.5
+    step = (numpy.asarray(length, dtype=numpy.float32) / (steps - 1))[:, None]
+    out = numpy.cumsum(numpy.sin(tilt) * step, axis=1) - numpy.sin(tilt) * step
+    rise = numpy.cumsum(numpy.cos(tilt) * step, axis=1) - numpy.cos(tilt) * step
+    forward = numpy.stack([numpy.cos(heading), numpy.sin(heading)], axis=1).astype(numpy.float32)
+    spine = numpy.concatenate([base[:, None, :2] + forward[:, None, :] * out[..., None], (base[:, 2:3] + rise)[..., None]], axis=-1).astype(numpy.float32)
+    side = numpy.broadcast_to(numpy.stack([-forward[:, 1], forward[:, 0], numpy.zeros(count, dtype=numpy.float32)], axis=1)[:, None, :], spine.shape)
+    return spine, side
 
 
 def spread(value, count, steps):
@@ -348,6 +379,22 @@ def scalar(value, count, steps):
     elif value.ndim == 1:
         value = value[:, None]
     return numpy.broadcast_to(value, (count, steps))
+
+
+def sweep(spine, radius, sides=4, flat=1.0, side=None):
+    spine = numpy.asarray(spine, dtype=numpy.float32)
+    count, steps = spine.shape[:2]
+    radius = scalar(radius, count, steps)
+    flat = scalar(flat, count, steps)
+    tangent, side, normal = frames(spine, side)
+    angle = numpy.arange(sides, dtype=numpy.float32) * (tau / sides) + tau * 0.25
+    across = numpy.cos(angle)[None, None, :] * radius[:, :, None]
+    along = numpy.sin(angle)[None, None, :] * (radius * flat)[:, :, None]
+    points = spine[:, :, None, :] + side[:, :, None, :] * across[..., None] + normal[:, :, None, :] * along[..., None]
+    ring = numpy.arange(sides)
+    base = (numpy.arange(steps - 1) * sides)[:, None]
+    quads = numpy.stack([base + ring, base + (ring + 1) % sides, base + sides + (ring + 1) % sides, base + sides + ring], axis=-1).reshape(-1, 4)
+    return points, quads, across, along
 
 
 def average(level, window):
@@ -401,9 +448,8 @@ def make_mesh(name, vertices, faces, attributes=None):
 
 
 def write_image(path, pixels, kind="uint8", quality=None):
-    pixels = numpy.ascontiguousarray(pixels)
-    channels = 1 if pixels.ndim == 2 else pixels.shape[2]
-    spec = OpenImageIO.ImageSpec(pixels.shape[1], pixels.shape[0], channels, kind)
+    pixels = numpy.ascontiguousarray(pixels if pixels.ndim == 3 else pixels[:, :, None])
+    spec = OpenImageIO.ImageSpec(pixels.shape[1], pixels.shape[0], pixels.shape[2], kind)
     if quality:
         spec.attribute("Compression", "jpeg:%d" % quality)
         spec.attribute("jpeg:subsampling", "4:4:4")
@@ -554,6 +600,9 @@ class graph:
     def local(self):
         return wire(self, self.new('ShaderNodeTexCoord').outputs['Object'], True)
 
+    def facing(self):
+        return wire(self, self.new('ShaderNodeNewGeometry').outputs['Normal'], True)
+
     def mix(self, a, b, factor):
         node = self.new('ShaderNodeMix', data_type='RGBA', clamp_factor=True)
         self.feed(node.inputs[0], factor)
@@ -650,53 +699,82 @@ class bed:
     def lift(self, x, y, z):
         numpy.maximum.at(self.h, self.index(x, y), numpy.asarray(z, dtype=numpy.float32))
 
-    def rest(self, rng, track, radius, stiff=0.5, rigid=False, half=None, batch=160, sag=1.0):
+    def swell(self, field):
+        self.h += resize(numpy.asarray(field, dtype=numpy.float32), self.size)
+
+    def mat(self, sigma):
+        return blur(self.h, sigma / self.cell)
+
+    def slab(self, rng, track, depth, field=None, surface=None, tilt=0.04, rank=None, pivot=0.0):
+        count, steps = track.shape[:2]
+        ground = sample(self.h if surface is None else surface, track[..., 0], track[..., 1], self.extent)
+        local = 1.0 if field is None else sample(field, track[..., 0], track[..., 1], self.extent)
+        reach = numpy.linalg.norm(track[:, 1:] - track[:, :-1], axis=-1).sum(axis=1, keepdims=True) * 0.5
+        lean = rng.normal(0.0, tilt, (count, 1)) * reach * (numpy.linspace(-1.0, 1.0, steps, dtype=numpy.float32)[None, :] - pivot)
+        rank = rng.random((count, 1)) if rank is None else rank
+        return (ground + numpy.maximum(rank * depth * local + lean, 0.0)).astype(numpy.float32)
+
+    def rest(self, rng, track, radius, stiff=0.5, rigid=False, half=None, batch=160, steep=0.18, order=None, mark=True):
         count, steps = track.shape[:2]
         level = numpy.zeros((count, steps), dtype=numpy.float32)
         radius = scalar(radius, count, steps)
         half = None if half is None else scalar(half, count, steps)
-        order = rng.permutation(count)
+        order = rng.permutation(count) if order is None else order
+        reach = numpy.linalg.norm(track[:, 1:] - track[:, :-1], axis=-1).sum(axis=1) * 0.5
         span = float(numpy.linalg.norm(track[:, 1:] - track[:, :-1], axis=-1).mean())
         fine = max(1, int(math.ceil(span / self.cell)))
-        place = numpy.arange((steps - 1) * fine + 1) / fine
+        dense = (steps - 1) * fine + 1
+        place = numpy.arange(dense) / fine
         left = numpy.minimum(place.astype(numpy.int64), steps - 2)
         part = (place - left).astype(numpy.float32)[None, :]
-        t = numpy.linspace(-1.0, 1.0, steps, dtype=numpy.float32)[None, :]
-        window = max(1, int(round(stiff * steps * 0.5)))
-        direction = numpy.gradient(track, axis=1)
-        direction /= numpy.maximum(numpy.linalg.norm(direction, axis=-1, keepdims=True), 1e-9)
-        across = numpy.stack([-direction[..., 1], direction[..., 0]], axis=-1)
+        t = numpy.linspace(-1.0, 1.0, dense, dtype=numpy.float32)[None, :]
+        window = max(1, int(round(stiff * dense * 0.5)))
         for begin in range(0, count, batch):
             pick = order[begin:begin + batch]
             xy = track[pick]
-            ground = self.at(xy[..., 0], xy[..., 1])
+            fx = xy[:, left, 0] * (1.0 - part) + xy[:, left + 1, 0] * part
+            fy = xy[:, left, 1] * (1.0 - part) + xy[:, left + 1, 1] * part
+            fr = radius[pick][:, left] * (1.0 - part) + radius[pick][:, left + 1] * part
+            ground = self.at(fx, fy)
             if half is not None:
+                ax = -numpy.gradient(fy, axis=1)
+                ay = numpy.gradient(fx, axis=1)
+                norm = numpy.maximum(numpy.hypot(ax, ay), 1e-9)
+                fh = half[pick][:, left] * (1.0 - part) + half[pick][:, left + 1] * part
+                ax = ax / norm * fh
+                ay = ay / norm * fh
                 for sign in (-0.8, 0.8):
-                    edge = xy + across[pick] * (half[pick] * sign)[..., None]
-                    ground = numpy.maximum(ground, self.at(edge[..., 0], edge[..., 1]))
+                    ground = numpy.maximum(ground, self.at(fx + ax * sign, fy + ay * sign))
             if rigid:
-                settled = ground.mean(axis=1, keepdims=True) + (ground * t).sum(axis=1, keepdims=True) / (t * t).sum() * t
-                settled = settled + (ground - settled).max(axis=1, keepdims=True)
+                before = t[0, :dense // 2]
+                after = t[0, (dense + 1) // 2:]
+                chord = (ground[:, :dense // 2, None] * after[None, None, :] - ground[:, None, (dense + 1) // 2:] * before[None, :, None]) / (after[None, None, :] - before[None, :, None])
+                best = chord.reshape(len(pick), -1).argmax(axis=1)
+                row = numpy.arange(len(pick))
+                first = best // len(after)
+                second = best % len(after) + (dense + 1) // 2
+                slope = (ground[row, second] - ground[row, first]) / (t[0, second] - t[0, first])
+                limit = steep * reach[pick]
+                settled = ground[row, first][:, None] + numpy.clip(slope, -limit, limit)[:, None] * (t - t[0, first][:, None])
+                settled = settled + numpy.maximum((ground - settled).max(axis=1, keepdims=True), 0.0)
             else:
                 settled = ground.copy()
                 for iteration in range(3):
                     settled = numpy.maximum(ground, average(settled, window))
-            settled = ground + (settled - ground) * sag
-            level[pick] = settled
-            top = settled + radius[pick] * 2.0
-            fx = xy[:, left, 0] * (1.0 - part) + xy[:, left + 1, 0] * part
-            fy = xy[:, left, 1] * (1.0 - part) + xy[:, left + 1, 1] * part
-            fz = top[:, left] * (1.0 - part) + top[:, left + 1] * part
+                padded = numpy.pad(settled, ((0, 0), (fine // 2, fine // 2)), mode="edge")
+                for shift in range(2 * (fine // 2) + 1):
+                    settled = numpy.maximum(settled, padded[:, shift:shift + dense])
+            knots = settled[:, ::fine]
+            level[pick] = knots
+            if not mark:
+                continue
+            top = knots[:, left] * (1.0 - part) + knots[:, left + 1] * part + fr * 2.0
             if half is None:
-                self.lift(fx, fy, fz)
+                self.lift(fx, fy, top)
             else:
-                reach = half[pick]
-                fh = reach[:, left] * (1.0 - part) + reach[:, left + 1] * part
-                ax = across[pick][:, left, 0]
-                ay = across[pick][:, left, 1]
-                lanes = max(3, int(math.ceil(float(reach.max()) * 2.0 / self.cell)) + 1)
+                lanes = max(3, int(math.ceil(float(fh.max()) * 2.0 / self.cell)) + 1)
                 for lane in numpy.linspace(-1.0, 1.0, lanes):
-                    self.lift(fx + ax * fh * lane, fy + ay * fh * lane, fz)
+                    self.lift(fx + ax * lane, fy + ay * lane, top)
         return level
 
     def drop(self, rng, position, axes, euler, tries=5, spread=1.0, sink=0.1, lean=0.6, order=None):
@@ -768,6 +846,7 @@ class tile:
         self.materials = {}
         self.groups = {}
         self.extents = {}
+        self.marks = {}
         self.triangles = 0
         self.instances = 0
         self.started = time.time()
@@ -787,6 +866,23 @@ class tile:
         image = bpy.data.images.load(path)
         image.colorspace_settings.name = 'Non-Color'
         return image
+
+    def plain(self, name, scale=300.0, contrast=0.12, stretch=(1.0, 1.0, 1.0), instanced=False):
+        shader = graph(name)
+        color = shader.attribute("tint", True) * shader.attribute("col") if instanced else shader.attribute("col")
+        rough = shader.attribute("var", True).x if instanced else shader.attribute("prm").x
+        place = (shader.local() + shader.attribute("ofs", True)) if instanced else shader.attribute("loc")
+        grain = shader.noise(place * stretch, scale, 2.0, 0.6)
+        self.materials[name] = shader.finish(color * (grain * (2.0 * contrast) + (1.0 - contrast)), rough)
+        return shader
+
+    def soil(self, name, albedo, rough, micro, strength=1.0):
+        shader = graph(name)
+        place = shader.position() * (1.0 / self.size)
+        color = shader.image(self.image(name + "_albedo", albedo), place)
+        data = shader.image(self.image(name + "_data", numpy.stack([rough, micro, numpy.zeros_like(rough)], axis=-1)), place, True)
+        self.materials[name] = shader.finish(color, data.x, shader.bump(data.y, strength, 0.001), data.y * 0.001)
+        return shader
 
     def copies(self, center, radius):
         center = numpy.asarray(center, dtype=numpy.float64)
@@ -818,13 +914,7 @@ class tile:
     def tubes(self, material, spine, radius, sides=4, color=(0.2, 0.2, 0.2), rough=0.8, flat=1.0, side=None, cap=False):
         spine = numpy.asarray(spine, dtype=numpy.float32)
         count, steps = spine.shape[:2]
-        radius = scalar(radius, count, steps)
-        flat = scalar(flat, count, steps)
-        tangent, side, normal = frames(spine, side)
-        angle = numpy.arange(sides, dtype=numpy.float32) * (tau / sides)
-        across = numpy.cos(angle)[None, None, :] * radius[:, :, None]
-        along = numpy.sin(angle)[None, None, :] * (radius * flat)[:, :, None]
-        points = spine[:, :, None, :] + side[:, :, None, :] * across[..., None] + normal[:, :, None, :] * along[..., None]
+        points, quads, across, along = sweep(spine, radius, sides, flat, side)
         length = numpy.concatenate([numpy.zeros((count, 1), dtype=numpy.float32), numpy.cumsum(numpy.linalg.norm(spine[:, 1:] - spine[:, :-1], axis=-1), axis=1)], axis=1)
         offset = self.rng.uniform(0.0, 8.0, (count, 1, 3)).astype(numpy.float32)
         loc = numpy.stack([numpy.broadcast_to(length[:, :, None], across.shape), across, along], axis=-1).reshape(count, steps * sides, 3) + offset
@@ -836,8 +926,7 @@ class tile:
         prm = prm.reshape(count, steps * sides, 3)
         points = points.reshape(count, steps * sides, 3)
         ring = numpy.arange(sides)
-        base = (numpy.arange(steps - 1) * sides)[:, None]
-        faces = {4: numpy.stack([base + ring, base + (ring + 1) % sides, base + sides + (ring + 1) % sides, base + sides + ring], axis=-1).reshape(-1, 4)}
+        faces = {4: quads}
         if cap:
             ends = [0, steps - 1]
             points = numpy.concatenate([points, spine[:, ends, :]], axis=1)
@@ -918,16 +1007,31 @@ class tile:
         prm[..., 2] = 0.0
         self.emit(material, center[:, None, :] + local, {3: faces}, col, prm, local + self.rng.uniform(0.0, 8.0, (count, 1, 3)).astype(numpy.float32))
 
-    def plates(self, material, center, radius, thick, color, rough=0.85, rings=3, sectors=12, ragged=0.22, dome=0.0, tilt=0.0, edge=None, stretch=(0.55, 1.0), bend=0.0):
+    def plates(self, material, center, radius, thick, color, rough=0.85, rings=3, sectors=12, ragged=0.22, dome=0.0, tilt=0.0, edge=None, stretch=(0.55, 1.0), bend=0.0, corners=0):
         center = numpy.asarray(center, dtype=numpy.float32)
         count = len(center)
         radius = numpy.broadcast_to(numpy.asarray(radius, dtype=numpy.float32), (count,))
         thick = numpy.broadcast_to(numpy.asarray(thick, dtype=numpy.float32), (count,))
         angle = numpy.arange(sectors) * (tau / sectors)
         outline = numpy.ones((count, sectors))
-        for harmonic in (2, 3, 4, 5):
-            outline += ragged * self.rng.uniform(0.2, 1.0, (count, 1)) / (harmonic - 1) * numpy.cos(harmonic * angle[None, :] + self.rng.uniform(0.0, tau, (count, 1)))
-        outline = numpy.clip(outline + self.rng.normal(0.0, ragged * 0.3, (count, sectors)), 0.35, 1.8)
+        if corners:
+            turn = numpy.sort((numpy.arange(corners)[None, :] + self.rng.uniform(0.15, 0.85, (count, corners))) * (tau / corners), axis=1)
+            far = self.rng.uniform(1.0 - ragged * 1.6, 1.0 + ragged, (count, corners))
+            for corner in range(corners):
+                a1 = turn[:, corner:corner + 1]
+                a2 = turn[:, (corner + 1) % corners:(corner + 1) % corners + 1]
+                r1 = far[:, corner:corner + 1]
+                r2 = far[:, (corner + 1) % corners:(corner + 1) % corners + 1]
+                wide = numpy.mod(a2 - a1, tau)
+                from_first = numpy.mod(angle[None, :] - a1, tau)
+                inside = from_first < wide
+                chord = r1 * r2 * numpy.sin(wide) / numpy.maximum(r1 * numpy.sin(from_first) + r2 * numpy.sin(wide - from_first), 1e-6)
+                outline = numpy.where(inside, chord, outline)
+            outline = numpy.clip(outline + self.rng.normal(0.0, ragged * 0.12, (count, sectors)), 0.3, 1.8)
+        else:
+            for harmonic in (2, 3, 4, 5):
+                outline += ragged * self.rng.uniform(0.2, 1.0, (count, 1)) / (harmonic - 1) * numpy.cos(harmonic * angle[None, :] + self.rng.uniform(0.0, tau, (count, 1)))
+            outline = numpy.clip(outline + self.rng.normal(0.0, ragged * 0.3, (count, sectors)), 0.35, 1.8)
         yaw = self.rng.uniform(0.0, tau, (count, 1))
         squash = self.rng.uniform(stretch[0], stretch[1], (count, 1))
         lean = self.rng.normal(0.0, tilt, (count, 2)) if tilt else numpy.zeros((count, 2))
@@ -946,7 +1050,7 @@ class tile:
         quads = []
         for ring in range(rings):
             first = 1 + ring * sectors
-            quads.append(numpy.stack([first + step, first + (step + 1) % sectors, first + sectors + (step + 1) % sectors, first + sectors + step], axis=-1))
+            quads.append(numpy.stack([first + step, first + sectors + step, first + sectors + (step + 1) % sectors, first + (step + 1) % sectors], axis=-1))
         faces = {3: numpy.stack([numpy.zeros(sectors, dtype=numpy.int64), 1 + step, 1 + (step + 1) % sectors], axis=-1), 4: numpy.concatenate(quads)}
         color = spread(color, count, 1)[:, 0, :]
         edge = color * 0.75 if edge is None else spread(edge, count, 1)[:, 0, :]
@@ -1099,19 +1203,42 @@ class tile:
         return path
 
 
-def compose(passes, bump=1.0, occlusion=1.0, cavity=0.35, trim=0.2):
+def dilate(field, radius):
+    result = field.copy()
+    for oy in range(-radius, radius + 1):
+        for ox in range(-radius, radius + 1):
+            if (ox or oy) and ox * ox + oy * oy <= radius * radius:
+                numpy.maximum(result, numpy.roll(field, (oy, ox), axis=(0, 1)), out=result)
+    return result
+
+
+def bounded(across, along, steep):
+    slope = numpy.maximum(numpy.hypot(across, along), 1e-6)
+    limit = steep * numpy.tanh(slope / steep) / slope
+    return across * limit, along * limit
+
+
+def compose(passes, pixel, bump=1.0, occlusion=1.0, cavity=0.35, trim=0.2, fill=0, soften=1.0, keep=1.0, steep=2.5, meso=8.0, envelope=1.0):
     albedo = numpy.clip(passes["albedo"], 0.0, 1.0)
-    normal = passes["normal"].astype(numpy.float32).copy()
-    normal[..., 1] *= -1.0
-    normal[..., :2] *= bump
-    normal[..., 2] = numpy.maximum(normal[..., 2], 0.02)
-    normal /= numpy.linalg.norm(normal, axis=-1, keepdims=True)
+    normal = passes["normal"].astype(numpy.float32)
+    across, along = bounded(normal[..., 0] / numpy.maximum(normal[..., 2], 1e-3) * bump, -normal[..., 1] / numpy.maximum(normal[..., 2], 1e-3) * bump, steep)
     ao = numpy.clip(passes["ao"], 0.0, 1.0) ** occlusion
     albedo = albedo * (1.0 - cavity * (1.0 - ao))[..., None]
-    height = passes["height"].astype(numpy.float64)
+    height = passes["height"].astype(numpy.float32)
+    if fill:
+        height = blur(dilate(height, fill), soften) * (1.0 - keep) + height * keep
+    if meso:
+        smooth = blur(height, meso)
+        across = across - blur(across, meso) - (numpy.roll(smooth, -1, axis=1) - numpy.roll(smooth, 1, axis=1)) * (envelope * 0.5 / pixel)
+        along = along - blur(along, meso) - (numpy.roll(smooth, -1, axis=0) - numpy.roll(smooth, 1, axis=0)) * (envelope * 0.5 / pixel)
+        across, along = bounded(across, along, steep)
+    normal = numpy.stack([across, along, numpy.ones_like(across)], axis=-1)
+    normal /= numpy.linalg.norm(normal, axis=-1, keepdims=True)
+    height = height.astype(numpy.float64)
     low, high = numpy.percentile(height, [trim, 100.0 - trim])
     mean = float(height.mean())
     span = max(mean - low, high - mean, 1e-6) / 0.49
+    print("GROUND height metres min %.4f low %.4f mean %.4f high %.4f max %.4f, ao mean %.3f, up mean %.3f" % (height.min(), low, mean, high, height.max(), ao.mean(), normal[..., 2].mean()), flush=True)
     height = numpy.clip(0.5 + (height - mean) / span, 0.0, 1.0)
     return {"albedo": albedo.astype(numpy.float32), "normal": normal, "ao": ao.astype(numpy.float32), "rough": numpy.clip(passes["rough"], 0.03, 1.0).astype(numpy.float32), "height": height.astype(numpy.float32), "relief": span}
 
