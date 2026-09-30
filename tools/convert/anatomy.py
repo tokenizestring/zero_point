@@ -446,6 +446,11 @@ def evaluate(shapes, points, margin, cell=0.02, labels=False, empty=1.0):
             distance[chosen] = smax(distance[chosen], value, item.blend)
         elif item.mode == "bump":
             distance[chosen] = distance[chosen] - value
+        elif item.mode == "graft":
+            weight = item.data["weight"](sorted_points[chosen])
+            distance[chosen] = distance[chosen] * (1.0 - weight) + value * weight
+        elif item.mode == "seal":
+            distance[chosen] = smin(distance[chosen], value, item.blend)
     result = numpy.empty_like(distance)
     result[order] = distance
     if labels:
