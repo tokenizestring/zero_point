@@ -1,11 +1,15 @@
 import bpy
 import bmesh
+import json
 import math
 import os
 import pickle
+import shutil
 import numpy
+from mathutils import Vector
 import fauna_hoofed_field as fields
 import fauna_hoofed_cage as cages
+import fauna_hoofed_motion as motion
 import fauna_hoofed_paint as paint
 import fauna_hoofed_parts as parts
 import fauna_hoofed_render as render
@@ -21,9 +25,9 @@ def assemble(blueprint):
     skin = cages.relax(f, skin, blueprint["cage"]["skin"])
     skin["faces"] = render.oriented(skin["points"], skin["faces"])
     cages.audit(f, skin, blueprint["cage"]["skin"])
-    pieces = species.pieces(blueprint)
+    pieces = species.pieces(blueprint["name"], blueprint)
     for piece in pieces:
-        if piece["part"] != "eyeball":
+        if piece["part"] not in ("eyeball", "lock"):
             piece["faces"] = render.oriented(piece["points"], piece["faces"])
     model = parts.combine(skin, pieces)
     model["meta"] = b.meta
@@ -168,11 +172,186 @@ def mesh_from_model(model, name):
         raise RuntimeError("mesh lost faces")
     layer = mesh.uv_layers.new(name="uv")
     layer.uv.foreach_set("vector", model["uv"][loops].reshape(-1).astype(numpy.float32))
+    mesh.normals_split_custom_set_from_vertices(paint.model_normals(model, triangles).tolist())
     return obj, triangles, owner
 
 
 def texture_paths(directory, name):
     return [os.path.join(directory, name + suffix) for suffix in ("_albedo.png", "_normal.png", "_orm.png")]
+
+
+def armature_object(name, bones, scale):
+    data = bpy.data.armatures.new(name)
+    obj = bpy.data.objects.new(name, data)
+    bpy.context.scene.collection.objects.link(obj)
+    select_only(obj)
+    bpy.ops.object.mode_set(mode='EDIT')
+    created = {}
+    for bone_name, parent, position in bones:
+        bone = data.edit_bones.new(bone_name)
+        bone.head = Vector(position) * scale
+        bone.tail = bone.head + Vector((0.0, 0.06 * scale, 0.0))
+        bone.roll = 0.0
+        if parent is not None:
+            bone.parent = created[parent]
+            bone.use_connect = False
+        created[bone_name] = bone
+    bpy.ops.object.mode_set(mode='OBJECT')
+    for bone in obj.pose.bones:
+        bone.rotation_mode = 'QUATERNION'
+    return obj
+
+
+def skinned_object(model, name, armature, names, order, kept, textures):
+    obj, triangles, owner = mesh_from_model(model, name)
+    obj.data.materials.append(material(name, *textures))
+    groups = [obj.vertex_groups.new(name=bone) for bone in names]
+    for vertex in range(len(order)):
+        for column in range(order.shape[1]):
+            if kept[vertex, column] > 0.0:
+                groups[int(order[vertex, column])].add([vertex], float(kept[vertex, column]), 'REPLACE')
+    attach(obj, armature)
+    return obj
+
+
+def attach(obj, armature):
+    obj.parent = armature
+    obj.matrix_parent_inverse = armature.matrix_world.inverted()
+    modifier = obj.modifiers.new("armature", 'ARMATURE')
+    modifier.object = armature
+
+
+def group_weights(obj, names, limit=4):
+    mesh = obj.data
+    lookup = {group.index: names.index(group.name) for group in obj.vertex_groups if group.name in names}
+    dense = numpy.zeros((len(mesh.vertices), len(names)))
+    for vertex in mesh.vertices:
+        for element in vertex.groups:
+            if element.group in lookup:
+                dense[vertex.index, lookup[element.group]] = element.weight
+    order = numpy.argsort(-dense, axis=1)[:, :limit]
+    kept = numpy.take_along_axis(dense, order, axis=1)
+    kept[kept < 0.004] = 0.0
+    total = kept.sum(axis=1)
+    kept[total < 1e-6, 0] = 1.0
+    kept /= kept.sum(axis=1)[:, None]
+    return order, kept
+
+
+def reduced_object(source, name, armature, names, ratio):
+    mesh = source.data.copy()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    for group in source.vertex_groups:
+        obj.vertex_groups.new(name=group.name)
+    modifier = obj.modifiers.new("reduce", 'DECIMATE')
+    modifier.decimate_type = 'COLLAPSE'
+    modifier.ratio = ratio
+    modifier.use_symmetry = True
+    modifier.symmetry_axis = 'X'
+    modifier.use_collapse_triangulate = True
+    select_only(obj)
+    bpy.ops.object.modifier_apply(modifier="reduce")
+    bpy.ops.mesh.customdata_custom_splitnormals_clear()
+    obj.data.polygons.foreach_set("use_smooth", numpy.ones(len(obj.data.polygons), dtype=bool))
+    obj.data.name = name
+    order, kept = group_weights(obj, names)
+    for group in obj.vertex_groups:
+        group.remove(list(range(len(obj.data.vertices))))
+    for vertex in range(len(order)):
+        for column in range(order.shape[1]):
+            if kept[vertex, column] > 0.0:
+                obj.vertex_groups[names[int(order[vertex, column])]].add([vertex], float(kept[vertex, column]), 'REPLACE')
+    attach(obj, armature)
+    return obj
+
+
+def export_gltf(path, animations):
+    bpy.ops.export_scene.gltf(filepath=path, export_format='GLTF_SEPARATE', export_image_format='AUTO', export_keep_originals=not animations, export_texcoords=True, export_normals=True, export_tangents=False, export_materials='EXPORT', export_skins=True, export_animations=animations, export_force_sampling=animations, export_optimize_animation_size=False, export_anim_single_armature=True, export_morph=False, export_yup=True, export_apply=False, use_selection=False, export_extras=False, export_cameras=False, export_lights=False)
+
+
+def only(objects):
+    keep = set(objects)
+    hidden = []
+    for obj in list(bpy.context.scene.objects):
+        if obj not in keep:
+            hidden.append((obj, obj.parent))
+            obj.parent = None
+            bpy.context.scene.collection.objects.unlink(obj)
+    return hidden
+
+
+def restore(hidden):
+    for obj, parent in hidden:
+        bpy.context.scene.collection.objects.link(obj)
+        if parent is not None:
+            obj.parent = parent
+            obj.matrix_parent_inverse = parent.matrix_world.inverted()
+
+
+def patch_material(path):
+    with open(path, "r", encoding="utf-8") as handle:
+        document = json.load(handle)
+    for entry in document.get("materials", []):
+        entry.setdefault("pbrMetallicRoughness", {})
+        entry["pbrMetallicRoughness"]["metallicFactor"] = 0.0
+        entry["pbrMetallicRoughness"]["roughnessFactor"] = 1.0
+        entry.pop("emissiveFactor", None)
+        entry["doubleSided"] = False
+    for entry in document.get("images", []):
+        entry["uri"] = entry["uri"].replace("\\", "/")
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(document, handle, indent=1)
+    return document
+
+
+def strip_scale(path):
+    with open(path, "r", encoding="utf-8") as handle:
+        document = json.load(handle)
+    for animation in document.get("animations", []):
+        channels = [channel for channel in animation["channels"] if channel["target"]["path"] in ("translation", "rotation")]
+        used = sorted(set(channel["sampler"] for channel in channels))
+        remap = {old: new for new, old in enumerate(used)}
+        animation["samplers"] = [animation["samplers"][old] for old in used]
+        for channel in channels:
+            channel["sampler"] = remap[channel["sampler"]]
+        animation["channels"] = channels
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(document, handle, indent=1)
+    return document
+
+
+def export_clips(blueprint, clips, directory, scale):
+    render.reset()
+    scene = bpy.context.scene
+    scene.render.fps = 30
+    armature = armature_object(blueprint["rig_name"], blueprint["bones"], scale)
+    names = [bone[0] for bone in blueprint["bones"]]
+    os.makedirs(directory, exist_ok=True)
+    for clip in clips:
+        armature.animation_data_clear()
+        for action in list(bpy.data.actions):
+            bpy.data.actions.remove(action)
+        armature.animation_data_create()
+        armature.animation_data.action = bpy.data.actions.new(clip["name"])
+        previous = {}
+        for frame in range(clip["frames"]):
+            for index, name in enumerate(names):
+                bone = armature.pose.bones[name]
+                q = motion.quaternion(clip["local"][frame, index])
+                if name in previous and float(q @ previous[name]) < 0.0:
+                    q = -q
+                previous[name] = q
+                bone.rotation_quaternion = q.tolist()
+                bone.location = clip["shift"][frame, index].tolist()
+                bone.keyframe_insert("rotation_quaternion", frame=frame)
+                bone.keyframe_insert("location", frame=frame)
+        scene.frame_start = 0
+        scene.frame_end = clip["frames"] - 1
+        path = os.path.join(directory, clip["name"] + ".gltf")
+        export_gltf(path, True)
+        strip_scale(path)
+    return armature
 
 
 def save(model, path):
