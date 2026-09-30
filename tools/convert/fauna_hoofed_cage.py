@@ -345,7 +345,7 @@ def ear_rings(ear, around=12):
     rings = []
     levels = ear.get("levels", (0.06, 0.16, 0.28, 0.42, 0.56, 0.7, 0.82, 0.92, 0.98))
     for t in levels:
-        profile = (0.62 + 0.38 * math.sin(math.pi * min(t / 0.45, 1.0) * 0.5)) * (1.0 if t < 0.45 else math.cos(math.pi * 0.5 * ((t - 0.45) / 0.57) ** 1.6))
+        profile = (0.62 + 0.38 * math.sin(math.pi * min(t / 0.45, 1.0) * 0.5)) * (1.0 if t < 0.45 else math.cos(math.pi * 0.5 * ((t - 0.45) / 0.57) ** ear.get("point", 1.6)))
         half = 0.5 * width * max(profile, 0.05)
         roll = 1.0 - float(fields.smoothstep(0.0, 0.3, t))
         cup = half * (0.55 + 0.5 * roll)
@@ -435,6 +435,7 @@ def build_skin(blueprint):
     b.meta["lip_lower"] = lower
     b.meta["mouth_column"] = column
     b.meta["corner_ring"] = corner_ring
+    b.meta["below"] = sorted(set([int(tube[r, s]) for r in range(corner_ring + 1, count) for s in range(column + 1, half + 1)] + [int(front[j, c]) for j in range(row + 1, n + 1) for c in range(0, m + 1)]))
 
     for leg in spec["legs"]:
         r0, r1, c0, c1 = bury(f, b, tube, leg["group"], leg["limit"], leg.get("grow", 1), (1, half - 1))
@@ -536,6 +537,7 @@ def build_skin(blueprint):
     if float(numpy.linalg.norm(loop_points[0] - first[0])) > float(numpy.linalg.norm(loop_points[0] - first[-1])):
         tail_ids = [ring[::-1] for ring in tail_ids]
     open_stitch(b, tail_loop_half, tail_ids[0], "tail")
+    b.cuts.append((tail_loop_half[-1], tail_ids[0][-1]))
     for level in range(len(tail_ids) - 1):
         for index in range(len(tail_ids[level]) - 1):
             b.face((tail_ids[level][index], tail_ids[level][index + 1], tail_ids[level + 1][index + 1], tail_ids[level + 1][index]), "tail")
@@ -551,8 +553,11 @@ def build_skin(blueprint):
     loop_points = b.at(nostril_loop)
     middle = loop_points.mean(axis=0)
     inward = -front_axis
-    rim = b.ring(middle[None, :] + (loop_points - middle[None, :]) * 0.62 + inward[None, :] * 0.002, "nostril", pinned=True)
-    deep = b.ring(middle[None, :] + (loop_points - middle[None, :]) * 0.4 + inward[None, :] * nostril.get("depth", 0.012) + numpy.array(nostril.get("drift", (0.0, 0.0, 0.0)))[None, :], "nostril", pinned=True)
+    spokes = loop_points - middle[None, :]
+    reach = numpy.linalg.norm(spokes, axis=1)
+    spokes = spokes * ((1.0 - nostril.get("round", 0.85)) + nostril.get("round", 0.85) * float(reach.mean()) / reach)[:, None]
+    rim = b.ring(middle[None, :] + spokes * 0.62 + inward[None, :] * 0.002, "nostril", pinned=True)
+    deep = b.ring(middle[None, :] + spokes * 0.4 + inward[None, :] * nostril.get("depth", 0.012) + numpy.array(nostril.get("drift", (0.0, 0.0, 0.0)))[None, :], "nostril", pinned=True)
     b.band(nostril_loop, rim, "nose")
     b.band(rim, deep, "nostril")
     b.fan(deep, middle + inward * (nostril.get("depth", 0.012) * 1.3) + numpy.array(nostril.get("drift", (0.0, 0.0, 0.0))), "nostril", "nostril", pinned=True)
