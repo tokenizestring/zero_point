@@ -241,6 +241,31 @@ namespace zp
 	*/
 	structures::trace_s world_c::trace(structures::vec3_s start, structures::vec3_s end, structures::vec3_s extents, std::uint32_t mask)
 	{
+		const auto span{ end - start };
+		const auto pieces{ static_cast<std::uint32_t>(std::ceil(std::max(std::fabs(span.x), std::fabs(span.z)) / trace_piece)) };
+
+		auto result{ pieces > 1u ? structures::trace_s{ 1.0f, end, { 0.0f, 0.0f, 0.0f }, -1, structures::surface_concrete, false, false, false } : sweep(start, end, extents, mask) };
+
+		for (auto piece{ 0u }; pieces > 1u && piece < pieces && result.hit == false; piece++)
+		{
+			const auto from{ static_cast<std::float_t>(piece) / static_cast<std::float_t>(pieces) };
+			const auto to{ static_cast<std::float_t>(piece + 1u) / static_cast<std::float_t>(pieces) };
+
+			if (const auto part{ sweep(start + span * from, start + span * to, extents, mask) }; part.hit)
+			{
+				result = part;
+				result.fraction = from + (to - from) * part.fraction;
+				result.end = start + span * result.fraction;
+			}
+		}
+
+		return result;
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::trace_s world_c::sweep(structures::vec3_s start, structures::vec3_s end, structures::vec3_s extents, std::uint32_t mask)
+	{
 		thread_local std::vector<std::uint32_t> candidates;
 
 		structures::trace_s result{ 1.0f, end, { 0.0f, 0.0f, 0.0f }, -1, structures::surface_concrete, false, false, false };

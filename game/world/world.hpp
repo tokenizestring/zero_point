@@ -33,6 +33,7 @@ namespace zp
 		void insert(std::uint32_t index);
 		void gather(structures::vec3_s minimum, structures::vec3_s maximum, std::vector<std::uint32_t>& out);
 		structures::trace_s trace(structures::vec3_s start, structures::vec3_s end, structures::vec3_s extents, std::uint32_t mask);
+		structures::trace_s sweep(structures::vec3_s start, structures::vec3_s end, structures::vec3_s extents, std::uint32_t mask);
 		void clip_planes(const structures::plane_s* brush_planes, std::uint32_t plane_count, std::int32_t index, std::uint32_t surface, structures::vec3_s start, structures::vec3_s end, structures::vec3_s extents, structures::trace_s& result);
 		bool box_solid(structures::vec3_s center, structures::vec3_s extents, std::uint32_t mask);
 	};
