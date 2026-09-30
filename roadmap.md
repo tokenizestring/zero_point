@@ -76,8 +76,21 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 ## Phase 4: The island
 
 32. [ ] Map redesign: biomes (beaches, pine forest, meadows, rocky highlands, marsh, cliffs), rivers, lakes, caves
+    - [x] Island enlarged to 4.6 km across (9.4 square km of land) with mountains, highlands and 13 named places
+    - [x] Biome map baked from height, slope, coast distance, wind exposure and wetness: beach, rocky shore, dunes, marsh, meadow, farmland with field plots, broadleaf woodland, pinewood, coastal heath, moorland, summit
+    - [x] 16 ground layers (compressed), grass density and height, planting and ambience all driven by the biome
+    - [x] Raised sea cliffs on stretches of the coast that are clear of roads and rails
+    - [ ] Own ground texture for every biome layer (needles, heath, moor, marsh, dune, shingle, turf, soil)
+    - [ ] Plants per biome: oak, birch, Scots pine, hawthorn, willow, gorse, bramble, heather, bracken, reeds, marram, wildflowers
+    - [ ] Hedgerows along field borders, rivers, lakes, caves
 33. [ ] Roads and paths, bridges, fences, power poles, an old rail line
+    - [x] Five roads and a 10 km railway loop graded into the terrain, drawn on the map
+    - [x] Freight train on a fixed timetable with five stops: you can climb on, walk around and ride it, it kills you on the track, and everyone sees riders locked to the wagons
+    - [x] Train sounds: engine, wheel roar, rail joints, two-tone horn, brake squeal, all with distance delay, occlusion and Doppler
+    - [x] Detailed track panels bent along the line; locomotive and flat wagon models
+    - [ ] Remaining wagons and the coach, spinning wheels, stations and platforms at the stops
 34. [ ] Detailed, fully furnished structures (Blender-built or CC0 downloads):
+    - [x] Cottage, two-storey house, ruin, shed and barn built in Blender with interiors, collision and loot spots; town, villages, farms and hamlets placed across the island
     - [ ] Fisherman's cottages (kitchen, table, beds, shelves, stove, clutter)
     - [ ] Farmhouse, barn, silo and sheds
     - [ ] Village: church, pub, shop and houses in different states of ruin
@@ -97,6 +110,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 41. [ ] Crafting UI: recipe book, queue, blueprints found in the world
 42. [ ] Cooking: campfire, drying rack, boiling water
 43. [ ] Animals: deer, boar, wolf, bear, chicken, rabbit, with AI, hunting and skinning (meat, hide, bone, fat)
+    - [ ] Rigged and animated models: red deer, wild boar, Jersey cow, wolf, fox, rabbit (in progress), then birds, fish and crabs
+    - [ ] Server-simulated herds and packs by biome, replication, hit detection, carcass harvesting
 44. [ ] Clothing crafted from hide and cloth, with warmth and protection
 45. [ ] Building: foundations, walls, doors, windows, roofs and stairs; twig, wood, stone and metal tiers; decay; locks
     - [x] Wood, stone and metal tiers (hammer upgrade with RMB, LMB repair, stone and metal shrug off bullets)
@@ -118,7 +133,10 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 ## Phase 6: Audio and UI polish
 
 52. [ ] Footsteps per surface, cloth rustle, sprint breathing, heartbeat when hurt
+    - [x] Footstep sound follows the ground layer you stand on
+    - [x] Positional sound realism: walls and hills muffle sounds, sounds behind you are duller, bullets crack and whiz past, ricochets, and other players hear your reloads, bolt work, swings and hits
 53. [ ] Ambience layers per biome and weather, music stingers
+    - [x] Birdsong, crickets and wind scale with the biome (loud woods, quiet windy moor)
 54. [ ] UI: inventory drag and drop, crafting menu, map markers, notes, tooltips, death screen
     - [x] Item icon atlas pipeline (baker stage `item_icons` from `assets/raw/icons/<item>.png`, text fallback); server browser password field and lock marker
     - [x] Death screen: how you died (or who killed you), where your things are, the real respawn key
@@ -140,4 +158,6 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [ ] Voice proximity chat
     - [x] Server admin tools: bans, whitelist, admins with chat commands, password, `zero_point_admin.cfg`
     - [x] Names belong to the first identity key that uses them (no more logging in as someone else); `forget <name>` frees one
+    - [x] Server and client clocks in double precision (the old clock stopped after about nine hours of uptime); commands carry an exact timestamp
+    - [x] Moving platforms in the shared movement code (the train), predicted with zero corrections
     - [ ] Remote console
