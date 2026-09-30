@@ -16,6 +16,7 @@ namespace zp
 		structures::movement_state_s state{};
 		structures::movement_state_s previous{};
 		structures::usercmd_s command{};
+		structures::tread_s tread{};
 		std::float_t yaw = 0.0f;
 		std::float_t pitch = 0.0f;
 		std::float_t roll = 0.0f;

@@ -135,6 +135,11 @@ namespace zp
 			client.record(command, usable, moving);
 		}
 
+		else
+		{
+			marks.tread(state, tread);
+		}
+
 		if (std::fabs(state.step) > move_step_smooth)
 		{
 			step_offset = std::clamp(step_offset - state.step, -move_step_height, move_step_height);
