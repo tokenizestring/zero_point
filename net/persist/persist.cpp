@@ -219,6 +219,25 @@ namespace zp
 			}
 		}
 
+		const auto lasting{ std::min(static_cast<std::uint32_t>(std::count_if(marks.ring.begin(), marks.ring.end(), [](const structures::mark_s& mark) { return mark.live && mark_definitions[mark.kind].life <= 0.0f; })), mark_save_limit) };
+
+		put_value(lasting);
+
+		for (auto step{ 0u }, kept{ 0u }; step < marks.ring.size() && kept < lasting; step++)
+		{
+			if (const auto& mark{ marks.ring[(marks.cursor + marks.ring.size() - 1u - step) % marks.ring.size()] }; mark.live && mark_definitions[mark.kind].life <= 0.0f)
+			{
+				put_value(mark.position);
+				put_value(marks.pack(mark.normal));
+				put_value(mark.kind);
+				put_value(mark.variant);
+				put_value(mark.spin);
+				put_value(mark.scale);
+
+				kept++;
+			}
+		}
+
 		const auto written{ functions::write_file(path().c_str(), buffer.data(), buffer.size()) };
 
 		logger.write("persist: world %s (%zu KB, %zu structures, %zu crops, %zu survivors)", written ? "saved" : "save failed", buffer.size() / 1024u, building.placed.size(), farming.crops.size(), records.size());
@@ -404,6 +423,25 @@ namespace zp
 				{
 					building.locks[door] = lock;
 				}
+			}
+
+			const auto lasting{ version >= world_save_marks ? std::min(get_value<std::uint32_t>(), mark_save_limit) : 0u };
+
+			std::vector<structures::mark_s> saved(lasting);
+
+			for (auto entry{ 0u }; entry < lasting && healthy; entry++)
+			{
+				saved[entry].position = get_value<structures::vec3_s>();
+				saved[entry].normal = marks.unpack(get_value<std::uint16_t>());
+				saved[entry].kind = get_value<std::uint8_t>();
+				saved[entry].variant = get_value<std::uint8_t>();
+				saved[entry].spin = get_value<std::uint8_t>();
+				saved[entry].scale = get_value<std::uint8_t>();
+			}
+
+			for (auto entry{ lasting }; entry > 0u && healthy; entry--)
+			{
+				marks.add(saved[entry - 1u].kind, saved[entry - 1u].variant, saved[entry - 1u].position, saved[entry - 1u].normal, saved[entry - 1u].spin, saved[entry - 1u].scale, 0.0, false);
 			}
 
 			building.dirty.clear();
