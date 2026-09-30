@@ -175,8 +175,8 @@ pixel_input vs_instanced(instanced_input input)
 	output.current_clip = output.position;
 	output.previous_clip = mul(float4(previous_position, 1.0), previous_view_projection);
 	output.world_position = world_position;
-	output.normal = normalize(foliage_rotate(input.normal, input.placement.w));
-	output.tangent = float4(normalize(foliage_rotate(input.tangent.xyz, input.placement.w)), input.tangent.w);
+	output.normal = normalize(foliage_rotate(input.normal, input.placement.w + foliage_turn(input.position, input.params)));
+	output.tangent = float4(normalize(foliage_rotate(input.tangent.xyz, input.placement.w + foliage_turn(input.position, input.params))), input.tangent.w);
 	output.uv = input.uv;
 	output.material = input.material;
 	output.fade = input.params.w;
