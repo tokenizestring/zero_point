@@ -1,0 +1,605 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "body"
+  }
+ ],
+ "materials": [
+  {
+   "name": "loco_black",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  },
+  {
+   "name": "rust_iron",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  },
+  {
+   "name": "chequer_plate",
+   "normalTexture": {
+    "index": 6
+   },
+   "occlusionTexture": {
+    "index": 7
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 8
+    },
+    "metallicRoughnessTexture": {
+     "index": 7
+    }
+   }
+  },
+  {
+   "name": "painted_wood_bauxite",
+   "normalTexture": {
+    "index": 9
+   },
+   "occlusionTexture": {
+    "index": 10
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 11
+    },
+    "metallicRoughnessTexture": {
+     "index": 10
+    }
+   }
+  },
+  {
+   "name": "floorboards",
+   "normalTexture": {
+    "index": 12
+   },
+   "occlusionTexture": {
+    "index": 13
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 14
+    },
+    "metallicRoughnessTexture": {
+     "index": 13
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "body",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    },
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11,
+     "material": 2
+    },
+    {
+     "attributes": {
+      "POSITION": 12,
+      "NORMAL": 13,
+      "TEXCOORD_0": 14
+     },
+     "indices": 15,
+     "material": 3
+    },
+    {
+     "attributes": {
+      "POSITION": 16,
+      "NORMAL": 17,
+      "TEXCOORD_0": 18
+     },
+     "indices": 19,
+     "material": 4
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  },
+  {
+   "sampler": 0,
+   "source": 6
+  },
+  {
+   "sampler": 0,
+   "source": 7
+  },
+  {
+   "sampler": 0,
+   "source": 8
+  },
+  {
+   "sampler": 0,
+   "source": 9
+  },
+  {
+   "sampler": 0,
+   "source": 10
+  },
+  {
+   "sampler": 0,
+   "source": 11
+  },
+  {
+   "sampler": 0,
+   "source": 12
+  },
+  {
+   "sampler": 0,
+   "source": 13
+  },
+  {
+   "sampler": 0,
+   "source": 14
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_normal.png",
+   "uri": "../_library/loco_black_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_orm.png",
+   "uri": "../_library/loco_black_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "loco_black_albedo.png",
+   "uri": "../_library/loco_black_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_normal.png",
+   "uri": "../_library/rust_iron_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_orm.png",
+   "uri": "../_library/rust_iron_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_albedo.png",
+   "uri": "../_library/rust_iron_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "chequer_plate_normal.png",
+   "uri": "../_library/chequer_plate_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "chequer_plate_orm.png",
+   "uri": "../_library/chequer_plate_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "chequer_plate_albedo.png",
+   "uri": "../_library/chequer_plate_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "painted_wood_bauxite_normal.png",
+   "uri": "../_library/painted_wood_bauxite_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "painted_wood_bauxite_orm.png",
+   "uri": "../_library/painted_wood_bauxite_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "painted_wood_bauxite_albedo.png",
+   "uri": "../_library/painted_wood_bauxite_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "floorboards_normal.png",
+   "uri": "../_library/floorboards_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "floorboards_orm.png",
+   "uri": "../_library/floorboards_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "floorboards_albedo.png",
+   "uri": "../_library/floorboards_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 956,
+   "max": [
+    1.3799999952316284,
+    3.630000114440918,
+    3.5
+   ],
+   "min": [
+    -1.3799999952316284,
+    0.13999998569488525,
+    -3.5
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 956,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 956,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 1644,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 128,
+   "max": [
+    1.0399999618530273,
+    1.0800000429153442,
+    3.3000001907348633
+   ],
+   "min": [
+    -1.0399999618530273,
+    0.6000000238418579,
+    -3.3000001907348633
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 128,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 128,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 192,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 8,
+   "max": [
+    0.5400000214576721,
+    1.2699999809265137,
+    3
+   ],
+   "min": [
+    -0.5400000214576721,
+    1.2699999809265137,
+    -3
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 8,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 8,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5123,
+   "count": 12,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 12,
+   "componentType": 5126,
+   "count": 264,
+   "max": [
+    1.3100000619888306,
+    3.5899999141693115,
+    2.0299999713897705
+   ],
+   "min": [
+    -1.3100000619888306,
+    1.2000000476837158,
+    -2.0299999713897705
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 13,
+   "componentType": 5126,
+   "count": 264,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 14,
+   "componentType": 5126,
+   "count": 264,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 15,
+   "componentType": 5123,
+   "count": 504,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 16,
+   "componentType": 5126,
+   "count": 20,
+   "max": [
+    1.25,
+    1.2699999809265137,
+    2.0299999713897705
+   ],
+   "min": [
+    -1.25,
+    1.2000000476837158,
+    -2.0299999713897705
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 17,
+   "componentType": 5126,
+   "count": 20,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 18,
+   "componentType": 5126,
+   "count": 20,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 19,
+   "componentType": 5123,
+   "count": 30,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 11472,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 11472,
+   "byteOffset": 11472,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 7648,
+   "byteOffset": 22944,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 3288,
+   "byteOffset": 30592,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1536,
+   "byteOffset": 33880,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1536,
+   "byteOffset": 35416,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1024,
+   "byteOffset": 36952,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 384,
+   "byteOffset": 37976,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 96,
+   "byteOffset": 38360,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 96,
+   "byteOffset": 38456,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 64,
+   "byteOffset": 38552,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 24,
+   "byteOffset": 38616,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 3168,
+   "byteOffset": 38640,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 3168,
+   "byteOffset": 41808,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2112,
+   "byteOffset": 44976,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1008,
+   "byteOffset": 47088,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 240,
+   "byteOffset": 48096,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 240,
+   "byteOffset": 48336,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 160,
+   "byteOffset": 48576,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 60,
+   "byteOffset": 48736,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 48796,
+   "uri": "train_wagon_box_far.bin"
+  }
+ ]
+}
