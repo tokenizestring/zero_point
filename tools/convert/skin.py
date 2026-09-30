@@ -1,35 +1,7 @@
-import math
 import numpy
-import bpy
 import anatomy
 import bodies
-
-
-def value_noise(points, scale, seed, octaves=3):
-    rng = numpy.random.default_rng(seed)
-    table = rng.random(4096).astype(numpy.float64)
-    total = numpy.zeros(len(points))
-    amplitude = 1.0
-    norm = 0.0
-    frequency = scale
-    for octave in range(octaves):
-        q = points * frequency + octave * 17.31
-        base = numpy.floor(q).astype(numpy.int64)
-        fraction = q - base
-        fraction = fraction * fraction * (3.0 - 2.0 * fraction)
-        result = numpy.zeros(len(points))
-        for dx in (0, 1):
-            for dy in (0, 1):
-                for dz in (0, 1):
-                    corner = base + numpy.array([dx, dy, dz])
-                    hashed = (corner[:, 0] * 73856093 ^ corner[:, 1] * 19349663 ^ corner[:, 2] * 83492791) & 4095
-                    weight = (fraction[:, 0] if dx else 1.0 - fraction[:, 0]) * (fraction[:, 1] if dy else 1.0 - fraction[:, 1]) * (fraction[:, 2] if dz else 1.0 - fraction[:, 2])
-                    result += weight * table[hashed]
-        total += result * amplitude
-        norm += amplitude
-        amplitude *= 0.5
-        frequency *= 2.0
-    return total / norm
+import texels
 
 
 def smoothstep(low, high, value):
@@ -92,30 +64,28 @@ def vein_field(shapes, points):
     return field
 
 
-def spots(points, scale, seed, threshold):
-    noise = value_noise(points, scale, seed, 1)
-    return smoothstep(threshold, threshold + (1.0 - threshold) * 0.35, noise)
-
-
-def tones(points, normals, setup, nails, palette, veins=None):
+def tones(points, normals, setup, nails, palette, veins=None, zones=None):
     skeleton = setup["skeleton"]
     joints = skeleton["joints"]
     axes = skeleton["axes"]
-    import texels
     count = len(points)
+    figure = setup["figure"]["scale"]
+    vary = palette.get("variation", 1.0)
+    broad = texels.noise(points, 6.5, 5, 2) - 0.5
     mottle = smoothstep(0.34, 0.66, texels.noise(points, 21.0, 3, 3)) - 0.5
     blotch = smoothstep(0.32, 0.68, texels.noise(points, 58.0, 7, 3)) - 0.5
     patch = smoothstep(0.3, 0.7, texels.noise(points, 170.0, 13, 2)) - 0.5
     speckle = texels.noise(points, 850.0, 11, 2) - 0.5
     color = numpy.tile(numpy.array(palette["base"], dtype=numpy.float64), (count, 1))
-    color = color * (1.0 + mottle[:, None] * numpy.array([0.1, 0.06, 0.0]))
-    color = color * (1.0 + blotch[:, None] * numpy.array([0.09, -0.04, -0.07]))
-    color = color * (1.0 + patch[:, None] * numpy.array([0.06, 0.035, 0.02]))
-    color = color * (1.0 + speckle[:, None] * 0.07)
+    color = color * (1.0 + broad[:, None] * numpy.array([0.1, 0.02, -0.06]) * vary)
+    color = color * (1.0 + mottle[:, None] * numpy.array([0.13, 0.085, 0.02]) * vary)
+    color = color * (1.0 + blotch[:, None] * numpy.array([0.12, -0.07, -0.11]) * vary)
+    color = color * (1.0 + patch[:, None] * numpy.array([0.07, 0.035, 0.015]) * vary)
+    color = color * (1.0 + speckle[:, None] * 0.08)
     near, far, identity = texels.cells(points, 620.0, 19)
     pore = smoothstep(0.24, 0.07, near) * (0.4 + 0.6 * identity)
-    color = color * (1.0 - pore[:, None] * numpy.array([0.035, 0.06, 0.065]))
-    roughness = numpy.full(count, palette["roughness"]) + mottle * 0.07 + patch * 0.05
+    color = color * (1.0 - pore[:, None] * numpy.array([0.04, 0.07, 0.075]))
+    roughness = numpy.full(count, palette["roughness"]) + mottle * 0.08 + patch * 0.07 + speckle * 0.05
     detail = numpy.ones(count)
     redness = numpy.zeros(count)
     lighten = numpy.zeros(count)
@@ -174,29 +144,39 @@ def tones(points, normals, setup, nails, palette, veins=None):
         heel = foot & (reach < -0.02)
         redness = numpy.maximum(redness, heel * 0.4)
         knee = joints["Bip01 %s Calf" % side]
-        knee_front = numpy.linalg.norm((points - (knee + numpy.array([0.0, -0.047, 0.012]))) / numpy.array([0.05, 0.035, 0.06]), axis=1)
-        redness = numpy.maximum(redness, smoothstep(1.0, 0.2, knee_front) * 0.4)
-        darken = numpy.maximum(darken, smoothstep(1.0, 0.3, knee_front) * 0.3)
+        knee_front = numpy.linalg.norm((points - (knee + numpy.array([0.0, -0.047, 0.012]) * figure)) / (numpy.array([0.055, 0.04, 0.07]) * figure), axis=1)
+        redness = numpy.maximum(redness, smoothstep(1.0, 0.2, knee_front) * 0.7)
+        darken = numpy.maximum(darken, smoothstep(1.0, 0.3, knee_front) * 0.45)
         elbow = joints["Bip01 %s Forearm" % side]
-        elbow_back = numpy.linalg.norm((points - (elbow + numpy.array([0.0, 0.038, 0.0]))) / numpy.array([0.035, 0.03, 0.035]), axis=1)
-        darken = numpy.maximum(darken, smoothstep(1.0, 0.2, elbow_back) * 0.35)
-        redness = numpy.maximum(redness, smoothstep(1.0, 0.2, elbow_back) * 0.35)
+        elbow_back = numpy.linalg.norm((points - (elbow + numpy.array([0.0, 0.038, 0.0]) * figure)) / (numpy.array([0.04, 0.034, 0.04]) * figure), axis=1)
+        darken = numpy.maximum(darken, smoothstep(1.0, 0.2, elbow_back) * 0.5)
+        redness = numpy.maximum(redness, smoothstep(1.0, 0.2, elbow_back) * 0.7)
     shoulders = smoothstep(joints["Bip01 Spine2"][2], joints["Bip01 Neck"][2] - 0.02, points[:, 2]) * smoothstep(0.2, 0.7, normals[:, 2] + 0.25 * normals[:, 1])
     underside = smoothstep(-0.25, -0.7, normals[:, 2]) * (points[:, 2] > 0.3)
     color = color * (1.0 - shoulders[:, None] * numpy.array([0.02, 0.06, 0.09]))
     color = color * (1.0 + underside[:, None] * numpy.array([0.03, 0.04, 0.04]))
     sunny = numpy.clip(shoulders + 0.35 * smoothstep(joints["Bip01 Spine1"][2], joints["Bip01 Neck"][2], points[:, 2]), 0.0, 1.0)
+    if zones is not None:
+        sunny = numpy.clip(sunny + 0.5 * zones["forearm"] + 0.3 * zones["upper_arm"] + 0.2 * zones["shin"], 0.0, 1.0)
+    flush = smoothstep(0.5, 1.0, sunny) * smoothstep(0.35, 0.7, texels.noise(points, 14.0, 25, 2))
+    color = color * (1.0 + flush[:, None] * numpy.array([0.05, -0.04, -0.05]))
     near, far, identity = texels.cells(points, 240.0, 21)
     size = 0.14 + 0.2 * numpy.modf(identity * 977.0)[0]
     freckles = smoothstep(size, size * 0.5, near) * (identity < sunny * 0.5 * palette.get("freckles", 0.0)) * (0.4 + 0.6 * numpy.modf(identity * 3571.0)[0])
+    near, far, identity = texels.cells(points, 95.0, 23)
+    size = 0.07 + 0.11 * numpy.modf(identity * 1291.0)[0]
+    spots = smoothstep(size, size * 0.45, near) * (identity < (0.05 + 0.28 * sunny) * palette.get("freckles", 0.0)) * (0.45 + 0.55 * numpy.modf(identity * 2713.0)[0]) * (1.0 - hands * 0.6)
     near, far, identity = texels.cells(points, 27.0, 29)
-    size = 0.02 + 0.04 * numpy.modf(identity * 977.0)[0]
-    moles = smoothstep(size, size * 0.6, near) * (identity < 0.03 * palette.get("moles", 0.0)) * (1.0 - hands)
-    color = color * (1.0 - freckles[:, None] * numpy.array([0.12, 0.2, 0.26]))
+    size = 0.024 + 0.05 * numpy.modf(identity * 977.0)[0]
+    moles = smoothstep(size, size * 0.6, near) * (identity < 0.04 * palette.get("moles", 0.0)) * (1.0 - hands)
+    color = color * (1.0 - freckles[:, None] * numpy.array([0.15, 0.24, 0.3]))
+    color = color * (1.0 - spots[:, None] * numpy.array([0.15, 0.24, 0.3]))
     color = color * (1.0 - moles[:, None] * numpy.array([0.5, 0.62, 0.68]))
-    color = color + (numpy.array(palette["red"]) - color) * redness[:, None] * 0.4
+    redness = numpy.clip(redness * (0.72 + 0.56 * texels.noise(points, 75.0, 27, 2)), 0.0, 1.0)
+    color = color + (numpy.array(palette["red"]) - color) * redness[:, None] * 0.35
+    color = color * (1.0 + redness[:, None] * numpy.array([0.04, -0.13, -0.1]))
     color = color + (numpy.array(palette["palm"]) - color) * lighten[:, None] * 0.6
-    color = color * (1.0 - darken[:, None] * 0.16)
+    color = color * (1.0 - darken[:, None] * 0.2)
     vein = numpy.zeros(count) if veins is None else veins
     color = color * (1.0 - vein[:, None] * numpy.array([0.06, 0.03, -0.01]) * palette.get("veins", 1.0))
     nail_weight, nail_along, nail_lateral = nails
@@ -218,42 +198,25 @@ def tones(points, normals, setup, nails, palette, veins=None):
     return numpy.clip(color, 0.0, 1.0), numpy.clip(roughness, 0.05, 1.0), numpy.clip(detail, 0.0, 1.0), nail_weight
 
 
-def body_hair(points, setup, amount):
-    joints = setup["skeleton"]["joints"]
-    hair = numpy.zeros(len(points))
-    if amount <= 0.0:
-        return hair
-    for side in ("L", "R"):
-        elbow = joints["Bip01 %s Forearm" % side]
-        wrist = joints["Bip01 %s Hand" % side]
-        distance, t, closest = segment_distance(points, elbow, wrist)
-        hair = numpy.maximum(hair, (distance < 0.06) * smoothstep(0.0, 0.25, t) * smoothstep(1.02, 0.85, t) * 0.85)
-        knee = joints["Bip01 %s Calf" % side]
-        ankle = joints["Bip01 %s Foot" % side]
-        distance, t, closest = segment_distance(points, knee, ankle)
-        hair = numpy.maximum(hair, (distance < 0.08) * smoothstep(0.05, 0.3, t) * smoothstep(0.98, 0.8, t) * 0.9)
-        hip = joints["Bip01 %s Thigh" % side]
-        distance, t, closest = segment_distance(points, hip, knee)
-        hair = numpy.maximum(hair, (distance < 0.11) * smoothstep(0.1, 0.5, t) * 0.4)
-        shoulder = joints["Bip01 %s UpperArm" % side]
-        distance, t, closest = segment_distance(points, shoulder, elbow)
-        hair = numpy.maximum(hair, (distance < 0.07) * smoothstep(0.5, 1.0, t) * 0.3)
-    chest = numpy.linalg.norm((points - numpy.array([0.0, -0.11, joints["Bip01 Spine2"][2] + 0.02])) / numpy.array([0.05, 0.06, 0.07]), axis=1)
-    hair = numpy.maximum(hair, smoothstep(1.0, 0.2, chest) * 0.45)
-    trail = numpy.linalg.norm((points - numpy.array([0.0, -0.1, joints["Bip01 Spine"][2] - 0.05])) / numpy.array([0.018, 0.05, 0.09]), axis=1)
-    hair = numpy.maximum(hair, smoothstep(1.0, 0.2, trail) * 0.5)
-    return hair * amount
-
-
-def micro_height(points, detail, hair):
-    import texels
-    a, b, identity = texels.cells(points, 420.0, 9)
-    creases = -numpy.exp(-((b - a) / 0.09) ** 2) * 0.000009
-    a2, b2, identity2 = texels.cells(points, 160.0, 13)
-    folds = -numpy.exp(-((b2 - a2) / 0.05) ** 2) * 0.000006
-    uneven = (texels.noise(points, 90.0, 17, 3) - 0.5) * 0.00007
-    broad = (texels.noise(points, 36.0, 15, 2) - 0.5) * 0.00024
-    return (creases + folds + uneven + broad) * detail
+def micro_height(points, detail, hair, fold=None, direction=None, pitch=None, texel=0.00045):
+    coarse = max(1.0, texel / 0.00045)
+    a, b, identity = texels.cells(points, 300.0 / coarse, 9)
+    creases = -numpy.exp(-((b - a) / 0.17) ** 2) * 0.00004 * coarse
+    a2, b2, identity2 = texels.cells(points, 120.0 / coarse, 13)
+    folds = -numpy.exp(-((b2 - a2) / 0.09) ** 2) * 0.00004 * coarse
+    a3, b3, identity3 = texels.cells(points, 520.0 / coarse, 15)
+    pits = -smoothstep(0.3, 0.08, a3) * (0.3 + 0.7 * identity3) * 0.000026 * coarse
+    uneven = (texels.noise(points, 90.0, 17, 3) - 0.5) * 0.00014
+    broad = (texels.noise(points, 36.0, 15, 2) - 0.5) * 0.00034
+    total = creases + folds + pits + uneven + broad
+    if fold is not None and direction is not None:
+        spacing = numpy.maximum(numpy.full(len(points), 0.0027) if pitch is None else pitch.astype(numpy.float64), 3.2 * texel)
+        along = numpy.sum(points * direction.astype(numpy.float64), axis=1)
+        warp = texels.noise(points, 55.0, 19, 2) * 9.0
+        lines = (0.5 + 0.5 * numpy.sin(along / spacing * 2.0 * numpy.pi + warp)) ** 4
+        broken = 0.35 + 0.65 * texels.noise(points, 240.0, 21, 2)
+        total = total - lines * broken * fold.astype(numpy.float64) * spacing * 0.03
+    return total * detail
 
 
 def ellipsoid_mask(points, center, radii, power=1.0):
@@ -261,12 +224,13 @@ def ellipsoid_mask(points, center, radii, power=1.0):
     return numpy.exp(-numpy.sum(q * q, axis=1) * power)
 
 
-def regions(points, normals, setup):
-    import texels
+def regions(points, normals, setup, shapes=None):
     joints = setup["skeleton"]["joints"]
     s = setup["figure"]["scale"]
     result = {}
     count = len(points)
+    fold = numpy.zeros(count)
+    veined = numpy.zeros(count)
     forearm = numpy.zeros(count)
     shin = numpy.zeros(count)
     thigh = numpy.zeros(count)
@@ -275,6 +239,7 @@ def regions(points, normals, setup):
     elbow = numpy.zeros(count)
     armpit = numpy.zeros(count)
     fuzz = numpy.zeros(count)
+    pitch = numpy.full(count, 0.0027 * s)
     direction = numpy.tile(numpy.array([0.0, 0.0, -1.0]), (count, 1))
     for side, flip in (("L", 1.0), ("R", -1.0)):
         shoulder = joints["Bip01 %s UpperArm" % side]
@@ -290,6 +255,22 @@ def regions(points, normals, setup):
         sleeve = (numpy.linalg.norm(points - wrist, axis=1) < 0.075 * s) * smoothstep(1.3, 1.02, reach) * smoothstep(0.95, 1.0, reach) * 0.45
         fuzz = numpy.maximum(fuzz, numpy.maximum(near, sleeve) * dorsal)
         direction[(sleeve > 0.0) & (near <= 0.0)] = anatomy.unit(wrist - bend)
+        away = numpy.linalg.norm(points - wrist, axis=1)
+        fold = numpy.maximum(fold, smoothstep(0.034 * s, 0.014 * s, away) * 0.8)
+        reachable = numpy.flatnonzero(away < 0.24 * s)
+        if len(reachable):
+            digits = setup["skeleton"].get("finger_scale", 1.0)
+            for index in range(5):
+                names, chain = finger_chain(setup["skeleton"], index, side)
+                for segment in range(0 if index > 0 else 1, 3):
+                    crease = smoothstep(0.0125 * digits, 0.0045 * digits, numpy.linalg.norm(points[reachable] - chain[segment], axis=1))
+                    stronger = crease > fold[reachable]
+                    target = reachable[stronger]
+                    fold[target] = crease[stronger]
+                    direction[target] = anatomy.unit(chain[segment + 1] - chain[segment])
+                    pitch[target] = 0.0017 * digits
+        veined = numpy.maximum(veined, smoothstep(0.125 * s, 0.085 * s, away) * smoothstep(0.85, 1.05, reach) * dorsal)
+        veined = numpy.maximum(veined, near * smoothstep(0.1, 0.6, normals @ palmar) * smoothstep(0.35, 0.8, t) * 0.8)
         distance, t, closest = segment_distance(points, shoulder, bend)
         near = (distance < 0.075 * s) * smoothstep(0.35, 0.8, t)
         upper_arm = numpy.maximum(upper_arm, near)
@@ -305,6 +286,8 @@ def regions(points, normals, setup):
         knee = numpy.maximum(knee, ellipsoid_mask(points, bend + numpy.array([0.0, -0.047, 0.012]) * s, numpy.array([0.045, 0.035, 0.055]) * s))
         pit = shoulder + numpy.array([-0.038 * flip, 0.002, -0.082]) * s
         armpit = numpy.maximum(armpit, ellipsoid_mask(points, pit, numpy.array([0.03, 0.045, 0.04]) * s))
+        fold = numpy.maximum(fold, ellipsoid_mask(points, bend + numpy.array([0.0, 0.04, 0.0]) * s, numpy.array([0.04, 0.03, 0.05]) * s) * 0.7)
+        veined = numpy.maximum(veined, (points[:, 2] < ankle[2] + 0.01 * s) * (numpy.abs(points[:, 0] - ankle[0]) < 0.09 * s) * smoothstep(0.2, 0.7, normals[:, 2]) * 0.9)
     pelvis = joints["Bip01 Pelvis"]
     spine = joints["Bip01 Spine"]
     chest_joint = joints["Bip01 Spine2"]
@@ -318,10 +301,14 @@ def regions(points, normals, setup):
     pubic = numpy.clip(pubic * (0.45 + 1.1 * texels.noise(points, 130.0, 77, 2)), 0.0, 1.0)
     trail = smoothstep(0.016 * s, 0.006 * s, numpy.abs(points[:, 0])) * smoothstep(top - 0.01 * s, top + 0.02 * s, points[:, 2]) * smoothstep(spine[2] + 0.085 * s, spine[2] + 0.04 * s, points[:, 2]) * front
     chest = ellipsoid_mask(points, chest_joint + numpy.array([0.0, -0.1, 0.035]) * s, numpy.array([0.1, 0.09, 0.075]) * s) * front
-    result.update({"forearm": forearm, "forearm_hair": fuzz, "shin": shin, "thigh": thigh, "upper_arm": upper_arm, "knee": knee, "elbow": elbow, "armpit": armpit, "pubic": pubic, "trail": trail, "chest": chest, "direction": direction})
+    result.update({"forearm": forearm, "forearm_hair": fuzz, "shin": shin, "thigh": thigh, "upper_arm": upper_arm, "knee": knee, "elbow": elbow, "armpit": armpit, "pubic": pubic, "trail": trail, "chest": chest, "direction": direction, "pitch": pitch})
     result["exposure"] = numpy.clip(normals[:, 2] * 0.85 + 0.15, 0.0, 1.0) * smoothstep(joints["Bip01 Spine1"][2], joints["Bip01 Spine2"][2] + 0.05 * s, points[:, 2])
     result["shorts"] = smoothstep(pelvis[2] - 0.2 * s, pelvis[2] - 0.14 * s, points[:, 2]) * smoothstep(pelvis[2] + 0.1 * s, pelvis[2] + 0.06 * s, points[:, 2])
     landmarks = setup["figure"].get("landmarks", {})
+    result["top"] = numpy.zeros(count)
+    if setup["name"] == "female" and "nipple_l" in landmarks:
+        level = landmarks["nipple_l"][2]
+        result["top"] = smoothstep(level - 0.1 * s, level - 0.06 * s, points[:, 2]) * smoothstep(level + 0.08 * s, level + 0.04 * s, points[:, 2]) * smoothstep(0.2 * s, 0.17 * s, numpy.abs(points[:, 0]))
     areola = numpy.zeros(count)
     tip = numpy.zeros(count)
     spec = setup["figure"].get("nipples")
@@ -334,6 +321,21 @@ def regions(points, normals, setup):
                 tip = numpy.maximum(tip, smoothstep(spec["tip"] * 1.9, spec["tip"] * 0.9, distance))
     result["areola"] = areola
     result["nipple"] = tip
+    neck = joints["Bip01 Neck"]
+    collar = smoothstep(0.075 * s, 0.03 * s, numpy.linalg.norm(points - (neck + numpy.array([0.0, -0.02, 0.025]) * s), axis=1)) * smoothstep(0.3, -0.4, normals[:, 1])
+    result["fold"] = numpy.clip(numpy.maximum(numpy.maximum(fold, numpy.maximum(elbow, knee) * 0.9), collar * 0.5), 0.0, 1.0)
+    result["veined"] = numpy.clip(veined, 0.0, 1.0)
+    intimate = numpy.zeros(count)
+    if shapes is not None and "groin" in landmarks:
+        center, radii = landmarks["groin"]
+        near = numpy.flatnonzero(numpy.linalg.norm((points - center) / (numpy.asarray(radii) * 1.7), axis=1) < 1.0)
+        if len(near):
+            if "shaft" in setup["figure"]["groin"]:
+                intimate[near] = smoothstep(0.0015, 0.007, bodies.protrusion(shapes, points[near]))
+            else:
+                intimate[near] = smoothstep(1.0, 0.35, numpy.linalg.norm((points[near] - center) / (numpy.asarray(radii) * numpy.array([0.6, 1.0, 1.0])), axis=1))
+    result["intimate"] = intimate
+    result["pubic"] = result["pubic"] * (1.0 - intimate if "shaft" in setup["figure"].get("groin", {}) else 1.0)
     return result
 
 
@@ -362,15 +364,17 @@ hair_layers = {
 
 
 def weathering(points, normals, setup, color, roughness, ambient, zones, palette=None):
-    import texels
     name = setup["name"]
     joints = setup["skeleton"]["joints"]
     s = setup["figure"]["scale"]
     spec = marks[name]
     palette = palette or {}
     exposure = zones["exposure"]
-    color = color * (1.0 - exposure[:, None] * numpy.array([0.06, 0.11, 0.14]))
-    color = color * (1.0 + zones["shorts"][:, None] * numpy.array([0.035, 0.05, 0.06]))
+    sun = palette.get("sun", 1.0)
+    ragged = (texels.noise(points, 38.0, 45, 2) - 0.5) * 0.5
+    color = color * (1.0 - exposure[:, None] * numpy.array([0.06, 0.095, 0.115]) * sun)
+    pale = numpy.clip(numpy.maximum(zones["shorts"], zones.get("top", 0.0)) * (1.0 + ragged), 0.0, 1.0)
+    color = color * (1.0 + pale[:, None] * numpy.array([0.055, 0.08, 0.095]) * sun)
     sheltered = smoothstep(0.25, -0.35, normals[:, 2]) * numpy.maximum(zones["forearm"], zones["upper_arm"])
     below = smoothstep(joints["Bip01 Pelvis"][2] - 0.085 * s, joints["Bip01 Pelvis"][2] - 0.14 * s, points[:, 2])
     sheltered = numpy.maximum(sheltered, zones["thigh"] * below * smoothstep(0.075 * s, 0.02 * s, numpy.abs(points[:, 0]) - 0.02 * s) * 0.8)
@@ -378,12 +382,14 @@ def weathering(points, normals, setup, color, roughness, ambient, zones, palette
     warped = points + (numpy.stack([texels.noise(points, 35.0, 41 + k, 2) for k in range(3)], axis=1) - 0.5) * 0.02
     near, far, identity = texels.cells(warped, 46.0, 37)
     network = smoothstep(0.1, 0.02, far - near) * (0.35 + 0.65 * texels.noise(points, 30.0, 43, 2))
-    veined = numpy.clip(sheltered * 1.2, 0.0, 1.0) * palette.get("veins", 1.0)
-    color = color * (1.0 - (network * veined)[:, None] * numpy.array([0.085, 0.04, 0.0]))
+    veined = numpy.clip(numpy.maximum(sheltered * 1.2, zones.get("veined", 0.0)), 0.0, 1.0) * palette.get("veins", 1.0)
+    color = color * (1.0 - (network * veined)[:, None] * numpy.array([0.17, 0.08, 0.0]))
     inner = smoothstep(0.35, 0.9, 1.0 - ambient)
     dirt = numpy.array([0.5, 0.42, 0.34])
     grime = inner * (0.35 + 0.65 * texels.noise(points, 140.0, 61, 3))
-    color = color * (1.0 - grime[:, None] * (1.0 - dirt) * 0.5)
+    color = color * (1.0 - grime[:, None] * (1.0 - dirt) * 0.3)
+    outdoors = numpy.clip(zones["forearm"] * 0.85 + zones["upper_arm"] * 0.4 + zones["shin"] * 0.5 + zones["thigh"] * (1.0 - zones["shorts"]) * 0.3, 0.0, 1.0) * (0.6 + 0.4 * texels.noise(points, 12.0, 63, 2)) * smoothstep(-0.75, -0.1, normals[:, 2])
+    color = color * (1.0 - outdoors[:, None] * numpy.array([0.055, 0.09, 0.11]) * sun)
     ground = smoothstep(0.16 * s, 0.02 * s, points[:, 2])
     limbs = numpy.maximum(zones["shin"] * 0.45, numpy.maximum(zones["knee"] * 0.7, numpy.maximum(zones["elbow"] * 0.6, zones["forearm"] * 0.3)))
     cloud = smoothstep(0.42, 0.72, texels.noise(points, 26.0, 67, 3)) * (0.55 + 0.45 * texels.noise(points, 300.0, 69, 2))
@@ -411,189 +417,10 @@ def pigment(color, roughness, zones, palette):
     shade = numpy.clip(zones["pubic"] * 0.7 + zones["armpit"] * 0.8, 0.0, 1.0)
     color = color * (1.0 + (fold[None, :] - 1.0) * shade[:, None])
     roughness = roughness + 0.04 * zones["areola"]
+    intimate = zones.get("intimate")
+    if intimate is not None:
+        color = color * (1.0 + (numpy.array([0.9, 0.78, 0.76])[None, :] - 1.0) * intimate[:, None])
+        roughness = roughness + 0.03 * intimate
     return color, roughness
 
 
-def attach(obj, color, roughness, detail, nail, hair=None):
-    mesh = obj.data
-    layer = mesh.color_attributes.new("tone", 'FLOAT_COLOR', 'POINT')
-    values = numpy.ones((len(color), 4), dtype=numpy.float32)
-    values[:, :3] = color
-    layer.data.foreach_set("color", values.ravel())
-    hair = numpy.zeros(len(color)) if hair is None else hair
-    for name, data in (("gloss", roughness), ("detail", detail), ("nail", nail), ("hair", hair)):
-        attribute = mesh.attributes.new(name, 'FLOAT', 'POINT')
-        attribute.data.foreach_set("value", data.astype(numpy.float32))
-
-
-def link(tree, a, b):
-    tree.links.new(a, b)
-
-
-def node_math(tree, operation, a, b=None):
-    node = tree.nodes.new('ShaderNodeMath')
-    node.operation = operation
-    for index, value in enumerate((a, b)):
-        if value is None:
-            continue
-        if isinstance(value, (int, float)):
-            node.inputs[index].default_value = value
-        else:
-            tree.links.new(value, node.inputs[index])
-    return node.outputs[0]
-
-
-def pores(tree, coordinates, scale, jitter=1.0):
-    mapping = tree.nodes.new('ShaderNodeMapping')
-    mapping.inputs['Scale'].default_value = (scale, scale, scale)
-    tree.links.new(coordinates, mapping.inputs['Vector'])
-    cells = tree.nodes.new('ShaderNodeTexVoronoi')
-    cells.feature = 'F1'
-    cells.inputs['Randomness'].default_value = jitter
-    tree.links.new(mapping.outputs['Vector'], cells.inputs['Vector'])
-    ramp = tree.nodes.new('ShaderNodeMapRange')
-    ramp.inputs['From Min'].default_value = 0.0
-    ramp.inputs['From Max'].default_value = 0.35
-    ramp.inputs['To Min'].default_value = -1.0
-    ramp.inputs['To Max'].default_value = 0.0
-    ramp.interpolation_type = 'SMOOTHSTEP'
-    tree.links.new(cells.outputs['Distance'], ramp.inputs['Value'])
-    return ramp.outputs['Result']
-
-
-def channel_of(tree, color, which):
-    split = tree.nodes.new('ShaderNodeSeparateColor')
-    tree.links.new(color, split.inputs['Color'])
-    return split.outputs[which]
-
-
-def stretched(tree, coordinates, scale, rotation):
-    mapping = tree.nodes.new('ShaderNodeMapping')
-    mapping.inputs['Rotation'].default_value = rotation
-    mapping.inputs['Scale'].default_value = scale
-    tree.links.new(coordinates, mapping.inputs['Vector'])
-    noise = tree.nodes.new('ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 1.0
-    noise.inputs['Detail'].default_value = 3.0
-    noise.inputs['Roughness'].default_value = 0.55
-    tree.links.new(mapping.outputs['Vector'], noise.inputs['Vector'])
-    return noise.outputs['Fac']
-
-
-def creases(tree, coordinates, scale, width, rotation=(0.0, 0.0, 0.0)):
-    mapping = tree.nodes.new('ShaderNodeMapping')
-    mapping.inputs['Rotation'].default_value = rotation
-    mapping.inputs['Scale'].default_value = (scale, scale, scale)
-    tree.links.new(coordinates, mapping.inputs['Vector'])
-    warp = tree.nodes.new('ShaderNodeTexNoise')
-    warp.inputs['Scale'].default_value = 0.8
-    warp.inputs['Detail'].default_value = 2.0
-    tree.links.new(mapping.outputs['Vector'], warp.inputs['Vector'])
-    offset = tree.nodes.new('ShaderNodeVectorMath')
-    offset.operation = 'MULTIPLY_ADD'
-    tree.links.new(warp.outputs['Color'], offset.inputs[0])
-    offset.inputs[1].default_value = (0.45, 0.45, 0.45)
-    tree.links.new(mapping.outputs['Vector'], offset.inputs[2])
-    cells = tree.nodes.new('ShaderNodeTexVoronoi')
-    cells.feature = 'DISTANCE_TO_EDGE'
-    tree.links.new(offset.outputs['Vector'], cells.inputs['Vector'])
-    ramp = tree.nodes.new('ShaderNodeMapRange')
-    ramp.inputs['From Min'].default_value = 0.0
-    ramp.inputs['From Max'].default_value = width
-    ramp.inputs['To Min'].default_value = -1.0
-    ramp.inputs['To Max'].default_value = 0.0
-    ramp.interpolation_type = 'SMOOTHSTEP'
-    tree.links.new(cells.outputs['Distance'], ramp.inputs['Value'])
-    return ramp.outputs['Result']
-
-
-def skin_material(name, head_color=None, head_normal=None, head_specular=None):
-    material = bpy.data.materials.new(name)
-    material.use_nodes = True
-    tree = material.node_tree
-    shader = next(n for n in tree.nodes if n.type == 'BSDF_PRINCIPLED')
-    coordinates = tree.nodes.new('ShaderNodeTexCoord').outputs['Object']
-    tone = tree.nodes.new('ShaderNodeAttribute')
-    tone.attribute_name = "tone"
-    gloss = tree.nodes.new('ShaderNodeAttribute')
-    gloss.attribute_name = "gloss"
-    detail = tree.nodes.new('ShaderNodeAttribute')
-    detail.attribute_name = "detail"
-    hair = tree.nodes.new('ShaderNodeAttribute')
-    hair.attribute_name = "hair"
-    color = tone.outputs['Color']
-    roughness_base = gloss.outputs['Fac']
-    blend = None
-    if head_color is not None:
-        texture = tree.nodes.new('ShaderNodeTexImage')
-        texture.image = head_color
-        blend = tree.nodes.new('ShaderNodeAttribute').outputs['Fac']
-        blend.node.attribute_name = "headblend"
-        mixer = tree.nodes.new('ShaderNodeMix')
-        mixer.data_type = 'RGBA'
-        tree.links.new(blend, mixer.inputs[0])
-        tree.links.new(color, mixer.inputs[6])
-        tree.links.new(texture.outputs['Color'], mixer.inputs[7])
-        color = mixer.outputs[2]
-        if head_specular is not None:
-            specular = tree.nodes.new('ShaderNodeTexImage')
-            specular.image = head_specular
-            strength = node_math(tree, 'MULTIPLY', node_math(tree, 'ADD', node_math(tree, 'ADD', channel_of(tree, specular.outputs['Color'], 'Red'), channel_of(tree, specular.outputs['Color'], 'Green')), channel_of(tree, specular.outputs['Color'], 'Blue')), 1.0 / 3.0)
-            derived = node_math(tree, 'MINIMUM', node_math(tree, 'MAXIMUM', node_math(tree, 'SUBTRACT', 0.9, node_math(tree, 'MULTIPLY', strength, 0.75)), 0.34), 0.92)
-            roughness_base = node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', roughness_base, node_math(tree, 'SUBTRACT', 1.0, blend)), node_math(tree, 'MULTIPLY', derived, blend))
-    network = creases(tree, coordinates, 520.0, 0.09)
-    network_fine = creases(tree, coordinates, 1150.0, 0.1, (0.6, 0.3, 0.9))
-    dots = pores(tree, coordinates, 1500.0)
-    uneven = tree.nodes.new('ShaderNodeTexNoise')
-    uneven.inputs['Scale'].default_value = 90.0
-    uneven.inputs['Detail'].default_value = 4.0
-    tree.links.new(coordinates, uneven.inputs['Vector'])
-    follicles = pores(tree, coordinates, 700.0, 1.0)
-    speck = tree.nodes.new('ShaderNodeTexNoise')
-    speck.inputs['Scale'].default_value = 650.0
-    speck.inputs['Detail'].default_value = 2.0
-    tree.links.new(coordinates, speck.inputs['Vector'])
-    fac = detail.outputs['Fac']
-    if blend is not None:
-        fac = node_math(tree, 'MULTIPLY', fac, node_math(tree, 'SUBTRACT', 1.0, node_math(tree, 'MULTIPLY', blend, 0.7)))
-    micro = node_math(tree, 'ADD', node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', network, 0.05), node_math(tree, 'MULTIPLY', network_fine, 0.025)), node_math(tree, 'MULTIPLY', dots, 0.035))
-    shade = node_math(tree, 'MULTIPLY', micro, fac)
-    follicle_mask = node_math(tree, 'MULTIPLY', node_math(tree, 'SUBTRACT', 0.0, follicles), hair.outputs['Fac'])
-    brightness = node_math(tree, 'ADD', 1.0, node_math(tree, 'ADD', shade, node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', node_math(tree, 'SUBTRACT', speck.outputs['Fac'], 0.5), 0.07), node_math(tree, 'MULTIPLY', follicle_mask, -0.25))))
-    tint = tree.nodes.new('ShaderNodeMix')
-    tint.data_type = 'RGBA'
-    tint.blend_type = 'MULTIPLY'
-    tint.inputs[0].default_value = 1.0
-    tree.links.new(color, tint.inputs[6])
-    combine = tree.nodes.new('ShaderNodeCombineColor')
-    tree.links.new(brightness, combine.inputs[0])
-    tree.links.new(node_math(tree, 'ADD', brightness, node_math(tree, 'MULTIPLY', shade, 0.35)), combine.inputs[1])
-    tree.links.new(node_math(tree, 'ADD', brightness, node_math(tree, 'MULTIPLY', shade, 0.5)), combine.inputs[2])
-    tree.links.new(combine.outputs['Color'], tint.inputs[7])
-    tree.links.new(tint.outputs[2], shader.inputs['Base Color'])
-    rough = node_math(tree, 'ADD', roughness_base, node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', node_math(tree, 'SUBTRACT', 0.0, network), 0.06), node_math(tree, 'MULTIPLY', node_math(tree, 'SUBTRACT', uneven.outputs['Fac'], 0.5), 0.08)))
-    tree.links.new(rough, shader.inputs['Roughness'])
-    shader.inputs['Metallic'].default_value = 0.0
-    height = node_math(tree, 'ADD', node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', network, 0.000035), node_math(tree, 'MULTIPLY', network_fine, 0.00001)), node_math(tree, 'ADD', node_math(tree, 'MULTIPLY', dots, 0.000012), node_math(tree, 'MULTIPLY', uneven.outputs['Fac'], 0.00012)))
-    height = node_math(tree, 'MULTIPLY', height, fac)
-    bump = tree.nodes.new('ShaderNodeBump')
-    bump.inputs['Strength'].default_value = 1.0
-    bump.inputs['Distance'].default_value = 1.0
-    tree.links.new(height, bump.inputs['Height'])
-    if head_normal is not None:
-        normal_texture = tree.nodes.new('ShaderNodeTexImage')
-        normal_texture.image = head_normal
-        split = tree.nodes.new('ShaderNodeSeparateColor')
-        tree.links.new(normal_texture.outputs['Color'], split.inputs['Color'])
-        join = tree.nodes.new('ShaderNodeCombineColor')
-        tree.links.new(split.outputs['Red'], join.inputs['Red'])
-        tree.links.new(node_math(tree, 'SUBTRACT', 1.0, split.outputs['Green']), join.inputs['Green'])
-        tree.links.new(split.outputs['Blue'], join.inputs['Blue'])
-        mapper = tree.nodes.new('ShaderNodeNormalMap')
-        mapper.inputs['Strength'].default_value = 1.0
-        if blend is not None:
-            tree.links.new(blend, mapper.inputs['Strength'])
-        tree.links.new(join.outputs['Color'], mapper.inputs['Color'])
-        tree.links.new(mapper.outputs['Normal'], bump.inputs['Normal'])
-    tree.links.new(bump.outputs['Normal'], shader.inputs['Normal'])
-    return material
