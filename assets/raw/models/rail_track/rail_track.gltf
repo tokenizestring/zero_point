@@ -1,0 +1,601 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "bed"
+  },
+  {
+   "mesh": 1,
+   "name": "sleepers"
+  },
+  {
+   "mesh": 2,
+   "name": "rails"
+  },
+  {
+   "mesh": 3,
+   "name": "fastenings"
+  },
+  {
+   "mesh": 4,
+   "name": "stones"
+  }
+ ],
+ "materials": [
+  {
+   "name": "ballast_stone",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  },
+  {
+   "name": "sleeper_timber",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  },
+  {
+   "name": "rail_steel",
+   "normalTexture": {
+    "index": 6
+   },
+   "occlusionTexture": {
+    "index": 7
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 8
+    },
+    "metallicRoughnessTexture": {
+     "index": 7
+    }
+   }
+  },
+  {
+   "name": "rust_iron",
+   "normalTexture": {
+    "index": 9
+   },
+   "occlusionTexture": {
+    "index": 10
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 11
+    },
+    "metallicRoughnessTexture": {
+     "index": 10
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "bed",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "sleepers",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  },
+  {
+   "name": "rails",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11,
+     "material": 2
+    }
+   ]
+  },
+  {
+   "name": "fastenings",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 12,
+      "NORMAL": 13,
+      "TEXCOORD_0": 14
+     },
+     "indices": 15,
+     "material": 3
+    }
+   ]
+  },
+  {
+   "name": "stones",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 16,
+      "NORMAL": 17,
+      "TEXCOORD_0": 18
+     },
+     "indices": 19,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  },
+  {
+   "sampler": 0,
+   "source": 6
+  },
+  {
+   "sampler": 0,
+   "source": 7
+  },
+  {
+   "sampler": 0,
+   "source": 8
+  },
+  {
+   "sampler": 0,
+   "source": 9
+  },
+  {
+   "sampler": 0,
+   "source": 10
+  },
+  {
+   "sampler": 0,
+   "source": 11
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "ballast_stone_normal.png",
+   "uri": "../_library/ballast_stone_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "ballast_stone_orm.png",
+   "uri": "../_library/ballast_stone_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "ballast_stone_albedo.png",
+   "uri": "../_library/ballast_stone_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "sleeper_timber_normal.png",
+   "uri": "../_library/sleeper_timber_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "sleeper_timber_orm.png",
+   "uri": "../_library/sleeper_timber_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "sleeper_timber_albedo.png",
+   "uri": "../_library/sleeper_timber_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_normal.png",
+   "uri": "../_library/rail_steel_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_orm.png",
+   "uri": "../_library/rail_steel_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rail_steel_albedo.png",
+   "uri": "../_library/rail_steel_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_normal.png",
+   "uri": "../_library/rust_iron_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_orm.png",
+   "uri": "../_library/rust_iron_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "rust_iron_albedo.png",
+   "uri": "../_library/rust_iron_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 2619,
+   "max": [
+    2.5,
+    0.2848213315010071,
+    0
+   ],
+   "min": [
+    -2.5,
+    -0.08474655449390411,
+    -12
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 2619,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 2619,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 14976,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 2027,
+   "max": [
+    1.3382620811462402,
+    0.3538086414337158,
+    -0.21283170580863953
+   ],
+   "min": [
+    -1.3401182889938354,
+    0.2155502289533615,
+    -11.795462608337402
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 2027,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 2027,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 8964,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 2270,
+   "max": [
+    0.8286508917808533,
+    0.5000210404396057,
+    -0.003000000026077032
+   ],
+   "min": [
+    -0.8286508917808533,
+    0.35707855224609375,
+    -11.996999740600586
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 2270,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 2270,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5123,
+   "count": 9084,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 12,
+   "componentType": 5126,
+   "count": 10280,
+   "max": [
+    0.9396122694015503,
+    0.45622313022613525,
+    0
+   ],
+   "min": [
+    -0.9396122694015503,
+    0.3258175849914551,
+    -12
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 13,
+   "componentType": 5126,
+   "count": 10280,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 14,
+   "componentType": 5126,
+   "count": 10280,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 15,
+   "componentType": 5123,
+   "count": 21600,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 16,
+   "componentType": 5126,
+   "count": 36909,
+   "max": [
+    2.4030344486236572,
+    0.3827822208404541,
+    -0.045036956667900085
+   ],
+   "min": [
+    -2.4077677726745605,
+    -0.06012340262532234,
+    -11.973885536193848
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 17,
+   "componentType": 5126,
+   "count": 36909,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 18,
+   "componentType": 5126,
+   "count": 36909,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 19,
+   "componentType": 5123,
+   "count": 56316,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 31428,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 31428,
+   "byteOffset": 31428,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 20952,
+   "byteOffset": 62856,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 29952,
+   "byteOffset": 83808,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 24324,
+   "byteOffset": 113760,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 24324,
+   "byteOffset": 138084,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 16216,
+   "byteOffset": 162408,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 17928,
+   "byteOffset": 178624,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 27240,
+   "byteOffset": 196552,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 27240,
+   "byteOffset": 223792,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 18160,
+   "byteOffset": 251032,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 18168,
+   "byteOffset": 269192,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 123360,
+   "byteOffset": 287360,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 123360,
+   "byteOffset": 410720,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 82240,
+   "byteOffset": 534080,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 43200,
+   "byteOffset": 616320,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 442908,
+   "byteOffset": 659520,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 442908,
+   "byteOffset": 1102428,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 295272,
+   "byteOffset": 1545336,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 112632,
+   "byteOffset": 1840608,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 1953240,
+   "uri": "rail_track.bin"
+  }
+ ]
+}

@@ -1,0 +1,149 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "bark",
+   "normalTexture": {
+    "index": 0
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0,
+    "roughnessFactor": 0.8500000238418579
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "tree_dead_0",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/jpeg",
+   "name": "fir_tree_01_bark_nor_gl_2k.jpg",
+   "uri": "../../../source/trees/fir_tree_01/fir_tree_01_bark_nor_gl_2k.jpg"
+  },
+  {
+   "mimeType": "image/jpeg",
+   "name": "fir_tree_01_bark_diff_2k.jpg",
+   "uri": "../../../source/trees/fir_tree_01/fir_tree_01_bark_diff_2k.jpg"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 5688,
+   "max": [
+    1.5712755918502808,
+    8.923210144042969,
+    1.773650050163269
+   ],
+   "min": [
+    -2.117877960205078,
+    -0.6000000238418579,
+    -2.2882094383239746
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 5688,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 5688,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 20898,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 68256,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 68256,
+   "byteOffset": 68256,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 45504,
+   "byteOffset": 136512,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 41796,
+   "byteOffset": 182016,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 223812,
+   "uri": "tree_dead_0.bin"
+  }
+ ]
+}

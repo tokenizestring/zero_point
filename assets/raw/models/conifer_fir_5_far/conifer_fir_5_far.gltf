@@ -1,0 +1,260 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "trunk"
+  },
+  {
+   "mesh": 1,
+   "name": "foliage"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "bark",
+   "normalTexture": {
+    "index": 0
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0,
+    "roughnessFactor": 0.8500000238418579
+   }
+  },
+  {
+   "doubleSided": true,
+   "name": "spray",
+   "normalTexture": {
+    "index": 2
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 3
+    },
+    "metallicFactor": 0,
+    "roughnessFactor": 0.6200000047683716
+   },
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5
+  }
+ ],
+ "meshes": [
+  {
+   "name": "conifer_fir_5_far_bark",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "conifer_fir_5_far_foliage",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/jpeg",
+   "name": "fir_tree_01_bark_nor_gl_2k.jpg",
+   "uri": "../../../source/trees/fir_tree_01/fir_tree_01_bark_nor_gl_2k.jpg"
+  },
+  {
+   "mimeType": "image/jpeg",
+   "name": "fir_tree_01_bark_diff_2k.jpg",
+   "uri": "../../../source/trees/fir_tree_01/fir_tree_01_bark_diff_2k.jpg"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "conifer_spray_nor_gl_2k.png",
+   "uri": "../../../source/trees/conifer_spray/conifer_spray_nor_gl_2k.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "conifer_spray_diff_2k.png",
+   "uri": "../../../source/trees/conifer_spray/conifer_spray_diff_2k.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1340,
+   "max": [
+    3.527003765106201,
+    14.660606384277344,
+    3.087263345718384
+   ],
+   "min": [
+    -3.0720157623291016,
+    -0.6000000238418579,
+    -3.5364441871643066
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1340,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1340,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 5238,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 5376,
+   "max": [
+    4.6001787185668945,
+    15.502718925476074,
+    4.434563159942627
+   ],
+   "min": [
+    -4.0668439865112305,
+    -0.5844519734382629,
+    -4.507619857788086
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 5376,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 5376,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 8064,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 16080,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 16080,
+   "byteOffset": 16080,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10720,
+   "byteOffset": 32160,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10476,
+   "byteOffset": 42880,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 64512,
+   "byteOffset": 53356,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 64512,
+   "byteOffset": 117868,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 43008,
+   "byteOffset": 182380,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 16128,
+   "byteOffset": 225388,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 241516,
+   "uri": "conifer_fir_5_far.bin"
+  }
+ ]
+}

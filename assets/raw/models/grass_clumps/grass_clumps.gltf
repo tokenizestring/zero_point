@@ -1,0 +1,146 @@
+{
+ "asset": {
+  "version": "2.0",
+  "generator": "zero point grass"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "grass",
+   "mesh": 0
+  }
+ ],
+ "meshes": [
+  {
+   "name": "grass",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "materials": [
+  {
+   "name": "grass",
+   "alphaMode": "MASK",
+   "alphaCutoff": 0.5,
+   "doubleSided": true,
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 0
+    },
+    "metallicRoughnessTexture": {
+     "index": 2
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "normalTexture": {
+    "index": 1
+   },
+   "occlusionTexture": {
+    "index": 2
+   }
+  }
+ ],
+ "textures": [
+  {
+   "source": 0
+  },
+  {
+   "source": 1
+  },
+  {
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "uri": "../../../source/grass/grass_clumps/grass_clumps_diff_2k.png"
+  },
+  {
+   "uri": "../../../source/grass/grass_clumps/grass_clumps_nor_gl_2k.png"
+  },
+  {
+   "uri": "../../../source/grass/grass_clumps/grass_clumps_arm_2k.png"
+  }
+ ],
+ "buffers": [
+  {
+   "uri": "grass_clumps.bin",
+   "byteLength": 152
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteOffset": 0,
+   "byteLength": 48
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 48,
+   "byteLength": 48
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 96,
+   "byteLength": 32
+  },
+  {
+   "buffer": 0,
+   "byteOffset": 128,
+   "byteLength": 24
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC3",
+   "min": [
+    -0.5,
+    0.0,
+    0.0
+   ],
+   "max": [
+    0.5,
+    1.0,
+    0.0
+   ]
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5125,
+   "count": 6,
+   "type": "SCALAR"
+  }
+ ]
+}

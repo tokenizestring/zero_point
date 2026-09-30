@@ -1,0 +1,160 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "coast_land_rocks_02"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "coast_land_rocks_02",
+   "normalTexture": {
+    "index": 0
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0,
+    "metallicRoughnessTexture": {
+     "index": 2
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "Plane",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/jpeg",
+   "name": "coast_land_rocks_02_nor_gl",
+   "uri": "../coast_land_rocks_02/textures/coast_land_rocks_02_nor_gl_2k.jpg"
+  },
+  {
+   "mimeType": "image/jpeg",
+   "name": "coast_land_rocks_02_diff",
+   "uri": "../coast_land_rocks_02/textures/coast_land_rocks_02_diff_2k.jpg"
+  },
+  {
+   "mimeType": "image/jpeg",
+   "name": "coast_land_rocks_02_rough",
+   "uri": "../coast_land_rocks_02/textures/coast_land_rocks_02_arm_2k.jpg"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 3764,
+   "max": [
+    2.443650722503662,
+    1.2278215885162354,
+    5.450475215911865
+   ],
+   "min": [
+    -2.4443767070770264,
+    -0.13588760793209076,
+    -4.990193843841553
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 3764,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 3764,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 14997,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 45168,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 45168,
+   "byteOffset": 45168,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 30112,
+   "byteOffset": 90336,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 29994,
+   "byteOffset": 120448,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 150444,
+   "uri": "coast_land_rocks_02_far.bin"
+  }
+ ]
+}

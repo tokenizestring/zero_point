@@ -3,6 +3,8 @@ tools/blender/
 __pycache__/
 *.pyc
 .DS_Store
+._*
+__MACOSX/
 Thumbs.db
 *.blend
 *.blend1
