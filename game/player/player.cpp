@@ -22,6 +22,9 @@ namespace zp
 		step_offset = 0.0f;
 		landing_offset = 0.0f;
 		landing_velocity = 0.0f;
+		crouch_latched = false;
+		aim_latched = false;
+		sprint_latched = false;
 		active = true;
 
 		eye = position + structures::vec3_s{ 0.0f, state.eye_height, 0.0f };
@@ -37,8 +40,10 @@ namespace zp
 		{
 			if (input_enabled)
 			{
-				yaw = mathematics.wrap_angle(yaw + platform.input.mouse_delta.x * sensitivity * renderer.zoom);
-				pitch = mathematics.clamp(pitch - platform.input.mouse_delta.y * sensitivity * renderer.zoom * (invert ? -1.0f : 1.0f), degrees_to_radians(-88.0f), degrees_to_radians(88.0f));
+				const auto look{ sensitivity * renderer.zoom * mathematics.lerp(1.0f, aim_sensitivity, mathematics.saturate(weapons.aim)) };
+
+				yaw = mathematics.wrap_angle(yaw + platform.input.mouse_delta.x * look);
+				pitch = mathematics.clamp(pitch - platform.input.mouse_delta.y * look * (invert ? -1.0f : 1.0f), degrees_to_radians(-88.0f), degrees_to_radians(88.0f));
 
 				if (platform.input.pressed[VK_F3] && client.connected() == false)
 				{
@@ -99,10 +104,15 @@ namespace zp
 		{
 			command.forward = (platform.held(structures::bind_forward) ? 1.0f : 0.0f) - (platform.held(structures::bind_back) ? 1.0f : 0.0f);
 			command.side = (platform.held(structures::bind_right) ? 1.0f : 0.0f) - (platform.held(structures::bind_left) ? 1.0f : 0.0f);
+
+			crouch_latched = crouch_toggle && (crouch_latched != platform.tapped(structures::bind_crouch));
+			aim_latched = aim_toggle && (aim_latched != platform.input.pressed[VK_RBUTTON]);
+			sprint_latched = sprint_toggle && command.forward > 0.0f && (sprint_latched || platform.tapped(structures::bind_sprint));
+
 			command.buttons |= platform.held(structures::bind_jump) ? structures::button_jump : 0u;
-			command.buttons |= platform.held(structures::bind_crouch) ? structures::button_crouch : 0u;
-			command.buttons |= platform.held(structures::bind_sprint) ? structures::button_sprint : 0u;
-			command.buttons |= keys[VK_RBUTTON] ? structures::button_aim : 0u;
+			command.buttons |= (platform.held(structures::bind_crouch) || crouch_latched) ? structures::button_crouch : 0u;
+			command.buttons |= (platform.held(structures::bind_sprint) || sprint_latched) ? structures::button_sprint : 0u;
+			command.buttons |= (keys[VK_RBUTTON] || aim_latched) ? structures::button_aim : 0u;
 			command.buttons |= keys[VK_LBUTTON] ? structures::button_fire : 0u;
 			command.buttons |= platform.held(structures::bind_reload) ? structures::button_reload : 0u;
 			command.buttons |= platform.held(structures::bind_use) ? structures::button_use : 0u;
@@ -179,17 +189,17 @@ namespace zp
 
 		bob_phase += on_ground ? horizontal_speed * dt / (step_length_base + step_length_scale * horizontal_speed) : 0.0f;
 
-		const auto bob{ -std::cos(bob_phase * two_pi) * 0.016f * bob_weight };
-		const auto sway{ std::sin(bob_phase * pi) * 0.011f * bob_weight };
+		const auto bob{ -std::cos(bob_phase * two_pi) * 0.016f * bob_weight * bob_scale };
+		const auto sway{ std::sin(bob_phase * pi) * 0.011f * bob_weight * bob_scale };
 		const auto right{ mathematics.right_from_yaw(yaw) };
 
-		roll = mathematics.damp(roll, -mathematics.dot(velocity, right) * 0.0035f, 8.0f, dt);
+		roll = mathematics.damp(roll, -mathematics.dot(velocity, right) * 0.0035f * tilt_scale, 8.0f, dt);
 
 		const auto afloat{ (state.flags & structures::movement_swimming) ? mathematics.saturate(1.0f - (state.water_surface - position.y - eye_height) / 1.5f) : 0.0f };
 
 		swell = mathematics.damp(swell, (water.level(position.x, position.z) - state.water_surface) * afloat, 8.0f, dt);
 
-		eye = position + client.error + structures::vec3_s{ 0.0f, eye_height + step_offset + landing_offset + bob + swell, 0.0f } + right * sway;
+		eye = position + client.error + structures::vec3_s{ 0.0f, eye_height + step_offset + bob + (landing_offset + swell) * motion_scale, 0.0f } + right * sway;
 	}
 }
 

@@ -28,12 +28,22 @@ namespace zp
 		std::float_t bob_weight = 0.0f;
 		std::float_t swell = 0.0f;
 		std::float_t sensitivity = default_mouse_sensitivity;
+		std::float_t aim_sensitivity = 1.0f;
+		std::float_t bob_scale = 1.0f;
+		std::float_t tilt_scale = 1.0f;
+		std::float_t motion_scale = 1.0f;
 		std::float_t heading = 0.0f;
 		std::uint32_t ridden = 0u;
 		std::uint32_t sequence = 0u;
 		structures::vec3_s eye{};
 		bool active = false;
 		bool invert = false;
+		bool crouch_toggle = false;
+		bool aim_toggle = false;
+		bool sprint_toggle = false;
+		bool crouch_latched = false;
+		bool aim_latched = false;
+		bool sprint_latched = false;
 
 		void spawn(structures::vec3_s position, std::float_t spawn_yaw);
 		void update(std::float_t dt, bool input_enabled);
