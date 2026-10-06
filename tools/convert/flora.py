@@ -9,6 +9,7 @@ import flora_kit as kit
 import flora_bake
 import flora_bark
 import flora_birch
+import flora_gorse
 import flora_hawthorn
 import flora_oak
 import flora_pine
@@ -20,7 +21,7 @@ command = arguments[0]
 name = arguments[1] if len(arguments) > 1 else "all"
 options = arguments[2:]
 registry = {}
-for module in (flora_oak, flora_birch, flora_pine, flora_hawthorn, flora_willow):
+for module in (flora_oak, flora_birch, flora_pine, flora_hawthorn, flora_willow, flora_gorse):
     registry.update(module.species)
 selected = list(registry) if name == "all" else [name]
 suffixes = ("", "_far", "_shadow")
