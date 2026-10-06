@@ -124,6 +124,7 @@ namespace zp
 			}
 
 			target.twist_shares.assign(target.bones.size(), 0.0f);
+			target.blade_shares.assign(target.bones.size(), 0.0f);
 			target.bounds_min = source.bounds_min;
 			target.bounds_max = source.bounds_max;
 			target.alpha_first_index = UINT32_MAX;
