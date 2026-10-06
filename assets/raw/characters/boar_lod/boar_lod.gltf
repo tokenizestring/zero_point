@@ -1,0 +1,675 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    41
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "jaw",
+   "translation": [
+    0,
+    -0.020153939723968506,
+    -0.052856624126434326
+   ]
+  },
+  {
+   "name": "ear_l",
+   "translation": [
+    0.08038433641195297,
+    -0.05754154920578003,
+    0.07261496782302856
+   ]
+  },
+  {
+   "name": "ear_r",
+   "translation": [
+    -0.08038433641195297,
+    -0.05754154920578003,
+    0.07261496782302856
+   ]
+  },
+  {
+   "name": "snout",
+   "translation": [
+    0,
+    -0.33767372369766235,
+    -0.1512497067451477
+   ]
+  },
+  {
+   "children": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "name": "head",
+   "translation": [
+    0,
+    -0.048318952322006226,
+    -0.005361616611480713
+   ]
+  },
+  {
+   "children": [
+    4
+   ],
+   "name": "neck_03",
+   "translation": [
+    0,
+    -0.05476146936416626,
+    -0.006076455116271973
+   ]
+  },
+  {
+   "children": [
+    5
+   ],
+   "name": "neck_02",
+   "translation": [
+    0,
+    -0.05798271298408508,
+    -0.006433963775634766
+   ]
+  },
+  {
+   "children": [
+    6
+   ],
+   "name": "neck_01",
+   "translation": [
+    0,
+    -0.1599999964237213,
+    -0.07499998807907104
+   ]
+  },
+  {
+   "name": "hoof_f_l",
+   "translation": [
+    0,
+    -0.02000001072883606,
+    -0.05000000447034836
+   ]
+  },
+  {
+   "children": [
+    8
+   ],
+   "name": "pastern_f_l",
+   "translation": [
+    -0.004153348505496979,
+    -0.005013376474380493,
+    -0.13487160205841064
+   ]
+  },
+  {
+   "children": [
+    9
+   ],
+   "name": "cannon_l",
+   "translation": [
+    -0.00628633052110672,
+    -0.06498803198337555,
+    -0.21011480689048767
+   ]
+  },
+  {
+   "children": [
+    10
+   ],
+   "name": "radius_l",
+   "translation": [
+    -0.004560321569442749,
+    0.120001420378685,
+    -0.13501358032226562
+   ]
+  },
+  {
+   "children": [
+    11
+   ],
+   "name": "humerus_l",
+   "translation": [
+    0.05000000074505806,
+    -0.15000000596046448,
+    -0.24000000953674316
+   ]
+  },
+  {
+   "children": [
+    12
+   ],
+   "name": "scapula_l",
+   "translation": [
+    0.05000000074505806,
+    -0.06499999761581421,
+    0.07499998807907104
+   ]
+  },
+  {
+   "name": "hoof_f_r",
+   "translation": [
+    0,
+    -0.02000001072883606,
+    -0.05000000447034836
+   ]
+  },
+  {
+   "children": [
+    14
+   ],
+   "name": "pastern_f_r",
+   "translation": [
+    0.004153348505496979,
+    -0.005013376474380493,
+    -0.13487160205841064
+   ]
+  },
+  {
+   "children": [
+    15
+   ],
+   "name": "cannon_r",
+   "translation": [
+    0.00628633052110672,
+    -0.06498803198337555,
+    -0.21011480689048767
+   ]
+  },
+  {
+   "children": [
+    16
+   ],
+   "name": "radius_r",
+   "translation": [
+    0.004560321569442749,
+    0.120001420378685,
+    -0.13501358032226562
+   ]
+  },
+  {
+   "children": [
+    17
+   ],
+   "name": "humerus_r",
+   "translation": [
+    -0.05000000074505806,
+    -0.15000000596046448,
+    -0.24000000953674316
+   ]
+  },
+  {
+   "children": [
+    18
+   ],
+   "name": "scapula_r",
+   "translation": [
+    -0.05000000074505806,
+    -0.06499999761581421,
+    0.07499998807907104
+   ]
+  },
+  {
+   "children": [
+    7,
+    13,
+    19
+   ],
+   "name": "spine_03",
+   "translation": [
+    0,
+    -0.14000000059604645,
+    0.004999995231628418
+   ]
+  },
+  {
+   "name": "ribs_l",
+   "translation": [
+    0.14000000059604645,
+    -0.03999999165534973,
+    -0.14000004529953003
+   ]
+  },
+  {
+   "name": "ribs_r",
+   "translation": [
+    -0.14000000059604645,
+    -0.03999999165534973,
+    -0.14000004529953003
+   ]
+  },
+  {
+   "children": [
+    20,
+    21,
+    22
+   ],
+   "name": "spine_02",
+   "translation": [
+    0,
+    -0.14000000059604645,
+    0.020000040531158447
+   ]
+  },
+  {
+   "children": [
+    23
+   ],
+   "name": "spine_01",
+   "translation": [
+    0,
+    -0.07000000774860382,
+    0.009999990463256836
+   ]
+  },
+  {
+   "name": "hoof_h_l",
+   "translation": [
+    0,
+    -0.019999980926513672,
+    -0.05000000447034836
+   ]
+  },
+  {
+   "children": [
+    25
+   ],
+   "name": "pastern_h_l",
+   "translation": [
+    0,
+    -0.02000001072883606,
+    -0.1850000023841858
+   ]
+  },
+  {
+   "children": [
+    26
+   ],
+   "name": "metatarsus_l",
+   "translation": [
+    0,
+    0.20000000298023224,
+    -0.16499999165534973
+   ]
+  },
+  {
+   "children": [
+    27
+   ],
+   "name": "tibia_l",
+   "translation": [
+    0,
+    -0.10500000417232513,
+    -0.19499999284744263
+   ]
+  },
+  {
+   "children": [
+    28
+   ],
+   "name": "femur_l",
+   "translation": [
+    0.08500000089406967,
+    0.10999999940395355,
+    -0.06499999761581421
+   ]
+  },
+  {
+   "name": "hoof_h_r",
+   "translation": [
+    0,
+    -0.019999980926513672,
+    -0.05000000447034836
+   ]
+  },
+  {
+   "children": [
+    30
+   ],
+   "name": "pastern_h_r",
+   "translation": [
+    0,
+    -0.02000001072883606,
+    -0.1850000023841858
+   ]
+  },
+  {
+   "children": [
+    31
+   ],
+   "name": "metatarsus_r",
+   "translation": [
+    0,
+    0.20000000298023224,
+    -0.16499999165534973
+   ]
+  },
+  {
+   "children": [
+    32
+   ],
+   "name": "tibia_r",
+   "translation": [
+    0,
+    -0.10500000417232513,
+    -0.19499999284744263
+   ]
+  },
+  {
+   "children": [
+    33
+   ],
+   "name": "femur_r",
+   "translation": [
+    -0.08500000089406967,
+    0.10999999940395355,
+    -0.06499999761581421
+   ]
+  },
+  {
+   "name": "tail_03",
+   "translation": [
+    0,
+    0.017000019550323486,
+    -0.07300001382827759
+   ]
+  },
+  {
+   "children": [
+    35
+   ],
+   "name": "tail_02",
+   "translation": [
+    0,
+    0.02499997615814209,
+    -0.022000014781951904
+   ]
+  },
+  {
+   "children": [
+    36
+   ],
+   "name": "tail_01",
+   "translation": [
+    0,
+    0.3920000195503235,
+    -0.039999961853027344
+   ]
+  },
+  {
+   "children": [
+    24,
+    29,
+    34,
+    37
+   ],
+   "name": "hips",
+   "translation": [
+    0,
+    0.20000000298023224,
+    0.699999988079071
+   ]
+  },
+  {
+   "children": [
+    38
+   ],
+   "name": "root",
+   "rotation": [
+    -0.7071067690849304,
+    0,
+    0,
+    0.7071067690849304
+   ]
+  },
+  {
+   "mesh": 0,
+   "name": "boar_lod",
+   "skin": 0
+  },
+  {
+   "children": [
+    40,
+    39
+   ],
+   "name": "boar_rig"
+  }
+ ],
+ "materials": [
+  {
+   "name": "boar",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "boar_lod",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "JOINTS_0": 3,
+      "WEIGHTS_0": 4
+     },
+     "indices": 5,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "boar_normal.png",
+   "uri": "../boar/boar_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "boar_orm.png",
+   "uri": "../boar/boar_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "boar_albedo.png",
+   "uri": "../boar/boar_albedo.png"
+  }
+ ],
+ "skins": [
+  {
+   "inverseBindMatrices": 6,
+   "joints": [
+    39,
+    38,
+    24,
+    23,
+    20,
+    7,
+    6,
+    5,
+    4,
+    0,
+    1,
+    2,
+    3,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    19,
+    18,
+    17,
+    16,
+    15,
+    14,
+    21,
+    22,
+    29,
+    28,
+    27,
+    26,
+    25,
+    34,
+    33,
+    32,
+    31,
+    30,
+    37,
+    36,
+    35
+   ],
+   "name": "boar_rig"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 2765,
+   "max": [
+    0.18187081813812256,
+    0.9260299205780029,
+    0.9116849899291992
+   ],
+   "min": [
+    -0.18187081813812256,
+    -2.2412152702599997e-06,
+    -0.6616527438163757
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 2765,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 2765,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5121,
+   "count": 2765,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 2765,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5123,
+   "count": 8940,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 40,
+   "type": "MAT4"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 33180,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 33180,
+   "byteOffset": 33180,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 22120,
+   "byteOffset": 66360,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 11060,
+   "byteOffset": 88480,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 44240,
+   "byteOffset": 99540,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 17880,
+   "byteOffset": 143780,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2560,
+   "byteOffset": 161660
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 164220,
+   "uri": "boar_lod.bin"
+  }
+ ]
+}
