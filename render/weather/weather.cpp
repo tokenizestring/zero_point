@@ -175,7 +175,7 @@ namespace zp
 			const auto distance{ 400.0f + random() * 5200.0f };
 
 			bolt_timer = 3.0f + random() * 12.0f;
-			flash = mathematics.saturate(1.4f - distance / 4000.0f);
+			flash = mathematics.saturate(1.4f - distance / 4000.0f) * renderer.settings.flashes;
 			thunder_timer = distance / audio_speed_of_sound;
 			thunder_volume = mathematics.saturate(1.1f - distance / 6500.0f);
 
@@ -243,7 +243,7 @@ namespace zp
 			{
 				const auto age{ weather_bolt_life - bolt_life };
 
-				bolt.params.y = std::max({ std::exp(-age * 14.0f), 0.8f * std::exp(-std::fabs(age - 0.14f) * 30.0f), 0.6f * std::exp(-std::fabs(age - 0.28f) * 30.0f) }) * weather_bolt_brightness;
+				bolt.params.y = std::max({ std::exp(-age * 14.0f), 0.8f * std::exp(-std::fabs(age - 0.14f) * 30.0f), 0.6f * std::exp(-std::fabs(age - 0.28f) * 30.0f) }) * weather_bolt_brightness * renderer.settings.flashes;
 
 				gpu.update_buffer(bolt_buffer, &bolt, sizeof(bolt));
 
