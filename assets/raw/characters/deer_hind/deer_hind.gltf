@@ -1,0 +1,700 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    40
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "name": "jaw",
+   "translation": [
+    0,
+    -0.04357343912124634,
+    0.015288352966308594
+   ]
+  },
+  {
+   "name": "ear_l",
+   "translation": [
+    0.04478617012500763,
+    -0.03700709342956543,
+    0.08116114139556885
+   ]
+  },
+  {
+   "name": "ear_r",
+   "translation": [
+    -0.04478617012500763,
+    -0.03700709342956543,
+    0.08116114139556885
+   ]
+  },
+  {
+   "children": [
+    0,
+    1,
+    2
+   ],
+   "name": "head",
+   "translation": [
+    0,
+    -0.07612502574920654,
+    0.13650000095367432
+   ]
+  },
+  {
+   "children": [
+    3
+   ],
+   "name": "neck_03",
+   "translation": [
+    0,
+    -0.08627504110336304,
+    0.15470004081726074
+   ]
+  },
+  {
+   "children": [
+    4
+   ],
+   "name": "neck_02",
+   "translation": [
+    0,
+    -0.09134995937347412,
+    0.16380000114440918
+   ]
+  },
+  {
+   "children": [
+    5
+   ],
+   "name": "neck_01",
+   "translation": [
+    0,
+    -0.2625000476837158,
+    -0.12250000238418579
+   ]
+  },
+  {
+   "name": "hoof_f_l",
+   "translation": [
+    0,
+    -0.022750049829483032,
+    -0.061250001192092896
+   ]
+  },
+  {
+   "children": [
+    7
+   ],
+   "name": "pastern_f_l",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    -0.008542992174625397,
+    -0.0061740875244140625,
+    -0.24470049142837524
+   ]
+  },
+  {
+   "children": [
+    8
+   ],
+   "name": "cannon_l",
+   "translation": [
+    -0.008908182382583618,
+    -0.05246567726135254,
+    -0.26270920038223267
+   ]
+  },
+  {
+   "children": [
+    9
+   ],
+   "name": "radius_l",
+   "translation": [
+    -0.00617382675409317,
+    0.1662648320198059,
+    -0.1488403081893921
+   ]
+  },
+  {
+   "children": [
+    10
+   ],
+   "name": "humerus_l",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    0.05250000208616257,
+    -0.1793750822544098,
+    -0.2056249976158142
+   ]
+  },
+  {
+   "children": [
+    11
+   ],
+   "name": "scapula_l",
+   "translation": [
+    0.048124998807907104,
+    -0.12687501311302185,
+    0.034999966621398926
+   ]
+  },
+  {
+   "name": "hoof_f_r",
+   "translation": [
+    0,
+    -0.022750049829483032,
+    -0.061250001192092896
+   ]
+  },
+  {
+   "children": [
+    13
+   ],
+   "name": "pastern_f_r",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    0.008542992174625397,
+    -0.0061740875244140625,
+    -0.24470049142837524
+   ]
+  },
+  {
+   "children": [
+    14
+   ],
+   "name": "cannon_r",
+   "translation": [
+    0.008908182382583618,
+    -0.05246567726135254,
+    -0.26270920038223267
+   ]
+  },
+  {
+   "children": [
+    15
+   ],
+   "name": "radius_r",
+   "translation": [
+    0.00617382675409317,
+    0.1662648320198059,
+    -0.1488403081893921
+   ]
+  },
+  {
+   "children": [
+    16
+   ],
+   "name": "humerus_r",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    -0.05250000208616257,
+    -0.1793750822544098,
+    -0.2056249976158142
+   ]
+  },
+  {
+   "children": [
+    17
+   ],
+   "name": "scapula_r",
+   "translation": [
+    -0.048124998807907104,
+    -0.12687501311302185,
+    0.034999966621398926
+   ]
+  },
+  {
+   "children": [
+    6,
+    12,
+    18
+   ],
+   "name": "spine_03",
+   "translation": [
+    0,
+    -0.1925000101327896,
+    -0.013125002384185791
+   ]
+  },
+  {
+   "name": "ribs_l",
+   "translation": [
+    0.14000000059604645,
+    -0.10499999672174454,
+    -0.1443750262260437
+   ]
+  },
+  {
+   "name": "ribs_r",
+   "translation": [
+    -0.14000000059604645,
+    -0.10499999672174454,
+    -0.1443750262260437
+   ]
+  },
+  {
+   "children": [
+    19,
+    20,
+    21
+   ],
+   "name": "spine_02",
+   "translation": [
+    0,
+    -0.1575000286102295,
+    -0.013125002384185791
+   ]
+  },
+  {
+   "children": [
+    22
+   ],
+   "name": "spine_01",
+   "translation": [
+    0,
+    -0.06125001609325409,
+    -0.004374980926513672
+   ]
+  },
+  {
+   "name": "hoof_h_l",
+   "translation": [
+    0,
+    -0.0245000422000885,
+    -0.0612499937415123
+   ]
+  },
+  {
+   "children": [
+    24
+   ],
+   "name": "pastern_h_l",
+   "translation": [
+    -0.0016493499279022217,
+    -0.013123571872711182,
+    -0.2975151836872101
+   ]
+  },
+  {
+   "children": [
+    25
+   ],
+   "name": "metatarsus_l",
+   "translation": [
+    -0.0013684406876564026,
+    0.2362610101699829,
+    -0.22323915362358093
+   ]
+  },
+  {
+   "children": [
+    26
+   ],
+   "name": "tibia_l",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    -0.0013572126626968384,
+    -0.14876239001750946,
+    -0.2579956650733948
+   ]
+  },
+  {
+   "children": [
+    27
+   ],
+   "name": "femur_l",
+   "translation": [
+    0.08749999850988388,
+    0.14000004529953003,
+    -0.07875001430511475
+   ]
+  },
+  {
+   "name": "hoof_h_r",
+   "translation": [
+    0,
+    -0.0245000422000885,
+    -0.0612499937415123
+   ]
+  },
+  {
+   "children": [
+    29
+   ],
+   "name": "pastern_h_r",
+   "translation": [
+    0.0016493499279022217,
+    -0.013123571872711182,
+    -0.2975151836872101
+   ]
+  },
+  {
+   "children": [
+    30
+   ],
+   "name": "metatarsus_r",
+   "translation": [
+    0.0013684406876564026,
+    0.2362610101699829,
+    -0.22323915362358093
+   ]
+  },
+  {
+   "children": [
+    31
+   ],
+   "name": "tibia_r",
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ],
+   "translation": [
+    0.0013572126626968384,
+    -0.14876239001750946,
+    -0.2579956650733948
+   ]
+  },
+  {
+   "children": [
+    32
+   ],
+   "name": "femur_r",
+   "translation": [
+    -0.08749999850988388,
+    0.14000004529953003,
+    -0.07875001430511475
+   ]
+  },
+  {
+   "name": "tail_03",
+   "translation": [
+    0,
+    0.013125002384185791,
+    -0.05249994993209839
+   ]
+  },
+  {
+   "children": [
+    34
+   ],
+   "name": "tail_02",
+   "translation": [
+    0,
+    0.025375008583068848,
+    -0.013125002384185791
+   ]
+  },
+  {
+   "children": [
+    35
+   ],
+   "name": "tail_01",
+   "translation": [
+    0,
+    0.3368750214576721,
+    -0.03937506675720215
+   ]
+  },
+  {
+   "children": [
+    23,
+    28,
+    33,
+    36
+   ],
+   "name": "hips",
+   "translation": [
+    0,
+    0.23625004291534424,
+    0.9668750166893005
+   ]
+  },
+  {
+   "children": [
+    37
+   ],
+   "name": "root",
+   "rotation": [
+    -0.7071067690849304,
+    0,
+    0,
+    0.7071067690849304
+   ],
+   "scale": [
+    1,
+    0.9999999403953552,
+    1
+   ]
+  },
+  {
+   "mesh": 0,
+   "name": "deer_hind",
+   "skin": 0
+  },
+  {
+   "children": [
+    39,
+    38
+   ],
+   "name": "deer_rig"
+  }
+ ],
+ "materials": [
+  {
+   "name": "deer_hind",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "deer_hind",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2,
+      "JOINTS_0": 3,
+      "WEIGHTS_0": 4
+     },
+     "indices": 5,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "deer_hind_normal.png",
+   "uri": "deer_hind_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "deer_hind_orm.png",
+   "uri": "deer_hind_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "deer_hind_albedo.png",
+   "uri": "deer_hind_albedo.png"
+  }
+ ],
+ "skins": [
+  {
+   "inverseBindMatrices": 6,
+   "joints": [
+    38,
+    37,
+    23,
+    22,
+    19,
+    6,
+    5,
+    4,
+    3,
+    0,
+    1,
+    2,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    20,
+    21,
+    28,
+    27,
+    26,
+    25,
+    24,
+    33,
+    32,
+    31,
+    30,
+    29,
+    36,
+    35,
+    34
+   ],
+   "name": "deer_rig"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 5134,
+   "max": [
+    0.18782690167427063,
+    1.4773962497711182,
+    1.016483187675476
+   ],
+   "min": [
+    -0.18782690167427063,
+    0,
+    -0.6238142251968384
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 5134,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 5134,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5121,
+   "count": 5134,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 5134,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5123,
+   "count": 26574,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 39,
+   "type": "MAT4"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 61608,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 61608,
+   "byteOffset": 61608,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 41072,
+   "byteOffset": 123216,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 20536,
+   "byteOffset": 164288,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 82144,
+   "byteOffset": 184824,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 53148,
+   "byteOffset": 266968,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2496,
+   "byteOffset": 320116
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 322612,
+   "uri": "deer_hind.bin"
+  }
+ ]
+}
