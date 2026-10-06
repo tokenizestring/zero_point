@@ -460,8 +460,14 @@ def build_skin(blueprint):
     rear_patch.removed[tr:tr + tail["rows"], 0:tc] = True
 
     nostril = spec["nostril"]
-    nr, nc = nostril["cell"]
-    nostril_loop = front_patch.hole(nr, nr + nostril.get("rows", 2), nc, nc + nostril.get("cols", 2))
+    if "at" in nostril:
+        nr, nc = nearest_cell(b, tube, nostril["at"])
+        nr -= nostril.get("rows", 2) // 2
+        nc -= nostril.get("cols", 2) // 2
+        nostril_loop = body.hole(nr, nr + nostril.get("rows", 2), nc, nc + nostril.get("cols", 2))
+    else:
+        nr, nc = nostril["cell"]
+        nostril_loop = front_patch.hole(nr, nr + nostril.get("rows", 2), nc, nc + nostril.get("cols", 2))
 
     body.emit(b)
     rear_patch.emit(b)
@@ -553,6 +559,8 @@ def build_skin(blueprint):
     loop_points = b.at(nostril_loop)
     middle = loop_points.mean(axis=0)
     inward = -front_axis
+    if "at" in nostril:
+        inward = fields.unit(-f.normals(middle[None, :], core)[0] * nostril.get("dive", 0.7) - front_axis * (1.0 - nostril.get("dive", 0.7)))
     spokes = loop_points - middle[None, :]
     reach = numpy.linalg.norm(spokes, axis=1)
     spokes = spokes * ((1.0 - nostril.get("round", 0.85)) + nostril.get("round", 0.85) * float(reach.mean()) / reach)[:, None]
