@@ -182,7 +182,11 @@ def combine(skin, pieces):
         count = len(piece["points"])
         points.append(piece["points"])
         normal.append(piece["normal"] if "normal" in piece else numpy.full((count, 3), numpy.nan))
-        root.append(numpy.tile(piece["root"], (count, 1)) if "root" in piece else numpy.full((count, 3), numpy.nan))
+        if "root" in piece:
+            anchors = numpy.asarray(piece["root"], dtype=numpy.float64)
+            root.append(anchors if anchors.ndim == 2 else numpy.tile(anchors, (count, 1)))
+        else:
+            root.append(numpy.full((count, 3), numpy.nan))
         faces.extend(tuple(index + offset for index in face) for face in piece["faces"])
         tags.extend(piece["tags"])
         part.extend([piece["part"]] * count)
