@@ -18,6 +18,10 @@ namespace zp
 		options.showcase_angle = -1.0f;
 		options.jam_progress = -1.0f;
 		options.reload_progress = -1.0f;
+		options.train_time = -1.0;
+		options.herd_view = -1;
+		options.hunt_herd = -1;
+		options.flock_view = -1;
 
 		parse_arguments();
 
@@ -170,6 +174,12 @@ namespace zp
 					options.walk_test = true;
 				}
 
+				else if (std::strcmp(current, "--walk-back") == 0)
+				{
+					options.walk_test = true;
+					options.walk_back = true;
+				}
+
 				else if (std::strcmp(current, "--nettest") == 0)
 				{
 					options.net_test = true;
@@ -179,6 +189,20 @@ namespace zp
 				else if (std::strcmp(current, "--third") == 0)
 				{
 					options.third_person = true;
+				}
+
+				else if (std::strcmp(current, "--orbit") == 0 && next[0])
+				{
+					options.orbit = static_cast<std::float_t>(std::atof(next));
+
+					index++;
+				}
+
+				else if (std::strcmp(current, "--orbit-distance") == 0 && next[0])
+				{
+					options.orbit_distance = static_cast<std::float_t>(std::atof(next));
+
+					index++;
 				}
 
 				else if (std::strcmp(current, "--ground") == 0)
@@ -282,6 +306,20 @@ namespace zp
 					index++;
 				}
 
+				else if (std::strcmp(current, "--tab") == 0 && next[0])
+				{
+					options.menu_tab = static_cast<std::uint32_t>(std::clamp(std::atoi(next), 0, static_cast<std::int32_t>(structures::tab_count) - 1));
+
+					index++;
+				}
+
+				else if (std::strcmp(current, "--dialog") == 0 && next[0])
+				{
+					options.menu_dialog = static_cast<std::uint32_t>(std::clamp(std::atoi(next), 0, static_cast<std::int32_t>(structures::dialog_defaults)));
+
+					index++;
+				}
+
 				else if (std::strcmp(current, "--time") == 0 && next[0])
 				{
 					options.start_hours = static_cast<std::float_t>(std::atof(next));
@@ -328,6 +366,13 @@ namespace zp
 				else if (std::strcmp(current, "--impacts") == 0)
 				{
 					options.impact_test = true;
+				}
+
+				else if (std::strcmp(current, "--train") == 0 && next[0])
+				{
+					options.train_time = std::atof(next);
+
+					index++;
 				}
 
 				else if (std::strcmp(current, "--trace") == 0)
@@ -390,6 +435,39 @@ namespace zp
 
 					index++;
 				}
+
+				else if (std::strcmp(current, "--herd") == 0 && next[0])
+				{
+					options.herd_view = std::atoi(next);
+					options.camera_set = true;
+
+					index++;
+				}
+
+				else if (std::strcmp(current, "--flock") == 0 && next[0])
+				{
+					options.flock_view = std::atoi(next);
+					options.camera_set = true;
+
+					index++;
+				}
+
+				else if (std::strcmp(current, "--hunt") == 0 && next[0])
+				{
+					options.hunt_herd = std::atoi(next);
+					options.test_item = options.test_item ? options.test_item : weapon_definitions[structures::weapon_rifle].item;
+
+					index++;
+				}
+
+				else if (std::strcmp(current, "--carve") == 0 && next[0])
+				{
+					options.hunt_herd = std::atoi(next);
+					options.carve_test = true;
+					options.test_item = structures::item_stone_hatchet;
+
+					index++;
+				}
 			}
 
 			LocalFree(arguments);
@@ -422,6 +500,8 @@ namespace zp
 					testing = (options.capture[0] || options.walk_test || options.fight_test || options.gather_kind >= 0 || options.fell_test || options.marks_test || options.dead_test || options.base_test || options.farm_test || options.spring_test || options.camera_set || options.smoke || options.chart_test || options.test_inventory) && options.title_test == false && options.loading_test == false;
 
 					menu.load_settings();
+
+					menu.apply_display();
 
 					platform.set_mouse_captured(false);
 
@@ -557,6 +637,23 @@ namespace zp
 			maps.load(options.map[0] ? options.map : "island");
 
 			train.create();
+
+			gates.create();
+
+			fauna.create();
+
+			fauna.populate();
+
+			fauna_mirrored = false;
+
+			wildlife.create();
+
+			wildlife.populate();
+
+			if (options.train_time >= 0.0)
+			{
+				train.clock = options.train_time;
+			}
 
 			if (options.sky[0])
 			{
@@ -713,6 +810,53 @@ namespace zp
 			actors.list[1].alerted = true;
 		}
 
+		if (options.hunt_herd >= 0 && fauna.herds.size())
+		{
+			const auto first{ fauna.herds[static_cast<std::uint32_t>(options.hunt_herd) % fauna.herds.size()].first };
+			const auto prey{ fauna.animals[first].position };
+			const auto& species{ species_table[fauna.animals[first].species] };
+			const auto spot{ prey + mathematics.flat_forward(fauna.animals[first].yaw + half_pi) * (options.carve_test ? 1.7f : 40.0f) };
+			const auto chest{ prey + structures::vec3_s{ 0.0f, options.carve_test ? fauna_dead_center : species.center, 0.0f } + mathematics.flat_forward(fauna.animals[first].yaw) * (options.carve_test ? 0.0f : species.half * 0.4f) };
+
+			player.spawn({ spot.x, terrain.height(spot.x, spot.z) + 0.05f, spot.z }, std::atan2(chest.x - spot.x, chest.z - spot.z));
+
+			player.pitch = std::atan2(chest.y - player.eye.y, mathematics.length(structures::vec3_s{ chest.x - spot.x, 0.0f, chest.z - spot.z }));
+
+			if (options.carve_test)
+			{
+				fauna.damage(first, 100000.0f, spot);
+			}
+		}
+
+		if (options.flock_view >= 0 && wildlife.flocks.size())
+		{
+			const auto& flock{ wildlife.flocks[static_cast<std::uint32_t>(options.flock_view) % wildlife.flocks.size()] };
+			const auto& type{ wildlife_kinds[flock.kind] };
+			const auto swimming{ type.motion == structures::creature_swim };
+			const auto center{ wildlife.anchor(flock) };
+			const auto spot{ center + structures::vec3_s{ swimming ? 6.0f : 40.0f, 0.0f, 0.0f } };
+			const auto eye{ swimming ? center.y : std::max(terrain.height(spot.x, spot.z), sea_level) + 1.7f };
+			const auto target{ structures::vec3_s{ center.x, swimming ? center.y : std::max(flock.home.y + type.height, std::max(terrain.height(center.x, center.z), sea_level) + wildlife_ground_clearance), center.z } };
+
+			options.camera[0] = spot.x;
+			options.camera[1] = eye;
+			options.camera[2] = spot.z;
+			options.camera[3] = radians_to_degrees(std::atan2(target.x - spot.x, target.z - spot.z));
+			options.camera[4] = radians_to_degrees(std::atan2(target.y - eye, mathematics.length(structures::vec3_s{ target.x - spot.x, 0.0f, target.z - spot.z })));
+		}
+
+		if (options.herd_view >= 0 && fauna.herds.size())
+		{
+			const auto& leader{ fauna.animals[fauna.herds[static_cast<std::uint32_t>(options.herd_view) % fauna.herds.size()].first] };
+			const auto spot{ leader.position + mathematics.flat_forward(leader.yaw + 1.1f) * 10.0f };
+
+			options.camera[0] = spot.x;
+			options.camera[1] = terrain.height(spot.x, spot.z) + 1.7f;
+			options.camera[2] = spot.z;
+			options.camera[3] = radians_to_degrees(std::atan2(leader.position.x - spot.x, leader.position.z - spot.z));
+			options.camera[4] = -8.0f;
+		}
+
 		if (options.camera_set)
 		{
 			fly_position = { options.camera[0], options.camera[1] + (options.camera_ground && terrain.enabled ? terrain.height(options.camera[0], options.camera[2]) : 0.0f), options.camera[2] };
@@ -734,7 +878,10 @@ namespace zp
 
 			menu.plan_shots();
 
-			menu.current_page = options.menu_page >= 1 && options.menu_page <= static_cast<std::int32_t>(structures::page_controls) ? static_cast<std::uint32_t>(options.menu_page) : structures::page_main;
+			menu.current_page = options.menu_page >= 1 && options.menu_page <= static_cast<std::int32_t>(structures::page_credits) ? static_cast<std::uint32_t>(options.menu_page) : structures::page_main;
+			menu.tab = options.menu_tab;
+			menu.dialog = options.menu_dialog;
+			menu.dialog_clock = kit_dialog_seconds;
 			actors.passive = true;
 		}
 	}
@@ -757,6 +904,8 @@ namespace zp
 		viewmodel.destroy();
 
 		train.clear();
+
+		gates.clear();
 
 		farming.destroy();
 
@@ -810,6 +959,8 @@ namespace zp
 	void application_c::frame()
 	{
 		platform.pump();
+
+		menu.listen();
 
 		if (platform.resized && platform.minimized == false)
 		{
@@ -976,7 +1127,10 @@ namespace zp
 		{
 			paused = true;
 
-			menu.current_page = options.menu_page >= 1 && options.menu_page <= static_cast<std::int32_t>(structures::page_controls) ? static_cast<std::uint32_t>(options.menu_page) : structures::page_main;
+			menu.current_page = options.menu_page >= 1 && options.menu_page <= static_cast<std::int32_t>(structures::page_credits) ? static_cast<std::uint32_t>(options.menu_page) : structures::page_main;
+			menu.tab = options.menu_tab;
+			menu.dialog = options.menu_dialog;
+			menu.dialog_clock = kit_dialog_seconds;
 		}
 
 		if (options.wake_test && state == structures::app_title && frame_index == 110u)
@@ -1023,6 +1177,10 @@ namespace zp
 
 			actors.update(delta);
 
+			update_fauna();
+
+			wildlife.update(delta, renderer.camera.position);
+
 			if (live)
 			{
 				projectiles.update(delta, platform.mouse_captured && survival.inventory_open == false && chart.open == false);
@@ -1042,6 +1200,8 @@ namespace zp
 			harvest.fell(delta);
 
 			train.update(delta);
+
+			gates.update(delta);
 
 			marks.expire();
 
@@ -1092,7 +1252,7 @@ namespace zp
 
 			else if (options.third_person)
 			{
-				renderer.begin_frame(third_person_camera(), player.yaw, player.pitch, 0.0f, delta);
+				renderer.begin_frame(third_person_camera(), player.yaw + degrees_to_radians(options.orbit), player.pitch, 0.0f, delta);
 			}
 
 			else
@@ -1101,6 +1261,10 @@ namespace zp
 			}
 
 			actors.submit();
+
+			fauna.submit();
+
+			wildlife.submit();
 
 			building.submit();
 
@@ -1111,6 +1275,8 @@ namespace zp
 			projectiles.submit();
 
 			train.submit();
+
+			gates.submit();
 
 			if (state == structures::app_playing && options.third_person == false && options.camera_set == false)
 			{
@@ -1147,7 +1313,7 @@ namespace zp
 
 			else
 			{
-				if (terrain.enabled && options.camera_set == false && options.inspect_hands < 0.0f)
+				if (terrain.enabled && options.camera_set == false && options.inspect_hands < 0.0f && paused == false)
 				{
 					hud.draw(delta);
 				}
@@ -1157,6 +1323,8 @@ namespace zp
 					handle_action(menu.draw_pause(delta));
 				}
 			}
+
+			menu.draw_fps(delta);
 
 			if (show_debug || options.camera_set || terrain.enabled == false)
 			{
@@ -1325,10 +1493,10 @@ namespace zp
 
 		else if (options.walk_test)
 		{
-			platform.simulate(structures::bind_forward, true);
-			platform.simulate(structures::bind_sprint, (frame_index / 120u) % 2u == 1u);
-			platform.simulate(structures::bind_jump, frame_index % 150u > 140u);
-			platform.input.mouse_delta = { (frame_index / 200u) % 2u ? 3.0f : -2.0f, 0.0f };
+			platform.simulate(options.walk_back ? structures::bind_back : structures::bind_forward, true);
+			platform.simulate(structures::bind_sprint, options.walk_back == false && (frame_index / 120u) % 2u == 1u);
+			platform.simulate(structures::bind_jump, options.walk_back == false && frame_index % 150u > 140u);
+			platform.input.mouse_delta = { options.walk_back ? 0.0f : ((frame_index / 200u) % 2u ? 3.0f : -2.0f), 0.0f };
 
 			player.update(delta, true);
 
@@ -1691,7 +1859,7 @@ namespace zp
 
 				if (platform.input.wheel != 0.0f && survival.inventory_open == false && harvest.swinging == false && viewmodel.inspecting == false)
 				{
-					survival.active_slot = (survival.active_slot + (platform.input.wheel < 0.0f ? 1u : hotbar_slots - 1u)) % hotbar_slots;
+					survival.active_slot = (survival.active_slot + ((platform.input.wheel < 0.0f) != menu.user.reverse_wheel ? 1u : hotbar_slots - 1u)) % hotbar_slots;
 				}
 
 				if (player.state.position.y < world.kill_height + 1.0f && client.connected() == false)
@@ -1825,7 +1993,7 @@ namespace zp
 
 		player_actor = UINT32_MAX;
 
-		if (actors.spawn(viewmodel_character, player.state.position, player.yaw, structures::actor_behavior_player))
+		if (actors.spawn(actors.survivor(), player.state.position, player.yaw, structures::actor_behavior_player))
 		{
 			player_actor = static_cast<std::uint32_t>(actors.list.size() - 1u);
 		}
@@ -1843,6 +2011,71 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void application_c::update_fauna()
+	{
+		const auto connected{ client.connected() };
+
+		if (connected != fauna_mirrored)
+		{
+			fauna.clear();
+
+			if (connected == false)
+			{
+				fauna.populate();
+			}
+
+			fauna_mirrored = connected;
+		}
+
+		if (connected == false)
+		{
+			fauna.watchers.clear();
+
+			if (state == structures::app_playing && survival.vitals.dead == false && options.camera_set == false)
+			{
+				fauna.watchers.push_back({ player.state.position, fauna.noise(player.state) });
+			}
+
+			fauna.simulate(delta);
+
+			for (const auto& bite : fauna.bites)
+			{
+				if (mathematics.distance(bite, player.state.position) < 2.5f && survival.vitals.dead == false)
+				{
+					survival.harm = structures::death_beaten;
+
+					survival.damage(fauna_charge_damage);
+				}
+			}
+
+			fauna.bites.clear();
+		}
+
+		fauna.update(delta, client.server_clock - net_interpolation_delay, connected);
+
+		if (connected && options.herd_view >= 0 && herd_framed == false && fauna.animals.size())
+		{
+			auto nearest{ 0u };
+
+			for (auto index{ 1u }; index < fauna.animals.size(); index++)
+			{
+				nearest = mathematics.distance(fauna.animals[index].shown, player.state.position) < mathematics.distance(fauna.animals[nearest].shown, player.state.position) ? index : nearest;
+			}
+
+			const auto& animal{ fauna.animals[nearest] };
+			const auto spot{ animal.shown + mathematics.flat_forward(animal.shown_yaw + 1.1f) * 10.0f };
+
+			fly_position = { spot.x, terrain.height(spot.x, spot.z) + 1.7f, spot.z };
+			fly_yaw = std::atan2(animal.shown.x - spot.x, animal.shown.z - spot.z);
+			fly_pitch = degrees_to_radians(-8.0f);
+			herd_framed = true;
+
+			logger.write("fauna: framing mirrored animal %u of %zu", static_cast<std::uint32_t>(animal.id), fauna.animals.size());
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void application_c::update_player_actor()
 	{
 		if (player_actor < actors.list.size())
@@ -1855,7 +2088,9 @@ namespace zp
 			body.look_pitch = player.pitch;
 			body.crouched = (player.state.flags & structures::movement_crouched) != 0u;
 			body.grounded = (player.state.flags & structures::movement_on_ground) != 0u;
-			body.hidden = options.third_person == false && options.camera_set == false;
+			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead;
+			body.first_person = options.third_person == false;
+			body.held = survival.slots[inventory_slots + survival.active_slot].item;
 		}
 	}
 	/*
@@ -1863,9 +2098,11 @@ namespace zp
 	*/
 	structures::vec3_s application_c::third_person_camera()
 	{
-		const auto forward{ mathematics.forward_from_angles(player.yaw, player.pitch) };
-		const auto right{ mathematics.right_from_yaw(player.yaw) };
-		const auto desired{ player.eye - forward * third_person_distance + right * third_person_side + structures::vec3_s{ 0.0f, third_person_height, 0.0f } };
+		const auto yaw{ player.yaw + degrees_to_radians(options.orbit) };
+		const auto forward{ mathematics.forward_from_angles(yaw, player.pitch) };
+		const auto right{ mathematics.right_from_yaw(yaw) };
+		const auto distance{ options.orbit_distance > 0.0f ? options.orbit_distance : third_person_distance };
+		const auto desired{ player.eye - forward * distance + right * third_person_side + structures::vec3_s{ 0.0f, third_person_height, 0.0f } };
 
 		return world.trace(player.eye, desired, { 0.15f, 0.15f, 0.15f }, structures::contents_solid).end;
 	}
