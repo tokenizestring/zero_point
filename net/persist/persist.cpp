@@ -157,6 +157,7 @@ namespace zp
 			put_value(crop);
 		}
 
+		put_value(static_cast<std::uint32_t>(harvest.nodes.size()));
 		put_value(static_cast<std::uint32_t>(std::count_if(harvest.nodes.begin(), harvest.nodes.end(), [](const structures::resource_node_s& node) { return node.depleted; })));
 
 		for (auto index{ 0u }; index < harvest.nodes.size(); index++)
@@ -338,14 +339,20 @@ namespace zp
 				farming.crops.push_back(get_value<structures::crop_s>());
 			}
 
+			const auto layout{ version >= world_save_layout ? get_value<std::uint32_t>() : 0u };
 			const auto depleted{ get_value<std::uint32_t>() };
+
+			if (layout != harvest.nodes.size())
+			{
+				logger.write("persist: the island layout changed (%u nodes saved, %zu now), cut nodes regrow", layout, harvest.nodes.size());
+			}
 
 			for (auto entry{ 0u }; entry < depleted && healthy; entry++)
 			{
 				const auto index{ get_value<std::uint32_t>() };
 				const auto remaining{ get_value<std::float_t>() };
 
-				if (index < harvest.nodes.size())
+				if (index < harvest.nodes.size() && layout == harvest.nodes.size())
 				{
 					harvest.deplete(index);
 
