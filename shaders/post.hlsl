@@ -14,6 +14,8 @@ cbuffer post_constants : register(b4)
 Texture2D<float4> hdr_texture : register(t0);
 Texture2D<float4> bloom_texture : register(t1);
 StructuredBuffer<float4> exposure_state : register(t2);
+Texture2D<float2> motion_texture : register(t3);
+Texture2D<float> depth_texture : register(t4);
 SamplerState linear_clamp : register(s0);
 
 struct fullscreen_output
@@ -74,6 +76,20 @@ float3 agx(float3 color, float saturation, float punch)
 /*
 //=====================================================================================
 */
+float3 daltonize(float3 color, float mode)
+{
+	static const float3x3 to_cones = { { 17.8824, 43.5161, 4.11935 }, { 3.45565, 27.1554, 3.86714 }, { 0.0299566, 0.184309, 1.46709 } };
+	static const float3x3 from_cones = { { 0.0809444479, -0.130504409, 0.116721066 }, { -0.0102485335, 0.0540193266, -0.113614708 }, { -0.000365296938, -0.00412161469, 0.693511405 } };
+
+	float3 cones = mul(to_cones, color);
+	float3 seen = mode < 1.5 ? float3(2.02344 * cones.y - 2.52581 * cones.z, cones.y, cones.z) : (mode < 2.5 ? float3(cones.x, 0.494207 * cones.x + 1.24827 * cones.z, cones.z) : float3(cones.x, cones.y, -0.395913 * cones.x + 0.801109 * cones.y));
+	float3 error = color - mul(from_cones, seen);
+
+	return saturate(color + float3(0.0, error.r * 0.7 + error.g, error.r * 0.7 + error.b));
+}
+/*
+//=====================================================================================
+*/
 float4 ps_tonemap(fullscreen_output input) : SV_Target
 {
 	float2 uv = input.uv;
@@ -93,6 +109,39 @@ float4 ps_tonemap(fullscreen_output input) : SV_Target
 	else
 	{
 		color = hdr_texture.SampleLevel(linear_clamp, uv, 0.0).rgb;
+	}
+
+	[branch] if (post_params.z > 0.0)
+	{
+		float2 motion = motion_texture.SampleLevel(linear_clamp, uv, 0.0);
+
+		[branch] if (depth_texture.SampleLevel(linear_clamp, uv, 0.0) <= 0.0)
+		{
+			float2 ndc = uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
+			float4 far_point = mul(float4(ndc, 0.000001, 1.0), inverse_view_projection);
+			float4 previous = mul(far_point, previous_view_projection);
+
+			motion = (previous.xy / previous.w - ndc) * float2(0.5, -0.5);
+		}
+
+		float2 streak = motion * post_params.z;
+		float span = length(streak * post_screen.xy);
+
+		[branch] if (span > 1.0)
+		{
+			streak *= min(1.0, 48.0 / span);
+
+			float3 total = color;
+
+			[unroll] for (int tap = 0; tap < 6; tap++)
+			{
+				float along = (float(tap) + 0.5) / 6.0 - 0.5;
+
+				total += hdr_texture.SampleLevel(linear_clamp, uv + streak * along, 0.0).rgb;
+			}
+
+			color = total / 7.0;
+		}
 	}
 
 	[branch] if (post_grade.w > 0.0)
@@ -115,6 +164,11 @@ float4 ps_tonemap(fullscreen_output input) : SV_Target
 	color = agx(color, post_grade.x, post_grade.y);
 
 	color = pow(saturate(color), post_grade.z);
+
+	[branch] if (post_effects.w > 0.5)
+	{
+		color = daltonize(color, post_effects.w);
+	}
 
 	float noise = interleaved_gradient_noise(input.position.xy + post_params.w * 17.0);
 	float grey = luminance(color);
