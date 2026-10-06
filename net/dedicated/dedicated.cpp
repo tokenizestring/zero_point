@@ -116,6 +116,11 @@ namespace zp
 				server.forced_ride = true;
 			}
 
+			else if (std::strcmp(arguments[index], "--herd-near") == 0)
+			{
+				server.forced_herd = true;
+			}
+
 			else if (std::strcmp(arguments[index], "--weather") == 0 && has_next)
 			{
 				forced_weather = std::clamp(std::atoi(arguments[++index]), 0, static_cast<std::int32_t>(std::size(weather_phases)) - 1);
@@ -140,6 +145,8 @@ namespace zp
 				result = true;
 
 				train.create();
+
+				fauna.populate();
 
 				if (testing == false)
 				{
