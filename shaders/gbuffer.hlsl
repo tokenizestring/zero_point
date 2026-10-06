@@ -97,10 +97,11 @@ pixel_input vs_main(vertex_input input)
 {
 	pixel_input output;
 
-	float4 local = float4(input.position, 1.0);
+	float3 moved_normal = input.normal;
+	float4 local = float4(creature_motion(input.position, moved_normal), 1.0);
 	float4 placed = mul(local, world);
 	float4 previous_placed = mul(local, previous_world);
-	float3 placed_normal = mul(input.normal, (float3x3)world);
+	float3 placed_normal = mul(moved_normal, (float3x3)world);
 	float3 placed_tangent = mul(input.tangent.xyz, (float3x3)world);
 
 	[branch] if (object_params.y > 0.5)
@@ -367,6 +368,13 @@ gbuffer_output shade(pixel_input input, bool front, bool alpha_test)
 	}
 
 	float4 albedo = albedo_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy);
+
+	[branch] if (skin_params.w > 0.0)
+	{
+		float closeness = saturate((skin_params.w - length(input.world_position - camera_position.xyz)) / 0.12);
+
+		clip(interleaved_gradient_noise(input.position.xy + 5.588238 * fmod(exposure_params.w, 64.0)) - closeness);
+	}
 
 	if (alpha_test)
 	{

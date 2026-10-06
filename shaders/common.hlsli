@@ -97,7 +97,42 @@ cbuffer object_constants : register(b1)
 	float4x4 previous_world;
 	float4 object_params;
 	float4 skin_params;
+	float4 motion_params;
 };
+
+float3 creature_motion(float3 position, inout float3 normal)
+{
+	[branch] if (motion_params.x > 1.5)
+	{
+		float along = saturate((motion_params.w * 0.5 - position.z) / motion_params.w);
+		float wave = motion_params.y - along * 5.0;
+		float sway = motion_params.z * along * along;
+
+		position.x += sin(wave) * sway;
+		normal = normalize(float3(normal.x - cos(wave) * sway * 5.0 / motion_params.w * normal.z, normal.y, normal.z));
+	}
+
+	else if (motion_params.x > 0.5)
+	{
+		float reach = max(abs(position.x) - motion_params.w, 0.0);
+
+		[branch] if (reach > 0.0)
+		{
+			float side = position.x < 0.0 ? -1.0 : 1.0;
+			float angle = motion_params.z * sin(motion_params.y - reach * 2.0) * smoothstep(0.0, 0.05, reach);
+			float sine, cosine;
+
+			sincos(angle, sine, cosine);
+
+			float across = side * normal.x;
+
+			position = float3(side * (motion_params.w + reach * cosine - position.y * sine), reach * sine + position.y * cosine, position.z);
+			normal = float3(side * (across * cosine - normal.y * sine), across * sine + normal.y * cosine, normal.z);
+		}
+	}
+
+	return position;
+}
 
 StructuredBuffer<float4> bone_rows : register(t20);
 

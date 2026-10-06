@@ -48,7 +48,9 @@ struct alpha_output
 
 float4 vs_main(vertex_input input) : SV_Position
 {
-	return mul(mul(float4(input.position, 1.0), world), cascade_matrices[(uint)shadow_params.w]);
+	float3 unused = float3(0.0, 1.0, 0.0);
+
+	return mul(mul(float4(creature_motion(input.position, unused), 1.0), world), cascade_matrices[(uint)shadow_params.w]);
 }
 /*
 //=====================================================================================
