@@ -384,6 +384,11 @@ class model_c:
                 for loop, uv in zip(face.loops, ((left, top), (left, bottom), (right, bottom), (right, top))):
                     loop[self.leaf_uv].uv = uv
 
+    def ground(self, limit):
+        for vert in self.leaf.verts:
+            if vert.co.z < limit:
+                vert.co.z = limit
+
     def finish(self, name, wood_material, leaf_material):
         objects = []
         if len(self.wood.faces):
