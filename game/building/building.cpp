@@ -547,32 +547,32 @@ namespace zp
 	*/
 	void building_c::load_kit()
 	{
-		if (const auto kit{ models.find(deployable_kit) }; kit)
+		if (const auto deployables{ models.find(deployable_kit) }; deployables)
 		{
 			for (auto piece{ 0u }; piece < structures::piece_count; piece++)
 			{
-				if (const auto part{ deployable_parts[piece] ? models.part(*kit, deployable_parts[piece]) : nullptr }; part)
+				if (const auto part{ deployable_parts[piece] ? models.part(*deployables, deployable_parts[piece]) : nullptr }; part)
 				{
 					piece_builder.clear();
-					piece_builder.append(*kit, part->first_index, part->index_count, mathematics.identity());
+					piece_builder.append(*deployables, part->first_index, part->index_count, mathematics.identity());
 					piece_builder.upload(meshes[piece]);
 				}
 			}
 		}
 
-		if (const auto kit{ models.find(structure_kit) }; kit)
+		if (const auto structures_model{ models.find(structure_kit) }; structures_model)
 		{
 			for (auto tier{ 0u }; tier < building_tier_count; tier++)
 			{
 				for (auto piece{ 0u }; piece < structures::piece_door; piece++)
 				{
-					if (const auto part{ models.part(*kit, structure_parts[tier][piece]) }; part)
+					if (const auto part{ models.part(*structures_model, structure_parts[tier][piece]) }; part)
 					{
 						functions::release(tier_meshes[tier][piece].vertex_buffer);
 						functions::release(tier_meshes[tier][piece].index_buffer);
 
 						piece_builder.clear();
-						piece_builder.append(*kit, part->first_index, part->index_count, mathematics.identity());
+						piece_builder.append(*structures_model, part->first_index, part->index_count, mathematics.identity());
 						piece_builder.upload(tier_meshes[tier][piece]);
 					}
 				}
