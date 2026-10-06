@@ -773,9 +773,10 @@ namespace zp
 
 			menu.key_name(platform.bindings[structures::bind_map], key, sizeof(key));
 
-			std::snprintf(note, sizeof(note), "%s to fold the map away, right click to mark a spot", key);
+			const auto hint_y{ area.y + size + 34.0f * s > height ? height - 24.0f * s : area.y + size + 34.0f * s };
 
-			canvas.text(structures::font_hand, { width * 0.5f, area.y + size + 26.0f * s > height ? height - 20.0f * s : area.y + size + 26.0f * s }, 22.0f * s, functions::rgba(235u, 225u, 205u, 210u), note, structures::align_center | structures::align_middle);
+			kit.hint({ width * 0.5f - 14.0f * s, hint_y }, key, "Fold the map", structures::align_right);
+			kit.hint({ width * 0.5f + 14.0f * s, hint_y }, "Right click", "Mark a spot", structures::align_left);
 		}
 	}
 }
