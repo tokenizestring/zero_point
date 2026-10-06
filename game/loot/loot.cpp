@@ -252,7 +252,7 @@ namespace zp
 					actor.hidden = false;
 				}
 
-				else if (const auto actor{ actors.spawn(remote_character, bag.position, bag.yaw, structures::actor_behavior_corpse) }; actor)
+				else if (const auto actor{ actors.spawn(actors.survivor(), bag.position, bag.yaw, structures::actor_behavior_corpse) }; actor)
 				{
 					bag.actor = static_cast<std::int32_t>(actors.list.size()) - 1;
 				}
