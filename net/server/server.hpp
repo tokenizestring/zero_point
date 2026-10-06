@@ -38,6 +38,7 @@ namespace zp
 		std::uint32_t bag_revision = 0u;
 		std::int32_t forced_spawn = -1;
 		bool forced_ride = false;
+		bool forced_herd = false;
 		std::float_t tick_accumulator = 0.0f;
 		std::float_t snapshot_accumulator = 0.0f;
 		std::float_t status_timer = 0.0f;
@@ -58,6 +59,7 @@ namespace zp
 		void receive();
 		void handle_query(const structures::address_s& address, stream_reader_c& reader);
 		void handle_connect(const structures::address_s& address, stream_reader_c& reader);
+		bool settle_name(char* player_name, std::size_t capacity, std::uint64_t identity);
 		void handle_data(std::int32_t index, stream_reader_c& reader);
 		void handle_message(std::int32_t index, const structures::reliable_s& message);
 		void read_input(std::int32_t index, stream_reader_c& reader);

@@ -270,16 +270,9 @@ namespace zp
 				send_reject(address, static_cast<std::uint8_t>(verdict));
 			}
 
-			else if (admin.player(player_name) >= 0)
+			else if (settle_name(player_name, sizeof(player_name), identity) == false)
 			{
-				logger.write("server: refused %s (already playing)", player_name);
-
-				send_reject(address, structures::reject_duplicate);
-			}
-
-			else if (persist.claim(mathematics.hash_text(player_name), identity) == false)
-			{
-				logger.write("server: refused %s (name claimed by another key)", player_name);
+				logger.write("server: refused %s (no free name left)", player_name);
 
 				send_reject(address, structures::reject_identity);
 			}
@@ -354,6 +347,40 @@ namespace zp
 				}
 			}
 		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool server_c::settle_name(char* player_name, std::size_t capacity, std::uint64_t identity)
+	{
+		char wanted[net_name_length]{};
+		char candidate[net_name_length]{};
+
+		std::snprintf(wanted, sizeof(wanted), "%s", player_name);
+		std::snprintf(candidate, sizeof(candidate), "%s", player_name);
+
+		auto copy{ 1u };
+
+		while (copy <= net_name_copies && (admin.player(candidate) >= 0 || persist.claim(mathematics.hash_text(candidate), identity) == false))
+		{
+			copy++;
+
+			std::snprintf(candidate, sizeof(candidate), "%.*s (%u)", static_cast<std::int32_t>(net_name_length - 8u), wanted, copy);
+		}
+
+		if (copy <= net_name_copies)
+		{
+			if (copy > 1u)
+			{
+				logger.write("server: %s is taken, joining as %s", wanted, candidate);
+			}
+
+			std::snprintf(player_name, capacity, "%s", candidate);
+
+			return true;
+		}
+
+		return false;
 	}
 	/*
 	//=====================================================================================
@@ -876,6 +903,31 @@ namespace zp
 
 		record_trails();
 
+		fauna.watchers.clear();
+
+		for (const auto& peer : clients)
+		{
+			if (peer.active && peer.alive)
+			{
+				fauna.watchers.push_back({ peer.state.position, fauna.noise(peer.state) });
+			}
+		}
+
+		fauna.simulate(delta);
+
+		for (const auto& bite : fauna.bites)
+		{
+			for (auto index{ 0 }; index < static_cast<std::int32_t>(clients.size()); index++)
+			{
+				if (clients[index].active && clients[index].alive && mathematics.distance(bite, clients[index].state.position) < 2.5f)
+				{
+					hurt(index, fauna_charge_damage, structures::death_beaten, -1);
+				}
+			}
+		}
+
+		fauna.bites.clear();
+
 		harvest.respawn(delta);
 
 		building.smelt(delta);
@@ -1061,7 +1113,22 @@ namespace zp
 		const auto victim{ ray_player(index, origin, direction, limit, when, net_interpolation_delay, distance, height, top) };
 		const auto sleeper{ loot.ray_sleeper(origin, direction, victim >= 0 ? distance : limit, slumber) };
 
-		if (sleeper >= 0)
+		auto prey{ sleeper >= 0 ? slumber : (victim >= 0 ? distance : limit) };
+
+		const auto animal{ fauna.ray(origin, direction, prey, prey) };
+
+		fauna.alarm(origin, definition.loudness);
+
+		if (animal >= 0)
+		{
+			const auto killed{ fauna.damage(static_cast<std::uint32_t>(animal), item_definitions[item].damage, origin) };
+
+			send_hit(index, fauna_victim, item_definitions[item].damage, false, killed, origin + direction * prey);
+
+			marks.bleed(origin + direction * prey, direction);
+		}
+
+		else if (sleeper >= 0)
 		{
 			const auto killed{ loot.strike(static_cast<std::uint32_t>(sleeper), item_definitions[item].damage) };
 
@@ -1093,7 +1160,7 @@ namespace zp
 			}
 		}
 
-		shots.push_back({ static_cast<std::uint16_t>(index), static_cast<std::uint8_t>(peer.weapon.weapon), static_cast<std::uint8_t>(victim >= 0 || sleeper >= 0 ? 255u : (hit.hit ? std::min(hit.surface, 252u) : 254u)), origin, origin + direction * (sleeper >= 0 ? slumber : (victim >= 0 ? distance : limit)) });
+		shots.push_back({ static_cast<std::uint16_t>(index), static_cast<std::uint8_t>(peer.weapon.weapon), static_cast<std::uint8_t>(animal >= 0 || victim >= 0 || sleeper >= 0 ? 255u : (hit.hit ? std::min(hit.surface, 252u) : 254u)), origin, origin + direction * (animal >= 0 ? prey : (sleeper >= 0 ? slumber : (victim >= 0 ? distance : limit))) });
 	}
 	/*
 	//=====================================================================================
@@ -1124,6 +1191,8 @@ namespace zp
 
 			auto slumber{ reach };
 
+			structures::vec3_s carved{};
+
 			if (const auto sleeper{ loot.ray_sleeper(eye, forward, blocked.hit ? blocked.fraction * reach : reach, slumber) }; sleeper >= 0)
 			{
 				const auto damage{ std::max(definition.damage, 5.0f) };
@@ -1147,6 +1216,20 @@ namespace zp
 				sound_at(index, structures::sound_hit_flesh, eye + forward * distance, 0.9f, 1.0f, audio_event_mid);
 
 				held.condition -= held.item && held.item != structures::item_rock ? 0.006f : 0.0f;
+			}
+
+			else if (const auto outcome{ fauna.melee(survivor, eye, forward, blocked.hit ? blocked.fraction * reach : reach, std::max(definition.damage, 5.0f), carved) }; outcome > 0u)
+			{
+				if (outcome < 3u)
+				{
+					send_hit(index, fauna_victim, std::max(definition.damage, 5.0f), false, outcome == 2u, carved);
+				}
+
+				sound_at(index, structures::sound_hit_flesh, carved, 0.9f, 1.0f, audio_event_mid);
+
+				marks.bleed(carved, forward);
+
+				held.condition -= held.item && held.item != structures::item_rock ? 0.004f : 0.0f;
 			}
 
 			else if (harvest.strike(survivor, slot, eye, forward, true) >= 0)
@@ -1663,6 +1746,11 @@ namespace zp
 			peer.bot_yaw = point.yaw;
 		}
 
+		if (forced_herd && peer.bot == false)
+		{
+			fauna.relocate(0u, peer.state.position, peer.yaw);
+		}
+
 		if (forced_ride && train.ready && peer.bot == false)
 		{
 			const auto& kind{ train_vehicles[train_consist[1]] };
@@ -1765,7 +1853,7 @@ namespace zp
 					}
 				}
 
-				const auto reserved{ 2u + static_cast<std::uint32_t>(heard.size()) * net_shot_bytes };
+				const auto reserved{ 3u + static_cast<std::uint32_t>(heard.size()) * net_shot_bytes + fauna_snapshot_reserve * fauna_animal_bytes };
 				const auto room{ writer.remaining() > reserved ? (writer.remaining() - reserved) / net_player_bytes : 0u };
 				const auto count{ static_cast<std::uint32_t>(std::min<std::size_t>({ nearby.size(), static_cast<std::size_t>(net_snapshot_players), static_cast<std::size_t>(room) })) };
 
@@ -1792,6 +1880,8 @@ namespace zp
 					writer.i16(static_cast<std::int16_t>(std::clamp(event.end.y * net_position_scale, -32767.0f, 32767.0f)));
 					writer.i16(static_cast<std::int16_t>(std::clamp(event.end.z * net_position_scale, -32767.0f, 32767.0f)));
 				}
+
+				fauna.write(writer, peer.state.position);
 
 				if (writer.overflow == false)
 				{
@@ -2125,6 +2215,7 @@ namespace zp
 		writer.u16(static_cast<std::uint16_t>(maximum));
 		writer.text(name, net_server_name_length);
 		writer.text(map, 32u);
+		writer.text(clients[index].name, net_name_length);
 
 		send_raw(clients[index].connection.address, packet, writer.size);
 	}
