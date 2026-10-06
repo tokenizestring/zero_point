@@ -60,6 +60,19 @@ namespace zp
 					engine->CreateSourceVoice(&voice, &mono, XAUDIO2_VOICE_USEFILTER, 4.0f, nullptr, &list);
 				}
 
+				const WAVEFORMATEX stereo{ WAVE_FORMAT_PCM, 2u, 44100u, 176400u, 4u, 16u, 0u };
+
+				XAUDIO2_SEND_DESCRIPTOR dry{ 0u, master };
+
+				const XAUDIO2_VOICE_SENDS direct{ 1u, &dry };
+
+				for (auto& voice : tail_voices)
+				{
+					engine->CreateSourceVoice(&voice, &stereo, XAUDIO2_VOICE_USEFILTER, 4.0f, nullptr, &direct);
+				}
+
+				loop(ring_voice, structures::sound_tinnitus, 1u, nullptr);
+
 				for (auto index{ 0u }; index < structures::ambience_count; index++)
 				{
 					loop(ambience[index], ambience_sounds[index], 2u, nullptr);
@@ -155,6 +168,23 @@ namespace zp
 
 				voice = nullptr;
 			}
+		}
+
+		for (auto& voice : tail_voices)
+		{
+			if (voice)
+			{
+				voice->DestroyVoice();
+
+				voice = nullptr;
+			}
+		}
+
+		if (ring_voice)
+		{
+			ring_voice->DestroyVoice();
+
+			ring_voice = nullptr;
 		}
 
 		for (auto& voice : drones)
@@ -351,33 +381,87 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void mixer_c::gunshot(structures::vec3_s position, std::uint32_t close_sound, std::uint32_t far_sound, std::float_t loudness, bool local)
+	void mixer_c::gunshot(structures::vec3_s position, std::uint32_t weapon, bool local)
 	{
+		const auto kind{ std::min(weapon, static_cast<std::uint32_t>(structures::weapon_count) - 1u) };
+		const auto& layers{ gun_sounds[kind] };
+		const auto loudness{ weapon_definitions[kind].loudness };
 		const auto distance{ local ? 0.0f : mathematics.distance(position, listener_position) };
 
-		if (ready && gun_voices[0] && distance < audio_gun_range * loudness)
+		if (ready && gun_voices[0] && layers.close < structures::sound_count && distance < audio_gun_range * loudness)
 		{
 			const auto delay{ distance / audio_speed_of_sound };
 			const auto blocked{ local ? 0.0f : occlusion(position) };
 			const auto level{ loudness * std::pow(audio_gun_reference / (audio_gun_reference + distance), 0.75f) * (1.0f - blocked * audio_occlusion_loss) };
-			const auto close_weight{ std::clamp(1.0f - (distance - 40.0f) / 260.0f, 0.0f, 1.0f) * (1.0f - blocked * 0.6f) };
-			const auto far_weight{ local ? 0.32f : std::clamp((distance - 20.0f) / 150.0f, 0.12f, 1.0f) };
+			const auto close_weight{ std::clamp(1.0f - (distance - 25.0f) / 230.0f, 0.0f, 1.0f) * (1.0f - blocked * 0.6f) };
+			const auto far_weight{ local ? 0.0f : std::clamp((distance - 30.0f) / 170.0f, 0.0f, 1.0f) };
 			const auto cutoff{ air_cutoff(distance) * mathematics.lerp(1.0f, audio_occlusion_muffle, blocked) };
-			const auto pitch{ 0.96f + random() * 0.08f };
+			const auto pitch{ 0.97f + random() * 0.06f };
+			const auto room{ local ? acoustics : surroundings(position) };
+			const auto space{ room < structures::acoustic_count ? audio_tail_gains[room] : 0.0f };
+			const auto tail_level{ loudness * space * std::pow(audio_tail_reference / (audio_tail_reference + distance), 0.6f) * (1.0f - blocked * 0.3f) };
+			const auto side{ local ? mathematics.right_from_yaw(player.yaw) : mathematics.flat_forward(random() * two_pi) };
 
 			if (close_weight > 0.0f)
 			{
-				pending.push_back({ clock + delay, close_sound, position, std::min(1.0f, level * close_weight), pitch, cutoff, audio_reverb_send * (local ? 1.0f : 1.4f), local == false });
+				pending.push_back({ clock + delay, layers.close, position, std::min(1.0f, level * close_weight), pitch, cutoff, audio_reverb_send * (local ? 0.5f : 1.0f), local == false });
 			}
 
-			pending.push_back({ clock + delay + (local ? 0.012f : 0.0f), far_sound, position, std::min(1.0f, level * far_weight * 1.3f), pitch, cutoff * 0.8f, audio_reverb_send * (1.5f + blocked), local == false });
+			if (far_weight > 0.0f)
+			{
+				pending.push_back({ clock + delay, layers.distant, position, std::min(1.0f, level * far_weight * 1.4f), pitch, cutoff, audio_reverb_send * (1.5f + blocked), true });
+			}
+
+			if (local || distance < audio_mechanism_range)
+			{
+				pending.push_back({ clock + delay, layers.mechanism, position, local ? 0.5f : 0.4f * (1.0f - distance / audio_mechanism_range), 0.98f + random() * 0.04f, 16000.0f, 0.0f, local == false });
+			}
+
+			if (tail_level > 0.005f && room < structures::acoustic_underwater)
+			{
+				pending.push_back({ clock + delay + 0.004f, layers.tail + room, position, std::min(1.0f, tail_level), pitch, air_cutoff(distance * 0.6f) * mathematics.lerp(1.0f, 0.6f, blocked), 0.0f, false });
+			}
 
 			find_echoes(position);
 
 			for (const auto& echo : echo_cache)
 			{
-				pending.push_back({ clock + echo.path / audio_speed_of_sound, far_sound, echo.position, std::min(1.0f, loudness * echo.strength * std::pow(audio_gun_reference / (audio_gun_reference + echo.path), 0.6f) * 2.2f), pitch * 0.97f, air_cutoff(echo.path) * 0.6f, audio_reverb_send * 2.0f, true });
+				pending.push_back({ clock + echo.path / audio_speed_of_sound, layers.distant, echo.position, std::min(1.0f, loudness * echo.strength * std::pow(audio_gun_reference / (audio_gun_reference + echo.path), 0.6f) * 2.2f), pitch * 0.97f, air_cutoff(echo.path) * 0.6f, audio_reverb_send * 2.0f, true });
 			}
+
+			if (layers.ejects)
+			{
+				casing(position, side, local);
+			}
+
+			deafen((local ? 1.0f : mathematics.saturate(1.0f - distance / audio_deafen_range)) * layers.deafening * (room == structures::acoustic_room ? audio_room_deafening : 1.0f));
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void mixer_c::casing(structures::vec3_s position, structures::vec3_s side, bool local)
+	{
+		const auto spot{ position + side * (0.55f + random() * 0.5f) };
+		const auto ground{ world.trace(spot, spot - structures::vec3_s{ 0.0f, 3.0f, 0.0f }, {}, structures::contents_solid) };
+		const auto landing{ ground.hit ? ground.end : spot - structures::vec3_s{ 0.0f, 1.6f, 0.0f } };
+		const auto step{ surface_sound(landing) };
+		const auto sound{ step == structures::sound_step_wood ? structures::sound_casing_wood : (step == structures::sound_step_concrete || step == structures::sound_step_gravel ? structures::sound_casing_hard : structures::sound_casing_soft) };
+		const auto distance{ mathematics.distance(landing, listener_position) };
+
+		if (ready && distance < audio_casing_range)
+		{
+			pending.push_back({ clock + audio_casing_delay + random() * 0.15f + distance / audio_speed_of_sound, sound, landing, (local ? 0.42f : 0.5f) * (1.0f - distance / audio_casing_range), 0.9f + random() * 0.25f, 16000.0f, audio_reverb_send * 0.5f, true });
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void mixer_c::deafen(std::float_t amount)
+	{
+		if (menu.user.ear_ringing && amount > 0.0f)
+		{
+			deafness = std::min(deafness + amount, 1.0f);
 		}
 	}
 	/*
@@ -518,7 +602,30 @@ namespace zp
 	{
 		if (entry.sound < structures::sound_count && groups[entry.sound].count)
 		{
-			if (const auto& clip{ clips[pick(entry.sound)] }; clip.channels == 1u)
+			if (const auto& clip{ clips[pick(entry.sound)] }; clip.channels == 2u)
+			{
+				if (const auto voice{ tail_voices[tail_cursor] }; voice)
+				{
+					std::float_t matrix[16]{};
+
+					const XAUDIO2_FILTER_PARAMETERS filter{ LowPassFilter, std::min(2.0f * std::sin(pi * std::min(entry.cutoff, 7350.0f) / 44100.0f), muffle), 1.0f };
+
+					matrix[0] = output_channels > 1u ? 1.0f : 0.5f;
+					matrix[1] = output_channels > 1u ? 0.0f : 0.5f;
+					matrix[3] = output_channels > 1u ? 1.0f : 0.0f;
+					matrix[8] = output_channels >= 6u ? 0.45f : 0.0f;
+					matrix[11] = output_channels >= 6u ? 0.45f : 0.0f;
+
+					voice->SetOutputMatrix(master, 2u, output_channels, matrix);
+					voice->SetFilterParameters(&filter);
+
+					submit(voice, clip, entry.volume, entry.pitch);
+				}
+
+				tail_cursor = (tail_cursor + 1u) % audio_tail_voices;
+			}
+
+			else if (clip.channels == 1u)
 			{
 				if (const auto voice{ gun_voices[gun_cursor] }; voice)
 				{
@@ -687,10 +794,22 @@ namespace zp
 	*/
 	void mixer_c::classify()
 	{
-		const auto head{ listener_position };
-		const auto roof{ world.trace(head, head + structures::vec3_s{ 0.0f, 14.0f, 0.0f }, {}, structures::contents_solid).fraction < 1.0f };
+		const auto kind{ (player.state.flags & structures::movement_underwater) != 0u ? static_cast<std::uint32_t>(structures::acoustic_underwater) : surroundings(listener_position) };
 
-		roofed = roof;
+		roofed = world.trace(listener_position, listener_position + structures::vec3_s{ 0.0f, 14.0f, 0.0f }, {}, structures::contents_solid).fraction < 1.0f;
+
+		if (kind != acoustics)
+		{
+			set_acoustics(kind);
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::uint32_t mixer_c::surroundings(structures::vec3_s position)
+	{
+		const auto head{ position };
+		const auto roof{ world.trace(head, head + structures::vec3_s{ 0.0f, 14.0f, 0.0f }, {}, structures::contents_solid).fraction < 1.0f };
 
 		auto kind{ static_cast<std::uint32_t>(structures::acoustic_plain) };
 		auto walls{ 0u };
@@ -716,12 +835,7 @@ namespace zp
 			}
 		}
 
-		if ((player.state.flags & structures::movement_underwater) != 0u)
-		{
-			kind = structures::acoustic_underwater;
-		}
-
-		else if (roof && close_walls >= 4u)
+		if (roof && close_walls >= 4u)
 		{
 			kind = structures::acoustic_room;
 		}
@@ -741,10 +855,7 @@ namespace zp
 			kind = structures::acoustic_forest;
 		}
 
-		if (kind != acoustics)
-		{
-			set_acoustics(kind);
-		}
+		return kind;
 	}
 	/*
 	//=====================================================================================
@@ -824,10 +935,17 @@ namespace zp
 
 			const auto submerged{ (player.state.flags & structures::movement_underwater) != 0u };
 
+			deafness = std::max(deafness - audio_ring_decay * delta, 0.0f);
+			ringing = mathematics.damp(ringing, menu.user.ear_ringing ? mathematics.saturate((deafness - audio_ring_threshold) / (1.0f - audio_ring_threshold)) : 0.0f, 6.0f, delta);
 			fire_level = mathematics.damp(fire_level, torch_held && viewmodel.stowed == false ? 0.32f : 0.0f, 4.0f, delta);
 			heart_level = mathematics.damp(heart_level, danger * 0.9f, 3.0f, delta);
 			underwater_level = mathematics.damp(underwater_level, submerged ? audio_underwater_volume : 0.0f, 7.0f, delta);
-			muffle = mathematics.damp(muffle, submerged ? audio_underwater_muffle : 1.0f, 9.0f, delta);
+			muffle = mathematics.damp(muffle, submerged ? audio_underwater_muffle : mathematics.lerp(1.0f, audio_ring_muffle, ringing), 9.0f, delta);
+
+			if (ring_voice)
+			{
+				ring_voice->SetVolume(ringing * audio_ring_volume * effects_level);
+			}
 
 			if (underwater_voice)
 			{

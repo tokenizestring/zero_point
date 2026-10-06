@@ -29,6 +29,8 @@ namespace zp
 		IXAudio2SourceVoice* underwater_voice = nullptr;
 		IXAudio2SourceVoice* rain_voice = nullptr;
 		IXAudio2SourceVoice* gun_voices[audio_gun_voices]{};
+		IXAudio2SourceVoice* tail_voices[audio_tail_voices]{};
+		IXAudio2SourceVoice* ring_voice = nullptr;
 		IXAudio2SourceVoice* drones[structures::drone_count]{};
 		structures::drone_s drone_states[structures::drone_count]{};
 		structures::vec3_s listener_velocity{};
@@ -42,6 +44,9 @@ namespace zp
 		std::float_t acoustic_timer = 0.0f;
 		std::uint32_t acoustics = structures::acoustic_count;
 		std::uint32_t gun_cursor = 0u;
+		std::uint32_t tail_cursor = 0u;
+		std::float_t deafness = 0.0f;
+		std::float_t ringing = 0.0f;
 		structures::vec3_s listener_position{};
 		std::float_t fire_level = 0.0f;
 		std::float_t heart_level = 0.0f;
@@ -72,12 +77,15 @@ namespace zp
 		void play(std::uint32_t sound, structures::vec3_s position, std::float_t volume, std::float_t pitch);
 		void play_2d(std::uint32_t sound, std::float_t volume, std::float_t pitch);
 		void submit(IXAudio2SourceVoice* voice, const structures::sound_clip_s& clip, std::float_t volume, std::float_t pitch);
-		void gunshot(structures::vec3_s position, std::uint32_t close_sound, std::uint32_t far_sound, std::float_t loudness, bool local);
+		void gunshot(structures::vec3_s position, std::uint32_t weapon, bool local);
+		void casing(structures::vec3_s position, structures::vec3_s side, bool local);
+		void deafen(std::float_t amount);
 		void find_echoes(structures::vec3_s source);
 		void bullet(structures::vec3_s origin, structures::vec3_s end, std::uint32_t result);
 		std::float_t occlusion(structures::vec3_s source);
 		void launch(const structures::pending_sound_s& entry);
 		void classify();
+		std::uint32_t surroundings(structures::vec3_s position);
 		void set_acoustics(std::uint32_t kind);
 		std::float_t air_cutoff(std::float_t distance);
 		void update(std::float_t delta);
