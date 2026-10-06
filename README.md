@@ -16,37 +16,54 @@ You wake up on the shore of a large abandoned island with nothing but your hands
 | ![A crafted scrap rifle on the beach](docs/screenshots/scrap_rifle.jpg) | ![Inside a player built base](docs/screenshots/base_interior.jpg) |
 | ![The hand drawn island map](docs/screenshots/ink_map.jpg) | ![The view from the summit](docs/screenshots/summit_view.jpg) |
 | ![On the flat wagon behind the locomotive](docs/screenshots/train_ride_day.jpg) | ![A railway stop on the north coast](docs/screenshots/railway_stop.jpg) |
+| ![A red deer stag and hinds grazing](docs/screenshots/deer_herd.jpg) | ![Wild horses on the dunes](docs/screenshots/wild_horses.jpg) |
+| ![Wild boar rooting in a woodland clearing](docs/screenshots/wild_boar.jpg) | ![Carving a stag after a heart shot](docs/screenshots/carving_stag.jpg) |
+| ![Carrying a rifle at low ready](docs/screenshots/rifle_carry.jpg) | ![A school of mackerel offshore](docs/screenshots/mackerel_school.jpg) |
 
-The train in these shots is still a set of placeholder boxes. More screenshots will be added as the world fills in.
+These shots still show the old placeholder train; the Blender-built locomotive, wagons and coach have replaced it in the game since. More screenshots will be added as the world fills in.
 
 ## What is in the game so far
 
 **World**
 - A 9.4 square kilometre island (4608 m terrain, 1 m height samples) shaped by noise and hydraulic erosion, with continuous level of detail
 - 13 named places (a ruined town, villages, farms, a harbour, a quarry, a signal post on the summit), roads, and a 10 km closed railway loop
-- A freight train on a fixed timetable that you can climb onto, walk around on and ride, and that will kill you if you stand on the track
-- Twelve biomes (beach, dunes, marsh, meadow, farmland, woodland, pinewood, heath, moor and more), roads that follow the terrain, and level crossings where they meet the railway
-- Bullet holes, blood and footprints that are kept on the server and shown to everyone nearby (the textures for them are still being made)
+- A train on a fixed timetable (locomotive, flat, open and box wagons and a passenger coach, all modelled in Blender, with spinning wheels and working lamps) that you can climb onto, walk around on and ride, and that will kill you if you stand on the track
+- Stations along the line: platforms at every stop, station buildings, a signal box, a water tower and signals, plus level crossings whose gates swing shut with flashing lamps before the train comes through
+- Twelve biomes (beach, dunes, marsh, meadow, farmland, woodland, pinewood, heath, moor and more), each with its own ground and trees (oak, birch, Scots pine, fir, hawthorn, willow, gorse), hedgerows around the fields, and roads that follow the terrain
+- Bullet holes, blood and footprints that are kept on the server and shown to everyone nearby
+- Gulls wheel over the coast and crows over the fields and woods, flapping and gliding, and a gunshot sends them climbing away. Schools of mackerel and sea bass swim offshore and scatter when you swim close
 - Day and night cycle with a procedural sky, weather (overcast, rain, storms with lightning), an ocean you can swim and dive in
 - Buildings modelled in Blender with interiors, collision and loot spots
 
 **Survival**
 - Health, food, water, breath, body temperature and wetness
 - Chopping trees, mining rock and ore, picking plants, looting containers
-- Crafting with a recipe list and research, a 30 slot inventory and a hotbar
+- Crafting with a recipe list and research, a 30 slot inventory and a belt
 - Farming with seeds, water and crop growth, campfire cooking, wells
 - Base building in four tiers (twig, wood, stone, metal) with doors, code locks, tool cupboards, decay and repair
 - Crafted junk guns (pipe pistol, scrap rifle, scrap assault rifle) that jam, misfire and overheat, plus a hunting bow
+- You wake up with nothing, not even clothes. A "Censor nudity" setting puts every survivor, you included, in underwear instead
+- Hunting: herds of red deer, wild boar and wild horses roam the island by biome. They graze, rest, stare when they hear you and bolt when you get close, and a cornered boar will charge. Crouching lets you stalk closer. Shot placement matters: a head or heart shot drops an animal, a gut shot sends it running until it bleeds out, leaving a blood trail to follow. Carve the carcass for meat, hide, fat and bone
 - A hand-drawn ink map with pins, and a compass
+
+**Interface**
+- Main and pause menus over the live island, a server browser with direct connect, a field guide that shows your own key bindings, and credits
+- Eight pages of settings (display, graphics, audio, controls, key bindings, gameplay, interface, accessibility), with a quality preset, a short explanation and the performance cost of every option, and a 15 second check before a new display mode is kept
+- A realistic heads-up display: no ammo counter, no weapon name and nothing that tells you what you are holding. The belt appears for a moment when you switch, and health, water and food only show while they are low or changing
+- Colour blind filters, reduced flashing, reduced camera motion, interface scaling, adjustable head bob, and hold or toggle for crouch, aim and sprint
 
 **Multiplayer**
 - Dedicated server, server-authoritative movement with client prediction and reconciliation
 - Lag compensated hit detection, sleepers, loot bags, persistence of players and the world
+- Players with the same name can join the same server: later arrivals get a number, like "Sam (2)", and nobody can take over someone else's saved character
+- You can see what other players are holding: rifles carried at low ready with both hands on the gun, pistols in two hands, tools at the hip, a bow in the left hand
+- Animals are simulated on the server and shared with everyone nearby, so a herd you spook bolts for every player at once
 - Admin tools: bans, whitelist, password, chat commands
 
 **Technology**
 - Deferred renderer: tiled compute lighting, cascaded shadows, ambient occlusion, temporal anti-aliasing, auto exposure, bloom, image based lighting
 - GPU skinned characters, instanced foliage with impostors, GPU grass, screen-space reflections on water
+- Full-body first person: look down and you see your own legs and feet, and your shadow is your whole body
 - Brush and heightfield collision with swept box traces, moving platforms
 - Positional audio on XAudio2 with occlusion, distance delay, echoes, reverb zones and Doppler
 - An offline asset baker (texture compression, mesh simplification, terrain generation, font atlases) that packs everything into one file
@@ -54,29 +71,29 @@ The train in these shots is still a set of placeholder boxes. More screenshots w
 
 ## Numbers
 
-Counted on 30 September 2026. Build output, the portable Blender install and binary assets are not included in these counts.
+Counted on 7 October 2026. Build output, the portable Blender install and binary assets are not included in these counts.
 
 | Language | Files | Lines |
 |---|---:|---:|
-| C++ source (.cpp) | 73 | 41,869 |
-| C++ headers (.hpp) | 63 | 9,135 |
-| HLSL shaders | 18 | 3,753 |
-| Python asset tools | 73 | 40,876 |
+| C++ source (.cpp) | 77 | 45,745 |
+| C++ headers (.hpp) | 67 | 10,368 |
+| HLSL shaders | 18 | 3,852 |
+| Python asset tools | 82 | 46,169 |
 | Batch | 1 | 135 |
-| **Total** | **228** | **95,768** |
+| **Total** | **245** | **106,269** |
 
 | Part of the game | Files | Lines of C++ |
 |---|---:|---:|
-| Gameplay (`game`) | 38 | 14,741 |
-| Renderer (`render`) | 48 | 9,159 |
-| Engine core (`core`) | 8 | 8,360 |
-| Asset baker (`tools/baker`) | 15 | 7,088 |
-| Networking (`net`) | 12 | 6,286 |
-| Interface (`ui`) | 6 | 3,522 |
-| Audio (`audio`) | 2 | 1,112 |
+| Gameplay (`game`) | 44 | 17,061 |
+| Engine core (`core`) | 8 | 9,564 |
+| Renderer (`render`) | 48 | 9,240 |
+| Asset baker (`tools/baker`) | 15 | 7,215 |
+| Networking (`net`) | 12 | 6,408 |
+| Interface (`ui`) | 8 | 4,647 |
+| Audio (`audio`) | 2 | 1,238 |
 | Utilities (`utils`) | 4 | 588 |
 
-Other numbers: 276 texture sets, 180 sounds, 13 landmarks, 10 km of railway, 8 roads and tracks, 60 Hz simulation, up to 500 players per server.
+Other numbers: about 290 texture sets, 259 sounds, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
 
 ## Building
 
@@ -109,7 +126,7 @@ build\bin\zero_point.exe
 
 Choose Play and pick the server from the browser, or join directly with `zero_point.exe --connect 127.0.0.1`.
 
-Default keys: WASD to move, Shift to sprint, C to crouch, Space to jump, Tab for the inventory, M for the map, E to use, R to reload, I to inspect the held gun. Keys can be changed in the settings.
+Default keys: WASD to move, Shift to sprint, Ctrl to crouch, Space to jump, Tab for the inventory, M for the map, E to use, R to reload, I to inspect the held gun. Keys can be changed in the settings, and the field guide in the menu always lists the current ones.
 
 ## Repository layout
 
@@ -119,7 +136,7 @@ Default keys: WASD to move, Shift to sprint, C to crouch, Space to jump, Tab for
 | `render` | Direct3D 11 renderer, terrain, water, foliage, characters, sky, post processing |
 | `game` | Movement, survival, harvesting, building, farming, weapons, the train, maps |
 | `net` | Transport, server, client, persistence, admin tools |
-| `ui` | Menus, HUD, the ink map |
+| `ui` | Menus and settings, the HUD, the ink map, and the widget kit they share |
 | `audio` | The mixer |
 | `shaders` | HLSL |
 | `tools/baker` | The offline asset baker |
@@ -131,7 +148,7 @@ The generator scripts expect a portable Blender 4.5 in `tools/blender`. It is no
 
 ## Roadmap
 
-See [roadmap.md](roadmap.md). Next up: biomes with their own ground and plants, sea cliffs, animals and fish, real train and station models, new player characters.
+See [roadmap.md](roadmap.md). Next up: animals and hunting, fish and birds, guards at the landmarks, boats, clothing, new player characters.
 
 ## Credits
 
