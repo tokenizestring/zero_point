@@ -44,8 +44,8 @@ def stage_sculpt(name, paths, voxel=0.006):
     extent = {key: value * f.scale for key, value in blueprint["extent"].items()}
     extent["height"] = extent["body"] * 1.06
     prefix = os.path.join(paths["scratch"], name + "_sculpt")
-    render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(blueprint["marks"]["eye"] * f.scale * numpy.array([0.0, 1.0, 1.0])), f.scale))
-    render.shots(prefix, prefix + "_detail.png", render.detail_rows(blueprint["marks"], f.scale))
+    render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(blueprint["marks"]["eye"] * f.scale * numpy.array([0.0, 1.0, 1.0])), f.scale, blueprint.get("zoom", 1.0)))
+    render.shots(prefix, prefix + "_detail.png", render.detail_rows(blueprint["marks"], f.scale, blueprint.get("zoom", 1.0)))
     print("SCULPT sheet", round(time.time() - started, 1), "s")
 
 
@@ -70,11 +70,12 @@ def stage_model(name, paths, views=True):
         marks = blueprint["marks"]
         extent = {key: value * scale for key, value in blueprint["extent"].items()}
         prefix = os.path.join(paths["scratch"], name + "_model")
-        render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale))
-        render.shots(prefix, prefix + "_detail.png", render.detail_rows(marks, scale))
-        under = {"target": (0.0, 0.0, 0.7 * scale), "direction": (0.35, 0.0, -1.0), "ortho": 1.7 * scale, "resolution": (1400, 700)}
-        rump = {"target": (0.0, 0.5 * scale, 0.95 * scale), "direction": (0.35, 1.0, 0.2), "ortho": 0.9 * scale, "resolution": (800, 700)}
-        shoulder = {"target": (0.0, -0.45 * scale, 0.85 * scale), "direction": (1.0, -0.5, 0.1), "ortho": 0.9 * scale, "resolution": (800, 700)}
+        render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale, blueprint.get("zoom", 1.0)))
+        render.shots(prefix, prefix + "_detail.png", render.detail_rows(marks, scale, blueprint.get("zoom", 1.0)))
+        wide = scale * blueprint.get("zoom", 1.0)
+        under = {"target": (0.0, 0.0, 0.7 * wide), "direction": (0.35, 0.0, -1.0), "ortho": 1.7 * wide, "resolution": (1400, 700)}
+        rump = {"target": (0.0, 0.5 * wide, 0.95 * wide), "direction": (0.35, 1.0, 0.2), "ortho": 0.9 * wide, "resolution": (800, 700)}
+        shoulder = {"target": (0.0, -0.45 * wide, 0.85 * wide), "direction": (1.0, -0.5, 0.1), "ortho": 0.9 * wide, "resolution": (800, 700)}
         render.shots(prefix, prefix + "_under.png", [[under], [rump, shoulder]])
         print("MODEL sheets", round(time.time() - started, 1), "s")
 
@@ -116,8 +117,8 @@ def stage_look(name, paths, blueprint=None, model=None):
     extent = {key: value * scale for key, value in blueprint["extent"].items()}
     extent["height"] = extent["body"] * 1.06
     prefix = os.path.join(paths["scratch"], name + "_look")
-    render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale))
-    render.shots(prefix, prefix + "_detail.png", render.detail_rows(marks, scale))
+    render.shots(prefix, prefix + ".png", render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale, blueprint.get("zoom", 1.0)))
+    render.shots(prefix, prefix + "_detail.png", render.detail_rows(marks, scale, blueprint.get("zoom", 1.0)))
     print("LOOK sheets", round(time.time() - started, 1), "s")
 
 
@@ -203,6 +204,9 @@ def stage_manifest(name, paths):
         "feet": feet,
         "clips": clips,
     }
+    if "saddle" in blueprint:
+        saddle = blueprint["saddle"]
+        manifest["saddle"] = {"bone": saddle["bone"], "parent": saddle["parent"], "position": [round(float(v) * scale, 3) for v in saddle["position"]], "forward": [0.0, -1.0, 0.0], "up": [0.0, 0.0, 1.0]}
     with open(os.path.join(paths["source"], name + ".json"), "w", encoding="utf-8") as handle:
         json.dump(manifest, handle, indent=1)
     print("MANIFEST", name, manifest["bones"], "bones", manifest["triangles"], "triangles", manifest["lod_triangles"], "lod", len(clips), "clips")
@@ -314,7 +318,7 @@ def stage_previews(name, paths):
     scene = render.studio(samples=48)
     bpy.ops.import_scene.gltf(filepath=os.path.join(paths["export"], "characters", name, name + ".gltf"))
     prefix = os.path.join(paths["scratch"], name + "_sheet")
-    render.shots(prefix, os.path.join(paths["previews"], name + "_sheet.png"), render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale))
+    render.shots(prefix, os.path.join(paths["previews"], name + "_sheet.png"), render.sheet_rows(extent, tuple(marks["eye"] * scale * numpy.array([0.0, 1.0, 1.0])), scale, blueprint.get("zoom", 1.0)))
     render.reset()
     render.studio(samples=48)
     obj = render.mesh_object("cage", model["points"], model["faces"])
