@@ -27,7 +27,7 @@ namespace zp
 		void sample(const structures::character_s& character, std::uint32_t clip_index, std::float_t time, structures::pose_s& pose);
 		void blend(const structures::character_s& character, const structures::pose_s& from, const structures::pose_s& to, std::float_t weight, structures::pose_s& out);
 		void add(const structures::character_s& character, const structures::pose_s& base, const structures::pose_s& reference, const structures::pose_s& target, std::float_t weight, structures::pose_s& out);
-		void palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out);
+		void palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade = 0.0f);
 		void compute_globals(const structures::character_s& character, const structures::pose_s& pose);
 		structures::mat4_s rest_global(const structures::character_s& character, std::int32_t bone);
 		void reach(const structures::character_s& character, structures::pose_s& pose, std::int32_t upper, std::int32_t lower, std::int32_t end, structures::vec3_s target, structures::vec3_s pole, std::float_t weight);

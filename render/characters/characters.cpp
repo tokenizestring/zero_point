@@ -88,12 +88,14 @@ namespace zp
 				}
 
 				character.twist_shares.assign(character.bones.size(), 0.0f);
+				character.blade_shares.assign(character.bones.size(), 0.0f);
 
 				for (auto twist{ 0u }; twist < std::size(character_twist_bones); twist++)
 				{
 					if (const auto found{ bone(character, character_twist_bones[twist]) }; found >= 0)
 					{
 						character.twist_shares[found] = character_twist_shares[twist];
+						character.blade_shares[found] = character_blade_shares[twist];
 					}
 				}
 
@@ -280,7 +282,7 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out)
+	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade)
 	{
 		for (auto index{ 0u }; index < character.bones.size(); index++)
 		{
@@ -292,7 +294,7 @@ namespace zp
 			if (character.twist_shares[index] > 0.0f)
 			{
 				const auto origin{ globals[index].row3(3u) };
-				const auto twist{ mathematics.quat_multiply(mathematics.quat_axis_angle({ 0.0f, 1.0f, 0.0f }, twist_yaw * character.twist_shares[index]), mathematics.quat_axis_angle({ 1.0f, 0.0f, 0.0f }, twist_pitch * character.twist_shares[index])) };
+				const auto twist{ mathematics.quat_multiply(mathematics.quat_axis_angle({ 0.0f, 1.0f, 0.0f }, twist_yaw * character.twist_shares[index] + blade * character.blade_shares[index]), mathematics.quat_axis_angle({ 1.0f, 0.0f, 0.0f }, twist_pitch * character.twist_shares[index])) };
 
 				globals[index] = mathematics.multiply(mathematics.multiply(mathematics.multiply(globals[index], mathematics.translation(-origin)), mathematics.rotation(twist)), mathematics.translation(origin));
 			}
