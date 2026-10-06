@@ -327,11 +327,21 @@ namespace zp
 		const auto time{ reader.f64() };
 		const auto slots{ reader.u16() };
 
+		char assigned[net_name_length]{};
+
 		reader.text(server_name, sizeof(server_name));
 		reader.text(map_name, sizeof(map_name));
+		reader.text(assigned, sizeof(assigned));
 
 		if (reader.overflow == false && answer == salt)
 		{
+			if (assigned[0] && std::strcmp(assigned, name) != 0)
+			{
+				logger.write("client: the server named us %s because %s is taken", assigned, name);
+
+				std::snprintf(name, sizeof(name), "%s", assigned);
+			}
+
 			id = index;
 			maximum = slots;
 			server_clock = time;
@@ -556,7 +566,7 @@ namespace zp
 
 				damage_dealt += damage;
 
-				if (flags & 2u)
+				if ((flags & 2u) && victim != fauna_victim)
 				{
 					const auto index{ find_remote(victim) };
 
@@ -952,6 +962,8 @@ namespace zp
 					hear_shot(shooter, weapon_id, result, { ox, oy, oz }, { ex, ey, ez });
 				}
 			}
+
+			fauna.read(reader, time);
 		}
 	}
 	/*
@@ -1052,9 +1064,11 @@ namespace zp
 
 		else
 		{
-			mixer.gunshot(origin, definition.shot_sound, definition.far_sound, definition.loudness, false);
+			mixer.gunshot(origin, weapon_id, false);
 
 			mixer.bullet(origin, end, result);
+
+			wildlife.startle(origin, weapon_definitions[weapon_id].loudness);
 		}
 
 		if (mathematics.distance(origin, player.eye) < net_tracer_range && result != 253u)
@@ -1306,6 +1320,7 @@ namespace zp
 						actor.dead = (newer.flags & 0x8000u) != 0u;
 						actor.death = actor.dead ? actor.death + delta : 0.0f;
 						actor.hidden = actor.dead && loot.nearest(actor.position) >= 0;
+						actor.held = remote.item < structures::item_count ? remote.item : 0u;
 
 						const auto speed{ mathematics.length(structures::vec3_s{ actor.velocity.x, 0.0f, actor.velocity.z }) };
 
@@ -1499,7 +1514,7 @@ namespace zp
 			actor.hidden = false;
 		}
 
-		else if (const auto actor{ actors.spawn(remote_character, position, yaw, structures::actor_behavior_remote) }; actor)
+		else if (const auto actor{ actors.spawn(actors.survivor(), position, yaw, structures::actor_behavior_remote) }; actor)
 		{
 			index = static_cast<std::int32_t>(actors.list.size()) - 1;
 		}
