@@ -290,7 +290,9 @@ namespace zp
 
 			if (kind < structures::mark_count && state.ground_normal.y > mark_tread_slope)
 			{
-				const auto heading{ structures::vec3_s{ state.velocity.x, 0.0f, state.velocity.z } / speed };
+				const auto turn{ mathematics.angle_difference(state.yaw, std::atan2(state.velocity.x, state.velocity.z)) };
+				const auto lean{ std::fabs(turn) > half_pi ? turn - std::copysign(pi, turn) : turn };
+				const auto heading{ mathematics.flat_forward(state.yaw + lean * mark_foot_follow) };
 				const auto side{ structures::vec3_s{ heading.z, 0.0f, -heading.x } * (left ? -mark_foot_offset : mark_foot_offset) };
 				const auto normal{ unpack(pack(state.ground_normal)) };
 				const auto drop{ (state.ground_normal.x * side.x + state.ground_normal.z * side.z) / state.ground_normal.y };
