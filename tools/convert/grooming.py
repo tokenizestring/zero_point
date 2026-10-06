@@ -20,8 +20,8 @@ tiles = {
 }
 
 palettes = {
-    "female": {"root": (0.17, 0.11, 0.068), "mid": (0.29, 0.195, 0.12), "tip": (0.45, 0.33, 0.21), "body": (0.15, 0.1, 0.07), "band": (0.2, 0.17, 0.13)},
-    "male": {"root": (0.105, 0.076, 0.056), "mid": (0.17, 0.122, 0.086), "tip": (0.29, 0.215, 0.15), "body": (0.125, 0.09, 0.066), "band": (0.2, 0.17, 0.13)},
+    "female": {"root": (0.17, 0.11, 0.068), "mid": (0.29, 0.195, 0.12), "tip": (0.45, 0.33, 0.21), "body": (0.2, 0.14, 0.1), "band": (0.2, 0.17, 0.13)},
+    "male": {"root": (0.105, 0.076, 0.056), "mid": (0.17, 0.122, 0.086), "tip": (0.29, 0.215, 0.15), "body": (0.17, 0.122, 0.09), "band": (0.2, 0.17, 0.13)},
 }
 
 
@@ -167,7 +167,7 @@ def hair_atlas(name, directory, prefix, seed=3):
     body["mid"] = palette["body"]
     body["tip"] = tuple(c * 1.25 for c in palette["body"])
     for index, rect in enumerate(tiles["curl"]):
-        strand_tile(layers, rect, (30, 18)[index], rng, body, length=(0.45, 1.0), wave=0.07, clumps=8, thickness=(1.1, 1.6), curl=0.045, fade=0.55)
+        strand_tile(layers, rect, (20, 12)[index], rng, body, length=(0.45, 1.0), wave=0.07, clumps=8, thickness=(1.0, 1.4), curl=0.045, fade=0.7, stagger=0.3, rooted=0.4)
     strand_tile(layers, tiles["fuzz"][0], 9, rng, body, length=(0.35, 1.0), wave=0.16, clumps=9, thickness=(1.0, 1.4), spread=0.8, curl=0.05, fade=0.5)
     if name == "male":
         periodic_dots(layers, shell_rect, 46, rng, palette)
@@ -857,7 +857,7 @@ def male_hair(sheet, space, rng):
             widths = rng.uniform(width_range[0], width_range[1]) * s * (1.0 - 0.35 * numpy.linspace(0.0, 1.0, samples) ** 2) * (0.5 + 0.5 * edge)
             tile = pick("wisp", rng) if edge < 0.4 and rng.random() < 0.8 else pick(group, rng, bias)
             sheet.ribbon(path, numpy.array(path_normals), widths, tile, {"Bip01 Head": 1.0}, bow)
-    fringe, fringe_normals = scalp_roots(space, 130, 0.009, rng, -0.004, 0.004)
+    fringe, fringe_normals = scalp_roots(space, 260, 0.0065, rng, -0.005, 0.005)
     for root in fringe:
         location, normal, index, weights = space.scalp.closest(root)
         away = location - crown
@@ -938,7 +938,7 @@ def body_hair(sheet, body, lookup, skeleton, figure_scale, name, rng, exclude=No
         return inside * (0.35 + 0.65 * numpy.sin(numpy.pi * t) ** 0.5)
 
     counts = {}
-    counts["pubic"] = body_patch(sheet, body, lookup, pubic, 84 if name == "male" else 70, 0.0088 * s, lambda p: numpy.array([-0.35 * numpy.sign(p[0]), 0.0, -1.0]), (0.012, 0.022), (0.011, 0.017), (0.0015, 0.0045), "curl", rng, s)
+    counts["pubic"] = body_patch(sheet, body, lookup, pubic, 110 if name == "male" else 90, 0.0074 * s, lambda p: numpy.array([-0.35 * numpy.sign(p[0]), 0.0, -1.0]), (0.01, 0.017), (0.008, 0.012), (0.001, 0.003), "curl", rng, s)
     if name == "male":
         for side in (1.0, -1.0):
             shoulder = numpy.asarray(joints["Bip01 L UpperArm"]) * numpy.array([side, 1.0, 1.0])

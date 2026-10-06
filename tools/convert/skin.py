@@ -351,11 +351,11 @@ hair_layers = {
         {"zone": "thigh", "count": 4200, "length": (0.006, 0.012), "opacity": (0.1, 0.26), "bend": 0.25, "tone": (0.08, 0.058, 0.044), "field": "limb"},
         {"zone": "chest", "count": 2000, "length": (0.008, 0.017), "opacity": (0.14, 0.38), "bend": 0.5, "tone": (0.075, 0.055, 0.042), "field": "inward"},
         {"zone": "trail", "count": 600, "length": (0.006, 0.013), "opacity": (0.18, 0.42), "bend": 0.4, "tone": (0.075, 0.055, 0.042), "field": "down"},
-        {"zone": "pubic", "count": 6500, "length": (0.006, 0.014), "opacity": (0.4, 0.85), "bend": 0.9, "tone": (0.06, 0.044, 0.034), "field": "inward"},
+        {"zone": "pubic", "count": 5200, "length": (0.006, 0.014), "opacity": (0.3, 0.7), "bend": 0.9, "tone": (0.09, 0.066, 0.05), "field": "inward"},
         {"zone": "armpit", "count": 2000, "length": (0.006, 0.013), "opacity": (0.35, 0.75), "bend": 0.8, "tone": (0.06, 0.044, 0.034), "field": "down"},
     ],
     "female": [
-        {"zone": "pubic", "count": 5200, "length": (0.006, 0.013), "opacity": (0.4, 0.85), "bend": 0.9, "tone": (0.08, 0.056, 0.04), "field": "inward"},
+        {"zone": "pubic", "count": 4200, "length": (0.006, 0.013), "opacity": (0.3, 0.7), "bend": 0.9, "tone": (0.1, 0.072, 0.052), "field": "inward"},
         {"zone": "armpit", "count": 1500, "length": (0.0008, 0.002), "opacity": (0.25, 0.55), "bend": 0.2, "tone": (0.1, 0.075, 0.06), "field": "down"},
         {"zone": "forearm_hair", "count": 2600, "length": (0.004, 0.008), "opacity": (0.05, 0.14), "bend": 0.3, "tone": (0.55, 0.42, 0.3), "field": "limb"},
         {"zone": "shin", "count": 2600, "length": (0.001, 0.003), "opacity": (0.08, 0.2), "bend": 0.2, "tone": (0.2, 0.15, 0.11), "field": "limb"},

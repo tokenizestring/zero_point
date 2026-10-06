@@ -266,7 +266,11 @@ def skin_layers(setup, shapes, page, occlusion, palette, rng, furred=True, chunk
     if len(close):
         look = headtex.looks[name]
         tone = texels.to_linear(numpy.asarray(look.get("scalp_tint") or look["hair"]["root"]))
-        nape = texels.smoothstep(-0.008, 0.006, headtex.hairline(local[close], headtex.hairlines[name]))
+        line = headtex.hairline(local[close], headtex.hairlines[name])
+        if look["hair"] is not None:
+            nape = texels.smoothstep(-0.004, 0.013, line + (texels.noise(points[close], 90.0, 51, 2) - 0.5) * 0.008)
+        else:
+            nape = texels.smoothstep(-0.006, 0.009, line + (texels.noise(points[close], 110.0, 53, 2) - 0.5) * 0.009)
         color[close] = color[close] * (1.0 - nape[:, None] * 0.86) + tone[None, :] * (nape[:, None] * 0.86)
         roughness[close] = roughness[close] * (1.0 - nape) + 0.62 * nape
     hair = numpy.zeros(len(points))

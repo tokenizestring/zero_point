@@ -573,7 +573,7 @@ def closed_triangles(data, drop=None, follow=False):
     return numpy.array(points), triangles
 
 
-def head_graft(data, low, high, point, normal, scale, voxel=0.001, reach=0.06):
+def head_graft(data, low, high, point, normal, scale, voxel=0.001, reach=0.08):
     import anatomy
     point = numpy.asarray(point, dtype=numpy.float64)
     normal = numpy.asarray(normal, dtype=numpy.float64)
@@ -589,7 +589,8 @@ def head_graft(data, low, high, point, normal, scale, voxel=0.001, reach=0.06):
         height = (query - point) @ normal
         radial = query - center - numpy.outer((query - center) @ normal, normal)
         near = texels.smoothstep(0.105 * scale, 0.08 * scale, numpy.linalg.norm(radial, axis=1))
-        rise = texels.smoothstep(-0.04 * scale, -0.0075 * scale, height)
+        depth = (0.04 + 0.03 * texels.smoothstep(0.0, 0.05 * scale, query[:, 1] - center[1])) * scale
+        rise = texels.smoothstep(0.0, 1.0, (height + depth) / (depth - 0.0075 * scale))
         return rise * (near + (1.0 - near) * texels.smoothstep(-0.0075 * scale, 0.015 * scale, height))
 
     result = anatomy.shape("custom", "Bip01 Head", 0.0, "graft", function=sampler, low=low, high=high, weight=weight)

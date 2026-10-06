@@ -566,7 +566,7 @@ def head_maps(root, name, data, head_now, scale, directory, prefix, size=4096, o
         collar = texels.smoothstep(0.05 * scale, 0.02 * scale, (position - numpy.asarray(neck[0])) @ numpy.asarray(neck[1]))
     if look.get("scalp_tint"):
         above = hairline(local, hairlines[name]) + (texels.noise(position, 110.0, 53, 2) - 0.5) * 0.009
-        scalp = texels.smoothstep(-0.011, 0.009, above)
+        scalp = texels.smoothstep(-0.006, 0.009, above)
         luminance = luma(rgb)
         level = numpy.median(luminance[scalp > 0.9]) if (scalp > 0.9).any() else 0.2
         tone = texels.to_linear(numpy.asarray(look["scalp_tint"]))
