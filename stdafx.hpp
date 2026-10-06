@@ -81,6 +81,8 @@
 #include "game/movement/movement.hpp"
 #include "game/player/player.hpp"
 #include "game/actors/actors.hpp"
+#include "game/fauna/fauna.hpp"
+#include "game/wildlife/wildlife.hpp"
 #include "game/survival/survival.hpp"
 #include "game/harvest/harvest.hpp"
 #include "game/combat/combat.hpp"
@@ -93,6 +95,7 @@
 #include "game/weapons/weapons.hpp"
 #include "game/viewmodel/viewmodel.hpp"
 #include "game/train/train.hpp"
+#include "game/gates/gates.hpp"
 #include "game/marks/marks.hpp"
 
 #include "net/transport/transport.hpp"
@@ -104,6 +107,7 @@
 #include "game/autotest/autotest.hpp"
 
 #include "ui/chart/chart.hpp"
+#include "ui/kit/kit.hpp"
 #include "ui/hud/hud.hpp"
 #include "ui/menu/menu.hpp"
 
