@@ -1,0 +1,164 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "fish_bass"
+  }
+ ],
+ "materials": [
+  {
+   "name": "fish_bass",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "fish_bass",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "fish_bass_normal.png",
+   "uri": "fish_bass_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "fish_bass_orm.png",
+   "uri": "fish_bass_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "fish_bass_albedo.png",
+   "uri": "fish_bass_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1139,
+   "max": [
+    0.05700000002980232,
+    0.1338942050933838,
+    0.3019999861717224
+   ],
+   "min": [
+    -0.05700000002980232,
+    -0.08705593645572662,
+    -0.3009999990463257
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1139,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1139,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 5676,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 13668,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 13668,
+   "byteOffset": 13668,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 9112,
+   "byteOffset": 27336,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 11352,
+   "byteOffset": 36448,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 47800,
+   "uri": "fish_bass.bin"
+  }
+ ]
+}
