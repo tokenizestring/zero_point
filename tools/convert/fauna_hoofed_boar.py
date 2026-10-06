@@ -43,12 +43,12 @@ def anatomy(f, k):
     skull = [
         (0.0, 0.0, 0.0, 0.033, 0.034, 0.037, 2.3, 2.3),
         (0.006, 0.0, 0.0, 0.037, 0.038, 0.04, 2.4, 2.4),
-        (0.03, 0.0, 0.001, 0.0365, 0.037, 0.043, 2.3, 2.2),
-        (0.1, 0.0, 0.007, 0.048, 0.044, 0.068, 2.4, 2.1),
-        (0.2, 0.0, 0.014, 0.063, 0.053, 0.1, 2.4, 2.0),
-        (0.3, 0.0, 0.019, 0.08, 0.063, 0.13, 2.3, 1.9),
-        (0.38, 0.0, 0.021, 0.097, 0.075, 0.165, 2.2, 1.8),
-        (0.45, 0.0, 0.018, 0.108, 0.09, 0.2, 2.2, 1.8),
+        (0.03, 0.0, 0.001, 0.038, 0.038, 0.045, 2.3, 2.2),
+        (0.1, 0.0, 0.007, 0.05, 0.045, 0.071, 2.4, 2.1),
+        (0.2, 0.0, 0.014, 0.066, 0.054, 0.106, 2.4, 2.0),
+        (0.3, 0.0, 0.019, 0.084, 0.064, 0.14, 2.3, 1.9),
+        (0.38, 0.0, 0.021, 0.102, 0.076, 0.176, 2.2, 1.8),
+        (0.45, 0.0, 0.018, 0.113, 0.09, 0.208, 2.2, 1.8),
         (0.51, 0.0, 0.012, 0.11, 0.098, 0.2, 2.1, 1.9),
         (0.56, 0.0, 0.0, 0.095, 0.09, 0.16, 2.0, 2.0),
         (0.6, 0.0, 0.0, 0.055, 0.05, 0.08, 2.0, 2.0),
@@ -217,7 +217,7 @@ def build(kind):
         "run": {"kind": "gallop", "frames": 8, "speed": 9.0, "duty": {"fore": 0.24, "hind": 0.24}, "phase": {"hind_l": 0.0, "hind_r": 0.1, "fore_l": 0.44, "fore_r": 0.56}, "center": {"fore": (0.0, -0.02, 0.0), "hind": (0.0, -0.08, 0.0)}, "narrow": 0.65, "lift": {"fore": 0.12, "hind": 0.11}, "toe": {"fore": 0.9, "hind": 0.7}, "curl": {"fore": 0.8, "hind": 0.6}, "swing_flex": {"fore": 1.6, "hind": 0.9}, "stance_flex": {"fore": 0.0, "hind": 0.12}, "sink": 0.25, "follow": 0.6, "bob": 0.035, "roll": 1.5, "flex": 10.0, "nod": 3.0, "hover": -0.015, "carry": -4.0, "flag": 70.0},
         "attack": {"seconds": 0.8, "hit": 0.36, "reach": 0.2, "crouch": -0.03, "dip": 6.0, "neck_down": -12.0, "neck_up": 24.0, "head_down": -14.0, "head_up": 34.0, "twist": 14.0, "roll": 16.0, "jaw": 12.0, "rear": 6.0, "rise": 0.04},
         "rest": {"hips": -0.33, "pitch": 1.5, "fore": (0.0, 0.0, -78.0, 150.0, 20.0, 0.0), "hind": (-52.0, 70.0, -95.0, 16.0, 0.0), "neck": -4.0, "head": 6.0, "hind_spread": 16.0},
-        "death": {"side": 0.26, "drop": -0.52, "neck": -6.0, "head": 8.0, "neck_yaw": -4.0, "head_yaw": 0.0, "head_roll": 0.0, "droop": -14.0, "fore_upper": (0.0, 5.0, -14.0, 36.0, 18.0, 8.0), "fore_lower": (0.0, 0.0, -6.0, 22.0, 12.0, 6.0), "hind_upper": (-14.0, 24.0, -18.0, 14.0, 8.0), "hind_lower": (-8.0, 14.0, -10.0, 10.0, 6.0)},
+        "death": {"side": 0.26, "drop": -0.52, "neck": -6.0, "head": 8.0, "neck_yaw": -4.0, "head_yaw": 0.0, "head_roll": 0.0, "droop": 22.0, "fore_upper": (0.0, 5.0, -14.0, 36.0, 18.0, 8.0), "fore_lower": (0.0, 0.0, -6.0, 22.0, 12.0, 6.0), "hind_upper": (-14.0, 24.0, -18.0, 14.0, 8.0), "hind_lower": (-8.0, 14.0, -10.0, 10.0, 6.0)},
     }
     return blueprint
 
@@ -232,9 +232,13 @@ def pieces(blueprint):
     upper = parts.sweep([head_point(k, 0.13, -0.014, 0.034), head_point(k, 0.125, -0.008, 0.054), head_point(k, 0.127, 0.006, 0.065), head_point(k, 0.132, 0.02, 0.068)], [0.009, 0.0088, 0.007, 0.0028], 6, "tusk", "head", "tusk", smooth=6, mark=1.0)
     result.extend([lower, parts.mirrored(lower), upper, parts.mirrored(upper)])
     seeds = []
-    for row, y in enumerate(numpy.linspace(-0.5, 0.52, 58)):
-        crest = min(math.exp(-((y + 0.26) / 0.2) ** 2) + 0.35 * math.exp(-((y + 0.02) / 0.25) ** 2), 1.0)
-        seeds.append({"origin": (0.004, float(y), 0.64), "ray": (0.0, 0.0, 1.0), "facing": (1.0, 0.0, 0.12), "flow": (0.0, 1.0, 0.0), "lean": 24.0 + 12.0 * crest, "length": 0.06 + 0.085 * crest, "width": 0.042, "thick": 0.011, "rise": 0.14, "lift": 0.003, "sag": 0.0, "spread": 8.0})
+    rng = numpy.random.default_rng(5)
+    for row, y in enumerate(numpy.linspace(-0.52, 0.5, 64)):
+        crest = min(math.exp(-((y + 0.27) / 0.22) ** 2) + 0.3 * math.exp(-(y / 0.25) ** 2), 1.0)
+        lanes = (0.005, 0.021) if row % 2 == 0 else (0.013, 0.029)
+        for lane, x in enumerate(lanes[:2 if crest > 0.3 else 1]):
+            shift = float(y) + (rng.random() - 0.5) * 0.012
+            seeds.append({"origin": (x + rng.random() * 0.006, shift, 0.64), "ray": (0.0, 0.0, 1.0), "flow": (0.0, 1.0, 0.0), "lean": 6.0 + 12.0 * crest, "length": (0.03 + 0.105 * crest) * (1.0 - 0.3 * lane), "width": 0.02 + 0.006 * crest, "thick": 0.006 + 0.002 * crest, "rise": 0.05, "lift": 0.003 + 0.002 * crest, "sag": 0.06, "spread": 14.0})
     result.extend(parts.tufts(f, blueprint["cage"]["skin"], seeds, 11))
     tip = numpy.array(blueprint["cage"]["tail"]["path"][-1])
     brush = []
@@ -287,9 +291,9 @@ def coat(c, m):
     color = coats.tint(color, (0.3, 0.245, 0.18), mud * 0.6)
     rim = m.ears * smooth(0.02, 0.24, m.ear_along)
     color = coats.tint(color, (0.13, 0.108, 0.095), rim * 0.9)
-    color = coats.tint(color, (0.33, 0.235, 0.205), m.ear_inner * smooth(0.06, 0.3, m.ear_along) * smooth(1.0, 0.6, m.ear_along) * 0.6)
+    color = coats.tint(color, (0.2, 0.15, 0.13), m.ear_inner * smooth(0.06, 0.3, m.ear_along) * smooth(1.0, 0.6, m.ear_along) * 0.6)
     color = coats.tint(color, (0.09, 0.075, 0.07), m.tail * smooth(0.56, 0.3, p[:, 2]) * 0.7)
-    bristle = numpy.array([0.075, 0.062, 0.055])[None, :] + numpy.array([0.33, 0.285, 0.22])[None, :] * smooth(0.25, 1.0, c.coord[:, 0])[:, None]
+    bristle = numpy.array([0.06, 0.05, 0.045])[None, :] + numpy.array([0.21, 0.18, 0.145])[None, :] * (smooth(0.35, 1.0, c.coord[:, 0]) * (0.55 + 0.45 * coarse))[:, None]
     color[m.lock] = bristle[m.lock]
     shade = 0.66 + 0.6 * fur + (mottle - 0.5) * 0.12
     color = numpy.where(m.furry[:, None], color * shade[:, None], color)
