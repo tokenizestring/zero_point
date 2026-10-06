@@ -381,7 +381,14 @@ namespace zp
 
 				renderer.add_light(renderer.camera.position + renderer.camera.forward * 0.8f, 6.0f, { 6.0f, 4.0f, 2.0f });
 
-				mixer.gunshot(player.eye, definition.shot_sound, definition.far_sound, definition.loudness, true);
+				mixer.gunshot(player.eye, state.weapon, true);
+
+				wildlife.startle(player.eye, definition.loudness);
+
+				if (client.connected() == false)
+				{
+					fauna.alarm(player.eye, definition.loudness);
+				}
 
 				strike(player.eye, state.shot, definition, held.item);
 			}
@@ -423,6 +430,11 @@ namespace zp
 			if (events & structures::weapon_event_bolt)
 			{
 				mixer.play_2d(structures::sound_bolt, 0.7f, 1.0f);
+
+				if (gun_models[state.weapon].action == structures::action_bolt)
+				{
+					mixer.casing(player.eye, mathematics.right_from_yaw(player.yaw), true);
+				}
 			}
 
 			if (events & structures::weapon_event_clearing)
@@ -462,8 +474,11 @@ namespace zp
 
 		auto distance{ 0.0f };
 		auto height{ 0.0f };
+		auto prey{ limit };
 
-		if (const auto target{ client.connected() ? -1 : ray_actor(origin, direction, limit, distance, height) }; target >= 0)
+		const auto animal{ fauna.ray(origin, direction, limit, prey) };
+
+		if (const auto target{ client.connected() ? -1 : ray_actor(origin, direction, limit, distance, height) }; target >= 0 && (animal < 0 || distance < prey))
 		{
 			auto& actor{ actors.list[target] };
 
@@ -484,6 +499,24 @@ namespace zp
 			if (actor.dead)
 			{
 				survival.post(headshot ? "Headshot kill" : "Kill", 0);
+			}
+		}
+
+		else if (animal >= 0)
+		{
+			if (client.connected() == false)
+			{
+				const auto point{ origin + direction * prey };
+				const auto killed{ fauna.damage(static_cast<std::uint32_t>(animal), item_definitions[item].damage, origin) };
+
+				combat.hit_marker = 1.0f;
+				combat.kill_marker = killed ? 1.0f : combat.kill_marker;
+
+				particles.impact(structures::surface_flesh, point, direction * -1.0f);
+
+				marks.bleed(point, direction);
+
+				mixer.play(structures::sound_hit_flesh, point, 1.0f, 0.9f + random() * 0.2f);
 			}
 		}
 
