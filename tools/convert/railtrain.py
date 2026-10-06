@@ -73,9 +73,9 @@ def oil_lamp(part, position, direction):
     rk.pipe(part, "rust_iron", handle, 0.005, 6, 0.015)
 
 
-def round_lamp(part, position, direction, radius=0.085, lens="lens_clear", body="loco_black"):
-    rk.lathe(part, body, position, direction, [(0.0, -0.09), (radius * 0.6, -0.085), (radius, -0.03), (radius, 0.03), (radius * 0.88, 0.04), (radius * 0.84, 0.02)], 20)
-    rk.atlas_disc(part, lens, position + direction.normalized() * 0.02, direction, Z if abs(direction.z) < 0.9 else Y, radius * 0.84, 18)
+def round_lamp(part, position, direction, radius=0.085, lens="lens_clear", body="loco_black", glow=None, segments=20):
+    rk.lathe(part, body, position, direction, [(0.0, -0.09), (radius * 0.6, -0.085), (radius, -0.03), (radius, 0.03), (radius * 0.88, 0.04), (radius * 0.84, 0.02)], segments)
+    rk.atlas_disc(part, lens, position + direction.normalized() * 0.02, direction, Z if abs(direction.z) < 0.9 else Y, radius * 0.84, segments - 2, glow or "rail_signs")
 
 
 def brake_block(part, x, y, z, direction):
@@ -305,7 +305,7 @@ def loco_bonnet(b, rng, detail):
     radius = 0.16
     y0 = bonnet_y0
     y1 = bonnet_y1
-    side_outline = bonnet_outline(half, base, top, radius)
+    side_outline = bonnet_outline(half, base, top, radius, 10)
     for side in (-1.0, 1.0):
         frame = kit.plane(V(side * half, 0.0, 0.0), V(side, 0.0, 0.0))
         a_low, a_high = sorted((frame[1].y * y0, frame[1].y * y1))
@@ -343,7 +343,7 @@ def loco_bonnet(b, rng, detail):
         stands = [(V(x, y1 + 0.06, z), V(0.0, 0.06, 0.0)) for z in (1.58, 2.38)]
         rk.handrail(detail, "loco_black", [V(x, y1 + 0.06, 1.54), V(x, y1 + 0.06, 2.42)], 0.013, stands)
     for position in lamp_positions:
-        round_lamp(detail, position, Y, 0.072)
+        round_lamp(detail, position, Y, 0.072, "lens_clear", "loco_black", "lamp_glow_warm", 32)
         b.light("warm", position + Y * 0.08)
     for side in (-1.0, 1.0):
         normal = V(side, 0.0, 0.0)
@@ -391,8 +391,8 @@ def loco_bonnet(b, rng, detail):
     for sx in (-1.0, 1.0):
         for y in (-0.5, 2.36):
             rk.pipe(detail, "rust_iron", [V(sx * 0.42, y - 0.05, top + 0.005), V(sx * 0.42, y - 0.05, top + 0.07), V(sx * 0.42, y + 0.05, top + 0.07), V(sx * 0.42, y + 0.05, top + 0.005)], 0.011, 6, 0.03)
-    rk.lathe(detail, "loco_black", stack_position, Z, [(0.19, 0.0), (0.19, 0.02), (0.11, 0.025), (0.1, 0.06), (0.13, 0.5), (0.175, 0.66), (0.18, 0.69), (0.165, 0.69)], 24)
-    rk.lathe(detail, "soot", stack_position, Z, [(0.165, 0.69), (0.12, 0.5), (0.09, 0.2), (0.0, 0.2)], 24)
+    rk.lathe(detail, "loco_black", stack_position, Z, [(0.19, 0.0), (0.19, 0.02), (0.11, 0.025), (0.1, 0.06), (0.115, 0.3), (0.13, 0.5), (0.155, 0.6), (0.175, 0.66), (0.182, 0.675), (0.18, 0.69), (0.165, 0.69)], 40)
+    rk.lathe(detail, "soot", stack_position, Z, [(0.165, 0.69), (0.12, 0.5), (0.09, 0.2), (0.0, 0.2)], 40)
     for angle in range(6):
         rk.prism_bolt(detail, "rust_iron", stack_position + V(math.cos(angle * tau / 6.0) * 0.155, math.sin(angle * tau / 6.0) * 0.155, 0.02), Z, 0.024, 0.012, 6)
     rk.lathe(detail, "loco_black", V(0.0, -0.36, top + 0.01), Z, [(0.11, 0.0), (0.11, 0.1), (0.2, 0.12), (0.2, 0.15), (0.1, 0.2), (0.0, 0.21)], 20)
@@ -413,7 +413,7 @@ def loco_cab(b, rng, body, detail):
     skin = 0.02
     wall = 2.0 * skin
     split = 2.2
-    steps = 16
+    steps = 24
     arc = [(half - 2.0 * half * s / steps, cab_arc(half - 2.0 * half * s / steps, half, eaves, rise)) for s in range(steps + 1)]
     inner_arc = [(max(min(x, half - skin), -half + skin), z - 0.02) for x, z in arc]
     door = (-0.47, 0.47, 3.35)
@@ -508,7 +508,7 @@ def loco_cab(b, rng, body, detail):
         rk.bar(detail, "loco_black", [pivot + V(0.0, 0.012, 0.0), tip + V(0.0, 0.012, 0.0)], 0.01, 0.004, Y)
         rk.bar(detail, "loco_black", [tip + V(side * 0.06, 0.01, 0.13), tip + V(-side * 0.06, 0.01, -0.13)], 0.012, 0.008, Y)
     roof_half = half + 0.06
-    ribs = 20
+    ribs = 32
     top_arc = [(roof_half - 2.0 * roof_half * s / ribs, cab_arc(roof_half - 2.0 * roof_half * s / ribs, roof_half, eaves - 0.01, rise + 0.035)) for s in range(ribs + 1)]
     roof_outline = top_arc + [(x, z - 0.04) for x, z in reversed(top_arc)]
     emit(body, rk.geo_prism(roof_outline, y0 - 0.32, y1 + 0.09, 4), "loco_black", None, "given", True)
@@ -524,9 +524,9 @@ def loco_cab(b, rng, body, detail):
         block(detail, "loco_black", V(side * roof_half - 0.015, y0 - 0.32, eaves - 0.06), V(side * roof_half + 0.015, y1 + 0.09, eaves - 0.02))
         bracket = [(y0, eaves - 0.03), (y0 - 0.28, eaves - 0.03), (y0 - 0.28, eaves - 0.06), (y0, eaves - 0.2)]
         emit(detail, rk.prism_x(bracket, side * (half - 0.03) - 0.006, side * (half - 0.03) + 0.006), "loco_black", None, "given", False)
-    rk.lathe(detail, "loco_black", V(0.0, (y0 + y1) * 0.5 - 0.3, eaves + rise + 0.02), Z, [(0.16, 0.0), (0.16, 0.035), (0.22, 0.05), (0.22, 0.065), (0.0, 0.085)], 18)
+    rk.lathe(detail, "loco_black", V(0.0, (y0 + y1) * 0.5 - 0.3, eaves + rise + 0.02), Z, [(0.16, 0.0), (0.16, 0.035), (0.22, 0.05), (0.22, 0.065), (0.0, 0.085)], 28)
     for sx in (-0.35, 0.35):
-        rk.lathe(detail, "rust_iron", V(sx, y1 - 0.02, cab_arc(sx, half, eaves, rise) + 0.04), V(0.0, 1.0, 0.12), [(0.02, 0.0), (0.022, 0.12), (0.05, 0.26), (0.06, 0.28), (0.045, 0.27)], 14)
+        rk.lathe(detail, "rust_iron", V(sx, y1 - 0.02, cab_arc(sx, half, eaves, rise) + 0.04), V(0.0, 1.0, 0.12), [(0.02, 0.0), (0.022, 0.12), (0.035, 0.2), (0.05, 0.26), (0.06, 0.28), (0.045, 0.27)], 24)
     round_lamp(detail, tail_position, -Y, 0.07, "lens_red")
     kit.floor_boards(cab, "floorboards", -half + wall, half - wall, y0 + wall, y1 - wall, floor + 0.025, "y", rng, 0.025, 0.004, None, (0.14, 0.2), 0.0)
     block(cab, "chequer_plate", V(door[0], y0, floor), V(door[1], y0 + wall, floor + 0.026))
@@ -695,15 +695,214 @@ def loco_extras(b, rng, body, detail):
     rk.pipe(detail, "loco_black", [V(0.09, (cab_y0 + cab_y1) * 0.5, cab_eaves + cab_rise - 0.04), V(0.09, cab_y1 - 0.08, cab_eaves + cab_rise - 0.04), V(0.635, cab_y1 - 0.07, cab_arc(0.635, loco_half, cab_eaves, cab_rise) - 0.045), V(0.635, cab_y1 - 0.07, 3.34)], 0.011, 6, 0.04)
 
 
+def loco_radiator(detail):
+    y1 = bonnet_y1
+    for index in range(62):
+        z = 1.515 + index * 0.0158
+        block(detail, "loco_black", V(-0.5, y1 - 0.062, z - 0.0016), V(0.5, y1 - 0.051, z + 0.0016), 0.0, "box", None, ("bottom", "back", "left", "right"))
+    block(detail, "loco_black", V(-0.235, y1, 2.567), V(0.235, y1 + 0.012, 2.683), 0.003)
+    rk.atlas_panel(detail, "number", V(0.0, y1 + 0.0125, 2.625), Y, Z, 0.44, 0.11)
+    for x in (-0.212, 0.212):
+        rk.prism_bolt(detail, "rust_iron", V(x, y1 + 0.0125, 2.625), Y, 0.014, 0.005, 6)
+    for side in (-1.0, 1.0):
+        x = side * bonnet_half
+        block(detail, "loco_green", V(min(x, x - side * 0.035), y1 - 0.035, loco_deck), V(max(x, x + side * 0.004), y1 + 0.004, 2.54), 0.003)
+        rk.rivets(detail, "loco_green", V(x + side * 0.004, y1 - 0.018, loco_deck + 0.08), V(x + side * 0.004, y1 - 0.018, 2.48), 0.12, V(side, 0.0, 0.0), 0.008)
+
+
+def loco_stack_flap(detail):
+    hinge = stack_position + V(0.0, -0.176, 0.705)
+    turn = math.radians(40.0)
+    center = hinge + V(0.0, 0.18 * math.cos(turn), 0.18 * math.sin(turn))
+    normal = V(0.0, -math.sin(turn), math.cos(turn))
+    rk.lathe(detail, "loco_black", center, normal, [(0.0, 0.0), (0.19, 0.0), (0.19, 0.008), (0.17, 0.012), (0.0, 0.012)], 32, False)
+    block(detail, "loco_black", hinge + V(-0.05, -0.012, -0.03), hinge + V(0.05, 0.012, 0.01), 0.003)
+    rk.pipe(detail, "rust_iron", [hinge + V(-0.065, 0.0, 0.0), hinge + V(0.065, 0.0, 0.0)], 0.008, 8)
+    arm = hinge + V(0.0, -0.11, -0.04)
+    rk.bar(detail, "loco_black", [hinge, arm], 0.02, 0.008, X)
+    rk.lathe(detail, "loco_black", arm, V(0.0, -1.0, -0.3), [(0.0, 0.0), (0.03, 0.0), (0.03, 0.05), (0.0, 0.05)], 12, False)
+
+
+def loco_brakes(detail):
+    beams = [axle - 0.55 for axle in loco_axles]
+    for y in beams:
+        rk.pipe(detail, "rust_iron", [V(-0.8, y, 0.36), V(0.8, y, 0.36)], 0.02, 10)
+        for side in (-1.0, 1.0):
+            block(detail, "rust_iron", V(side * 0.755 - 0.035, y - 0.03, 0.33), V(side * 0.755 + 0.035, y + 0.07, 0.39), 0.004)
+            rk.bar(detail, "rust_iron", [V(side * 0.6, y, 0.375), V(side * 0.6, y + 0.02, 0.215)], 0.05, 0.018, X)
+            rk.lathe(detail, "rust_iron", V(side * 0.586, y + 0.018, 0.23), X, [(0.0, 0.0), (0.013, 0.0), (0.013, 0.028), (0.0, 0.028)], 8)
+            rk.lathe(detail, "rust_iron", V(side * 0.586, y, 0.36), X, [(0.0, 0.0), (0.016, 0.0), (0.016, 0.028), (0.0, 0.028)], 8)
+    for side in (-1.0, 1.0):
+        rk.bar(detail, "rust_iron", [V(side * 0.6, beams[0] + 0.02, 0.23), V(side * 0.6, beams[2] - 0.05, 0.23)], 0.045, 0.014, X)
+        block(detail, "rust_iron", V(side * 0.6 - 0.012, beams[2] - 0.07, 0.205), V(side * 0.6 + 0.012, beams[2] - 0.03, 0.27), 0.002)
+    lever_y = beams[2] - 0.05
+    rk.bar(detail, "rust_iron", [V(-0.62, lever_y, 0.245), V(0.62, lever_y, 0.245)], 0.06, 0.016, Y)
+    cylinder = V(0.0, -2.52, 0.38)
+    rk.lathe(detail, "loco_black", cylinder, Y, [(0.0, 0.0), (0.09, 0.0), (0.112, 0.012), (0.112, 0.35), (0.095, 0.37), (0.0, 0.37)], 28)
+    for y in (cylinder.y + 0.012, cylinder.y + 0.358):
+        for angle in range(8):
+            a = angle * tau / 8.0 + 0.2
+            rk.prism_bolt(detail, "rust_iron", V(math.cos(a) * 0.1, y, cylinder.z + math.sin(a) * 0.1), V(0.0, 1.0 if y > cylinder.y + 0.1 else -1.0, 0.0), 0.016, 0.007, 6)
+    for y in (cylinder.y + 0.09, cylinder.y + 0.28):
+        block(detail, "rust_iron", V(-0.125, y - 0.02, 0.4), V(0.125, y + 0.02, 0.505), 0.003)
+    rk.pipe(detail, "rust_iron", [V(0.0, cylinder.y + 0.37, cylinder.z), V(0.0, lever_y - 0.03, cylinder.z)], 0.022, 10)
+    rk.bar(detail, "rust_iron", [V(0.0, lever_y - 0.02, cylinder.z + 0.03), V(0.0, lever_y, 0.22)], 0.05, 0.018, X)
+    rk.pipe(detail, "loco_black", [V(0.06, cylinder.y + 0.05, cylinder.z + 0.1), V(0.06, cylinder.y + 0.05, 0.47), V(0.3, cylinder.y + 0.05, 0.47), V(0.46, cylinder.y + 0.2, 0.56), V(0.46, -1.75, 0.56)], 0.012, 6, 0.05)
+
+
+def loco_drives(frame, detail):
+    for axle, toward in ((loco_axles[0], -1.0), (loco_axles[2], 1.0)):
+        rk.lathe(frame, "loco_black", V(-0.24, axle, wheel_radius), X, [(0.085, 0.0), (0.19, 0.0), (0.2, 0.012), (0.2, 0.04), (0.17, 0.06), (0.17, 0.42), (0.2, 0.44), (0.2, 0.468), (0.19, 0.48), (0.085, 0.48)], 28)
+        for end in (-1.0, 1.0):
+            for angle in range(10):
+                a = angle * tau / 10.0
+                rk.prism_bolt(detail, "rust_iron", V(end * 0.24, axle + math.cos(a) * 0.185, wheel_radius + math.sin(a) * 0.185), V(end, 0.0, 0.0), 0.018, 0.008, 6)
+        nose = V(0.0, axle + toward * 0.15, 0.46)
+        rk.lathe(frame, "loco_black", nose, V(0.0, toward, 0.0), [(0.13, 0.0), (0.13, 0.04), (0.1, 0.07), (0.09, 0.13), (0.11, 0.135), (0.11, 0.16), (0.0, 0.165)], 24)
+        a = V(0.0, axle + toward * 0.34, 0.46)
+        c = V(0.0, (0.45 if toward < 0 else -0.4) - toward * 0.11, 0.46)
+        rk.pipe(frame, "loco_black", [a, c], 0.032, 14)
+        for end, sign in ((a, toward), (c, -toward)):
+            rk.lathe(detail, "rust_iron", end - V(0.0, sign * 0.035, 0.0), V(0.0, sign, 0.0), [(0.0, 0.0), (0.075, 0.0), (0.075, 0.025), (0.04, 0.035), (0.0, 0.035)], 18)
+            block(detail, "rust_iron", end + V(-0.06, -0.012, -0.012), end + V(0.06, 0.012, 0.012), 0.003)
+            block(detail, "rust_iron", end + V(-0.012, -0.012, -0.06), end + V(0.012, 0.012, 0.06), 0.003)
+    for y, direction in ((0.45, 1.0), (-0.4, -1.0)):
+        rk.lathe(frame, "loco_black", V(0.0, y, 0.46), V(0.0, direction, 0.0), [(0.0, 0.0), (0.11, 0.0), (0.11, 0.03), (0.085, 0.045), (0.085, 0.07), (0.0, 0.075)], 20)
+    for x in (-0.38, -0.13, 0.13, 0.38):
+        for y in (-0.4, 0.45):
+            rk.prism_bolt(detail, "rust_iron", V(x, y, 0.58), Y if y > 0 else -Y, 0.022, 0.01, 6)
+    rk.lathe(detail, "rust_iron", V(0.46, 0.1, 0.6), Z, [(0.0, 0.0), (0.02, 0.0), (0.02, 0.03), (0.014, 0.05), (0.0, 0.05)], 10)
+    rk.lathe(detail, "rust_iron", V(-0.5, -0.1, 0.36), -X, [(0.0, 0.0), (0.025, 0.0), (0.025, 0.02), (0.0, 0.02)], 6)
+
+
+def loco_underdeck(frame, detail):
+    block(frame, "loco_black", V(0.86, -0.45, 0.78), V(1.18, 0.45, 1.22), 0.03)
+    for y in (-0.3, 0.0, 0.3):
+        block(detail, "rust_iron", V(0.85, y - 0.02, 0.77), V(1.19, y + 0.02, 1.23), 0.004)
+        block(detail, "rust_iron", V(1.08, y - 0.02, 1.23), V(1.13, y + 0.02, 1.27), 0.003)
+    rk.lathe(detail, "loco_black", V(1.18, 0.16, 0.96), X, [(0.0, 0.0), (0.045, 0.0), (0.045, 0.05), (0.058, 0.055), (0.058, 0.08), (0.03, 0.088), (0.0, 0.09)], 16)
+    rk.chain(detail, "rust_iron", [V(1.262, 0.17, 0.95), V(1.24, 0.22, 0.88), V(1.2, 0.26, 0.92)], 0.026, 0.012, 0.003, None, 4, 2)
+    rk.pipe(detail, "glass_dirty", [V(1.195, -0.15, 0.84), V(1.195, -0.15, 1.05)], 0.011, 8)
+    for z in (0.83, 1.06):
+        rk.lathe(detail, "rust_iron", V(1.18, -0.15, z), X, [(0.0, 0.0), (0.02, 0.0), (0.02, 0.03), (0.0, 0.03)], 8)
+    rk.lathe(detail, "rust_iron", V(1.02, 0.1, 0.78), -Z, [(0.0, 0.0), (0.028, 0.0), (0.028, 0.02), (0.0, 0.025)], 6)
+    box = (V(-1.18, 0.55, 0.84), V(-0.86, 1.3, 1.2))
+    block(frame, "loco_black", box[0], box[1], 0.012)
+    block(detail, "loco_black", V(-1.192, 0.6, 0.88), V(-1.18, 1.25, 1.16), 0.003)
+    for z in (0.93, 1.11):
+        rk.lathe(detail, "rust_iron", V(-1.196, 0.6, z - 0.03), Z, [(0.0, 0.0), (0.011, 0.0), (0.011, 0.06), (0.0, 0.06)], 8)
+    block(detail, "rust_iron", V(-1.2, 1.17, 1.0), V(-1.192, 1.23, 1.05), 0.002)
+    block(detail, "rust_iron", V(-1.215, 1.19, 0.93), V(-1.199, 1.23, 0.98), 0.004)
+    rk.pipe(detail, "rust_iron", [V(-1.207, 1.196, 0.98), V(-1.207, 1.196, 1.0), V(-1.207, 1.224, 1.0), V(-1.207, 1.224, 0.98)], 0.003, 5, 0.006)
+    cells = (V(-1.18, -1.75, 0.82), V(-0.86, -1.05, 1.2))
+    block(frame, "loco_black", cells[0], cells[1], 0.012)
+    for y in (-1.6, -1.2):
+        rk.pipe(detail, "rust_iron", [V(-1.18, y - 0.06, 1.0), V(-1.215, y - 0.05, 1.0), V(-1.215, y + 0.05, 1.0), V(-1.18, y + 0.06, 1.0)], 0.006, 6, 0.01)
+    for y in (-1.68, -1.12):
+        for z in (0.88, 1.14):
+            rk.prism_bolt(detail, "rust_iron", V(-1.18, y, z), -X, 0.02, 0.008, 6)
+    rk.louvres(detail, "loco_black", V(-1.181, -1.62, 0.9), V(0.0, 1.0, 0.0), Z, -X, 0.44, 4, 0.04, 0.01, 0.02)
+    for low, high in (box, cells):
+        for y in (low.y + 0.08, high.y - 0.08):
+            block(detail, "loco_black", V(-1.0, y - 0.025, high.z), V(-0.95, y + 0.025, 1.26), 0.002)
+
+
+def loco_engine_details(engine, detail):
+    for y in (0.15, 0.55, 0.95, 1.35):
+        outline = rk.rounded_rect(y - 0.13, 1.5, y + 0.13, 1.84, 0.05, 3)
+        emit(engine, kit.geo_slab(V(0.3, 0.0, 0.0), Y, Z, X, outline, [], 0.0, 0.012), "loco_black", None, "box", False)
+        for dy, dz in ((-0.1, 1.53), (0.1, 1.53), (-0.1, 1.81), (0.1, 1.81), (-0.11, 1.67), (0.11, 1.67), (0.0, 1.525), (0.0, 1.815)):
+            rk.prism_bolt(detail, "rust_iron", V(0.312, y + dy, dz), X, 0.016, 0.007, 6)
+    for y in [0.1 + index * 0.3 for index in range(6)]:
+        emit(engine, kit.geo_cbox(0.3, 0.2, 0.05, 0.014), "loco_black", Matrix.Translation(V(0.0, y, 2.135)), "box", True)
+        for sx in (-0.09, 0.09):
+            rk.prism_bolt(detail, "rust_iron", V(sx, y, 2.16), Z, 0.018, 0.01, 6)
+        rk.lathe(detail, "rust_iron", V(0.2, y, 2.0), X, [(0.0, 0.0), (0.05, 0.0), (0.05, 0.016), (0.0, 0.016)], 12)
+    dynamo = V(0.5, 1.55, 1.78)
+    rk.lathe(engine, "loco_black", dynamo, Y, [(0.0, 0.0), (0.09, 0.0), (0.1, 0.015), (0.1, 0.27), (0.09, 0.29), (0.0, 0.29)], 24)
+    for index in range(10):
+        a = index * tau / 10.0
+        block(detail, "loco_black", dynamo + V(math.cos(a) * 0.1 - 0.006, 0.05, math.sin(a) * 0.1 - 0.006), dynamo + V(math.cos(a) * 0.1 + 0.006, 0.24, math.sin(a) * 0.1 + 0.006))
+    block(engine, "loco_black", V(0.3, 1.6, 1.68), V(0.43, 1.78, 1.72), 0.004)
+    rk.lathe(engine, "loco_black", V(0.5, 1.84, 1.78), Y, [(0.0, 0.0), (0.02, 0.0), (0.02, 0.1), (0.065, 0.1), (0.065, 0.14), (0.0, 0.14)], 20)
+    rk.lathe(engine, "loco_black", V(0.0, 1.9, 1.55), Y, [(0.0, 0.0), (0.05, 0.0), (0.05, 0.04), (0.1, 0.04), (0.1, 0.08), (0.0, 0.08)], 24)
+    rk.lathe(engine, "loco_black", V(0.0, 1.94, 2.0), Y, [(0.0, 0.0), (0.07, 0.0), (0.07, 0.04), (0.04, 0.05), (0.04, 0.16), (0.0, 0.16)], 20)
+    for a, c in (((0.02, 1.65), (0.5, 1.845)), ((0.04, 1.455), (0.52, 1.716)), ((-0.1, 1.55), (-0.07, 2.0)), ((0.1, 1.55), (0.07, 2.0))):
+        kit.member(engine, "loco_black", V(a[0], 1.96, a[1]), V(c[0], 1.96, c[1]), 0.008, 0.024, Y, 0.0, "box")
+    for path in ([V(0.15, 1.9, 1.9), V(0.45, 1.95, 1.91), V(0.5, 2.2, 2.0), V(0.45, 2.38, 2.2)], [V(-0.15, 1.9, 1.5), V(-0.2, 2.1, 1.48), V(-0.35, 2.36, 1.55)]):
+        rk.pipe(engine, "loco_black", path, 0.03, 10, 0.08)
+        for start, toward in ((path[0], path[1]), (path[-1], path[-2])):
+            direction = (toward - start).normalized()
+            rk.lathe(detail, "rust_iron", start + direction * 0.03, direction, [(0.034, 0.0), (0.038, 0.0), (0.038, 0.02), (0.034, 0.02)], 10)
+    rk.pipe(engine, "rust_iron", [V(0.32, 1.28, 1.44), V(0.33, 1.28, 1.9)], 0.006, 6)
+    rk.pipe(engine, "rust_iron", [V(0.33, 1.255, 1.9), V(0.33, 1.255, 1.935), V(0.33, 1.305, 1.935), V(0.33, 1.305, 1.9)], 0.004, 5, 0.008)
+    rk.pipe(engine, "loco_black", [V(0.31, 0.05, 1.94), V(0.31, 1.75, 1.94)], 0.008, 6)
+    for y in (0.3, 0.75, 1.2, 1.65):
+        block(detail, "rust_iron", V(0.3, y - 0.01, 1.925), V(0.322, y + 0.01, 1.955))
+    for path in ([V(0.47, 1.2, 1.6), V(0.47, 1.1, 1.6), V(0.46, 1.0, 1.62)], [V(0.39, 1.2, 1.58), V(0.38, 1.1, 1.56), V(0.37, 1.0, 1.58)]):
+        rk.swatch(engine, kit.geo_tube(rk.fillet_path(path, 0.03, 3), kit.circle(0.006, 6), False, X), "copper", None, True)
+    for index in range(1, 4):
+        y = door_span(index)[0] - 0.015
+        block(engine, "loco_black", V(0.64, y - 0.03, loco_deck), V(0.694, y + 0.03, 2.56))
+        block(engine, "loco_black", V(-0.694, y - 0.03, loco_deck), V(-0.64, y + 0.03, 2.56))
+    for z0, z1 in ((loco_deck + 0.05, loco_deck + 0.1), (2.47, 2.52)):
+        block(engine, "loco_black", V(0.65, bonnet_y0 + 0.02, z0), V(0.694, bonnet_y1 - 0.14, z1))
+
+
+def loco_cab_details(b, rng, cab, detail):
+    wall = 0.04
+    front = kit.frame_matrix(kit.plane(V(0.0, cab_y1 - wall, 0.0), -Y))
+    for x0, x1, z0, z1 in ((0.78, 1.2, 2.3, 3.05), (-1.2, -0.78, 2.3, 3.05), (-0.5, 0.5, 2.86, 3.16)):
+        window_trim(detail, front, x0, x1, z0, z1, "loco_black", 0.02)
+    for x0, x1 in ((0.78, 1.2), (-1.2, -0.78)):
+        local_block(detail, "loco_black", front, x0 - 0.02, x1 + 0.02, -0.16, -0.01, 3.075, 3.085, 0.002)
+    for sign in (-1.0, 1.0):
+        inner = kit.frame_matrix(kit.plane(V(sign * (loco_half - wall), 0.0, 0.0), V(-sign, 0.0, 0.0)))
+        a0, a1 = sorted((-sign * -2.2, -sign * -1.1))
+        window_trim(detail, inner, a0, a1, 2.3, 3.05, "loco_black", 0.02)
+        local_block(detail, "loco_black", inner, a0 - 0.05, a1 + 0.05, -0.03, 0.0, 2.24, 2.27, 0.002)
+        for z in (2.255, 3.075):
+            local_block(detail, "rust_iron", inner, a0 - 0.02, a1 + 0.02, -0.012, 0.0, z - 0.006, z + 0.006)
+    rear = cab_y0 + wall
+    for x in (-0.56, 0.56):
+        stands = [(V(x, rear + 0.05, z), V(0.0, 0.05, 0.0)) for z in (1.66, 2.34)]
+        rk.handrail(detail, "loco_black", [V(x, rear + 0.05, 1.62), V(x, rear + 0.05, 2.38)], 0.012, stands)
+    oil_lamp(detail, V(-0.98, rear + 0.16, loco_deck + 0.025), V(0.4, 1.0, 0.0).normalized())
+    can = V(1.0, cab_y1 - 0.62, loco_deck + 0.025)
+    rk.lathe(detail, "rust_iron", can, Z, [(0.0, 0.0), (0.075, 0.0), (0.078, 0.01), (0.078, 0.11), (0.03, 0.15), (0.012, 0.16), (0.012, 0.19), (0.0, 0.19)], 16)
+    rk.pipe(detail, "rust_iron", [can + V(0.05, 0.0, 0.1), can + V(0.15, 0.0, 0.2), can + V(0.24, 0.0, 0.23)], 0.006, 6, 0.04)
+    rk.pipe(detail, "rust_iron", [can + V(-0.06, 0.0, 0.12), can + V(-0.1, 0.0, 0.2), can + V(-0.03, 0.0, 0.25), can + V(0.0, 0.0, 0.17)], 0.005, 5, 0.02)
+    bag = Matrix.Translation(V(0.72, rear + 0.3, loco_deck + 0.025)) @ Matrix.Rotation(0.35, 4, 'Z')
+    emit(cab, kit.geo_cbox(0.42, 0.2, 0.22, 0.05), "leather_brown", bag @ Matrix.Translation(V(0.0, 0.0, 0.11)), "box", True)
+    rk.pipe(detail, "leather_brown", [bag @ V(-0.12, 0.0, 0.22), bag @ V(-0.08, 0.0, 0.3), bag @ V(0.08, 0.0, 0.3), bag @ V(0.12, 0.0, 0.22)], 0.012, 6, 0.04)
+    for x in (-0.13, 0.13):
+        local_block(detail, "rust_iron", bag, x - 0.02, x + 0.02, -0.105, -0.098, 0.12, 0.2)
+    rk.pipe(detail, "loco_black", [V(-1.2, cab_y1 - 0.06, 3.3), V(-1.2, rear + 0.06, 3.3)], 0.01, 6)
+    for y in (cab_y1 - 0.4, -1.6, rear + 0.3):
+        block(detail, "rust_iron", V(-1.215, y - 0.012, 3.28), V(-1.185, y + 0.012, 3.32))
+    rk.swatch(detail, kit.geo_cbox(0.2, 0.012, 0.15, 0.003), "white", Matrix.Translation(V(0.6, rear + 0.006, 2.6)), False)
+    rk.swatch(detail, kit.geo_cbox(0.12, 0.004, 0.025, 0.001), "red", Matrix.Translation(V(0.6, rear + 0.014, 2.6)), False)
+    rk.swatch(detail, kit.geo_cbox(0.025, 0.004, 0.12, 0.001), "red", Matrix.Translation(V(0.6, rear + 0.0145, 2.6)), False)
+
+
 def locomotive():
+    rk.quality = 2
     b = rk.Build("train_locomotive", 31)
     rng = b.rng
     frame, detail = loco_frames(b, rng)
     body = loco_bonnet(b, rng, detail)
     cab, glass = loco_cab(b, rng, body, detail)
     loco_interior(b, rng, cab, detail)
-    loco_engine(b, rng)
+    engine = loco_engine(b, rng)
     loco_extras(b, rng, body, detail)
+    loco_radiator(detail)
+    loco_stack_flap(detail)
+    loco_brakes(detail)
+    loco_drives(frame, detail)
+    loco_underdeck(frame, detail)
+    loco_engine_details(engine, detail)
+    loco_cab_details(b, rng, cab, detail)
+    rk.quality = 1
     return b
 
 
@@ -1444,7 +1643,7 @@ def coach():
     for y in (-3.0, 0.0, 3.0):
         lamp = V(0.0, y, coach_arc(0.0) - 0.04)
         rk.swatch(detail, kit.geo_lathe([(0.0, -0.02), (0.11, -0.02), (0.11, 0.0), (0.09, 0.012)], 16), "brass", rk.frame_along(lamp, -Z))
-        rk.swatch(detail, kit.geo_lathe([(0.085, 0.0), (0.095, 0.05), (0.07, 0.1), (0.03, 0.125), (0.0, 0.13)], 16), "lens_clear", rk.frame_along(lamp, -Z))
+        rk.swatch(detail, kit.geo_lathe([(0.085, 0.0), (0.095, 0.05), (0.07, 0.1), (0.03, 0.125), (0.0, 0.13)], 16), "lens_clear", rk.frame_along(lamp, -Z), True, "lamp_glow_dim")
         rk.lathe(detail, "loco_black", V(0.0, y, coach_arc(0.0) + 0.04), Z, [(0.09, 0.0), (0.09, 0.05), (0.14, 0.07), (0.14, 0.09), (0.0, 0.13)], 16)
         b.light("warm", lamp - V(0.0, 0.0, 0.2))
     for side in (-1.0, 1.0):

@@ -494,6 +494,9 @@ views = {
             ("wheels", (3.4, 0.9, 0.75), (0.7, 0.3, 0.75), 35.0, 0.6, None),
             ("cab", (0.0, -2.35, 2.925), (-0.1, -0.7, 2.5), 14.0, 2.2, 16.0),
             ("cab_rear", (-0.35, -1.25, 2.925), (0.45, -2.6, 2.45), 15.0, 2.2, 16.0),
+            ("front", (1.1, 5.9, 2.3), (0.0, 2.56, 2.05), 35.0, 0.0, None),
+            ("engine", (2.1, 1.25, 2.05), (0.2, 1.4, 1.8), 26.0, 1.4, 10.0),
+            ("under", (3.4, 0.6, 0.42), (0.0, -0.4, 0.42), 24.0, 1.0, 12.0),
         ],
         "levels": [("STEPS", 1.22, -0.5, 1.0), ("FOOTPLATE", 3.2, 1.0, 3.3), ("ROOF", 5.0, 3.3, 4.0)],
     },
@@ -583,6 +586,30 @@ views = {
         ],
         "levels": [("TOP", 6.0, -0.5, 3.0)],
     },
+    "rail_crossing_gate": {
+        "context": [("rail_crossing_post", (-0.205, 0.0, 0.0)), ("rail_crossing_post", (4.905, 0.0, 0.0), math.pi), ("rail_crossing_gate", (4.7, 0.0, 0.0), math.pi), ("rail_crossing_sign", (-1.3, -1.4, 0.0), 0.0)],
+        "shots": [
+            ("three", (4.6, -5.6, 2.1), (2.1, 0.0, 0.95), 35.0, 0.0, None),
+            ("detail", (0.95, -1.25, 1.35), (0.15, 0.0, 0.85), 40.0, 0.0, None),
+            ("back", (1.6, 3.4, 1.5), (1.5, 0.0, 0.85), 35.0, 0.0, None),
+        ],
+    },
+    "rail_crossing_post": {
+        "context": [("rail_crossing_gate", (0.205, 0.0, 0.0), math.radians(-35.0))],
+        "shots": [
+            ("three", (1.7, -2.6, 2.2), (0.1, 0.0, 1.45), 35.0, 0.0, None),
+            ("lamp", (0.75, -1.05, 2.6), (0.0, 0.0, 2.3), 40.0, 0.0, None),
+        ],
+        "levels": [("TOP", 3.2, 0.0, 2.7)],
+    },
+    "rail_crossing_sign": {
+        "shots": [
+            ("three", (0.9, -2.3, 1.75), (0.0, 0.0, 1.6), 35.0, 0.0, None),
+            ("detail", (0.25, -1.05, 1.95), (0.0, 0.0, 1.85), 40.0, 0.0, None),
+            ("back", (-1.0, 1.9, 1.8), (0.0, 0.0, 1.6), 35.0, 0.0, None),
+        ],
+        "levels": [("TOP", 3.0, 0.0, 2.4)],
+    },
     "rail_water_tower": {
         "context": [("rail_track", (-6.0, -3.6, 0.0), -math.pi * 0.5)],
         "shots": [
@@ -602,6 +629,21 @@ views = {
             ("ground", (1.2, 0.8, 1.64), (-0.8, -0.9, 1.0), 15.0, 1.6, 10.0),
         ],
         "levels": [("GROUND", 2.1, -0.5, 2.1), ("CABIN", 4.4, 2.1, 4.6), ("ROOF", 8.0, 4.6, 7.0)],
+    },
+    "bld_station": {
+        "context": [("rail_platform", (0.0, -4.5, -1.7)), ("rail_platform_end", (8.5, -4.5, -1.7), 0.0), ("rail_platform_end", (-8.5, -4.5, -1.7), math.pi), ("rail_track", (-12.0, -7.95, -1.7), -math.pi * 0.5), ("rail_track", (0.0, -7.95, -1.7), -math.pi * 0.5)],
+        "ground": -1.702,
+        "shots": [
+            ("three", (10.5, -14.0, 3.4), (0.4, -2.6, 1.2), 35.0, 0.0, None),
+            ("rear", (-10.0, 10.5, 4.2), (0.0, 0.6, 1.4), 35.0, 0.0, None),
+            ("detail", (4.4, -6.6, 1.6), (1.6, -2.9, 1.5), 35.0, 0.3, None),
+            ("waiting", (-0.2, 1.1, 1.64), (-5.0, -0.7, 1.25), 15.0, 1.2, 14.0),
+            ("hatch", (-4.7, -1.1, 1.64), (0.6, -0.4, 1.55), 16.0, 1.2, 14.0),
+            ("office", (4.9, -1.4, 1.64), (0.8, 0.4, 1.2), 15.0, 1.2, 14.0),
+            ("steps", (1.2, 10.4, 0.2), (-3.0, 4.2, -0.8), 30.0, 0.0, None),
+            ("steps_top", (-3.0, 2.2, 1.64), (-3.0, 5.6, -1.4), 28.0, 0.3, None),
+        ],
+        "levels": [("YARD", -0.06, -1.8, -0.06), ("FLOOR", 2.9, -0.5, 2.9), ("ROOF", 9.0, 2.9, 7.0)],
     },
 }
 
@@ -630,6 +672,71 @@ previews = {
     "rail_track": preview_track,
     "rail_track_weeds": preview_track,
 }
+consist = ["train_locomotive", "train_coach", "train_wagon_box", "train_wagon_open", "train_wagon_flat"]
+
+
+def place_train(names, front_x, y, z):
+    turn = -math.pi * 0.5
+    x = front_x
+    for name in names:
+        length = rt.specs[name]["length_over_buffers"]
+        center = x - length * 0.5
+        place(name, (center, y, z), turn)
+        for axle in rt.specs[name]["axles"]:
+            place("train_wheelset", (center + axle, y, z + rt.wheel_radius), turn)
+        x = center - length * 0.5 - rt.coupling_gap
+
+
+def preview_scene(which=None):
+    kit.reset_scene()
+    rk.register()
+    formation = -rs.platform_top
+    platform_y = -rs.station_hy - rs.platform_half
+    line = platform_y - rs.platform_half - rs.platform_offset
+    place("bld_station")
+    place("rail_platform", (0.0, platform_y, formation))
+    place("rail_platform_end", (8.5, platform_y, formation), 0.0)
+    place("rail_platform_end", (-8.5, platform_y, formation), math.pi)
+    for index, x in enumerate((-36.0, -24.0, -12.0, 0.0, 12.0, 24.0)):
+        place("rail_track_weeds" if index % 2 else "rail_track", (x, line, formation), -math.pi * 0.5)
+    place_train(consist, 14.4, line, formation + rs.rail_top)
+    place("rail_signal", (22.0, line + 2.4, formation), -math.pi * 0.5)
+    place("rail_signal_box", (-20.0, line + 4.2, formation), 0.0)
+    place("rail_water_tower", (-33.0, line + 3.6, formation), 0.0)
+    kit.daylight(1.0, 3.2, (0.42, 0.56, -0.62))
+    kit.ground(formation - 0.002, 600.0)
+    prefix = os.path.join(rk.preview_root, "railway_scene_")
+    todo = which or ["train", "overview", "platform"]
+    if "train" in todo:
+        shot(prefix + "train.png", (-5.0, line - 46.0, 1.2), (-5.0, line, -0.1), 35.0, 0.0, None, 0.05, (2400, 900))
+    if "overview" in todo:
+        shot(prefix + "overview.png", (26.0, line - 30.0, 13.0), (-6.0, -4.0, -1.0), 30.0)
+    if "platform" in todo:
+        shot(prefix + "platform.png", (-4.0, -3.4, 1.62), (14.0, line + 0.8, 0.4), 24.0)
+
+
+sheet_rows = [
+    ("track", [("plain", "rail_track_three"), ("weeds", "rail_track_weeds_three"), ("joint", "rail_track_joint"), ("along", "rail_track_along")]),
+    ("wheelset", [("three", "train_wheelset_three")]),
+    ("locomotive", [("three", "train_locomotive_three"), ("rear", "train_locomotive_rear"), ("front", "train_locomotive_front"), ("engine", "train_locomotive_engine"), ("under", "train_locomotive_under"), ("cab", "train_locomotive_cab")]),
+    ("flat wagon", [("three", "train_wagon_flat_three"), ("detail", "train_wagon_flat_detail"), ("plan", "train_wagon_flat_plan")]),
+    ("open wagon", [("three", "train_wagon_open_three"), ("detail", "train_wagon_open_detail"), ("inside", "train_wagon_open_inside"), ("plan", "train_wagon_open_plan")]),
+    ("box van", [("three", "train_wagon_box_three"), ("detail", "train_wagon_box_detail"), ("inside", "train_wagon_box_inside"), ("plan", "train_wagon_box_plan")]),
+    ("coach", [("three", "train_coach_three"), ("detail", "train_coach_detail"), ("bogie", "train_coach_bogie"), ("inside", "train_coach_inside"), ("bay", "train_coach_inside_bay"), ("plan", "train_coach_plan")]),
+    ("platform", [("three", "rail_platform_three"), ("detail", "rail_platform_detail"), ("end", "rail_platform_end_three"), ("end detail", "rail_platform_end_detail")]),
+    ("buffer signal", [("buffer", "rail_buffer_three"), ("buffer detail", "rail_buffer_detail"), ("signal", "rail_signal_three"), ("signal arm", "rail_signal_detail"), ("signal base", "rail_signal_base")]),
+    ("crossing", [("three", "rail_crossing_three"), ("detail", "rail_crossing_detail"), ("road", "rail_crossing_road")]),
+    ("crossing kit", [("gates", "rail_crossing_gate_three"), ("gate back", "rail_crossing_gate_back"), ("post", "rail_crossing_post_three"), ("lamp", "rail_crossing_post_lamp"), ("sign", "rail_crossing_sign_three"), ("sign detail", "rail_crossing_sign_detail")]),
+    ("water tower", [("three", "rail_water_tower_three"), ("detail", "rail_water_tower_detail"), ("rear", "rail_water_tower_rear")]),
+    ("signal box", [("three", "rail_signal_box_three"), ("rear", "rail_signal_box_rear"), ("inside", "rail_signal_box_inside"), ("ground", "rail_signal_box_ground"), ("plan", "rail_signal_box_plan")]),
+    ("station", [("three", "bld_station_three"), ("rear", "bld_station_rear"), ("steps", "bld_station_steps"), ("waiting", "bld_station_waiting"), ("office", "bld_station_office"), ("plan", "bld_station_plan")]),
+    ("scene", [("train", "railway_scene_train"), ("overview", "railway_scene_overview"), ("platform", "railway_scene_platform")]),
+]
+
+
+def write_railway_sheet():
+    rows = [(title, [(label, os.path.join(rk.preview_root, stem + ".png")) for label, stem in entries]) for title, entries in sheet_rows]
+    kit.contact_sheet(rows, os.path.join(rk.preview_root, "railway_sheet.png"), (400, 225))
 
 
 def main():
@@ -645,6 +752,10 @@ def main():
         which = arguments[3].split(",") if len(arguments) > 3 else None
         for name in wanted or list(previews) + list(views):
             previews.get(name, preview_model)(name, which)
+    elif mode == "scene":
+        preview_scene([name for name in wanted if name != "all"] or None)
+    elif mode == "sheet":
+        write_railway_sheet()
     print("DONE", mode, round(time.time() - started, 1), "s", flush=True)
 
 

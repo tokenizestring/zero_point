@@ -596,9 +596,72 @@ for number, name in enumerate(label_names):
     signs[name] = (number * 128, 0, (number + 1) * 128, 64)
 
 
+plates = {
+    "cast_beware": (0, 0, 1024, 683),
+}
+glow_sets = {
+    "lamp_glow_warm": ((1.0, 0.86, 0.64), 6.0),
+    "lamp_glow_dim": ((1.0, 0.8, 0.56), 2.0),
+}
+
+
 def sign_uv(name, margin=1.5):
-    x0, y0, x1, y1 = signs[name]
+    x0, y0, x1, y1 = signs[name] if name in signs else plates[name]
     return ((x0 + margin) / size, (y0 + margin) / size, (x1 - margin) / size, (y1 - margin) / size)
+
+
+def smear_down(chipped, decay=0.965):
+    out = np.zeros(chipped.shape)
+    carry = np.zeros(chipped.shape[1])
+    for index in range(chipped.shape[0] - 1, -1, -1):
+        carry = np.maximum(chipped[index], carry * decay)
+        out[index] = carry
+    return out
+
+
+def make_plates():
+    seed = 6700
+    x0, y0, x1, y1 = plates["cast_beware"]
+    cx = (x0 + x1) * 0.5
+    items = [("BEWARE", "slab", cx, y0 + 495.0, 140.0, 800.0, 1.06), ("OF TRAINS", "slab", cx, y0 + 318.0, 112.0, 820.0, 1.04), ("STOP  LOOK  LISTEN", "slab", cx, y0 + 140.0, 60.0, 820.0, 1.04)]
+    mask = text_mask(items)
+    n1 = field(seed, 3.0, 80.0, 1.8)
+    n2 = field(seed + 1, 20.0, 400.0, 1.4)
+    n3 = field(seed + 2, 1.5, 20.0, 2.2)
+    grain = speckle(seed + 3, 0.8)
+    inside = (grid_u >= x0) & (grid_u < x1) & (grid_v >= y0) & (grid_v < y1)
+    u = grid_u - x0
+    v = grid_v - y0
+    d = np.minimum(np.minimum(u, (x1 - x0) - u), np.minimum(v, (y1 - y0) - v))
+    rim = np.maximum(sstep(23.0, 20.0, d), sstep(39.0, 42.0, d) * sstep(51.0, 48.0, d))
+    bosses = np.zeros((size, size))
+    heads = np.zeros((size, size))
+    for bv in (y0 + 592.0, y0 + 85.0):
+        radius = np.hypot(grid_u - cx, grid_v - bv)
+        bosses = np.maximum(bosses, sstep(19.0, 16.0, radius))
+        heads = np.maximum(heads, sstep(11.0, 9.5, radius))
+    raised = np.clip(np.maximum(np.maximum(mask, rim), bosses), 0.0, 1.0) * inside
+    rust = mix(linear(104, 56, 30), linear(52, 30, 20), unit(n2))
+    ground = linear(24, 24, 26) * (0.78 + 0.4 * unit(n1) + 0.06 * grain)[:, :, None]
+    bloom = sstep(0.5, 0.86, unit(n2 + n1 * 0.7)) * (1.0 - raised)
+    ground = mix(ground, rust, bloom * 0.75)
+    white = linear(220, 216, 202) * (0.86 + 0.14 * unit(n1) + 0.03 * grain)[:, :, None]
+    chip_field = n2 * 0.6 + n1 * 0.55 + n3 * 0.3
+    level = float(np.quantile(chip_field[inside], 0.84))
+    chipped = sstep(level, level + 0.1, chip_field) * raised
+    top = mix(white, rust * 1.25, chipped)
+    top = mix(top, linear(30, 28, 26), heads * 0.85)
+    albedo = mix(ground, top, raised)
+    stain = np.clip(smear_down(np.maximum(chipped, heads * 0.8) * inside) - raised * 0.7, 0.0, 1.0)
+    albedo = mix(albedo, albedo * np.array([1.25, 0.72, 0.42]) + np.array([0.035, 0.012, 0.004]), stain * 0.55)
+    grime = cover(field(seed + 4, 2.0, 60.0, 1.8), 0.35, 0.5)
+    albedo = mix(albedo, albedo * np.array([0.6, 0.6, 0.55]), grime * (1.0 - raised * 0.6) * 0.45)
+    albedo = np.where(inside[:, :, None], albedo, linear(24, 24, 26))
+    lifted = blur(raised, 0.9)
+    height = lifted * 0.0024 + heads * 0.0015 - chipped * 0.0003 - bloom * 0.0002 + grain * 0.00003
+    rough = np.where(inside, np.clip(0.58 - 0.1 * raised + 0.25 * chipped + 0.15 * bloom + 0.06 * unit(n3), 0.2, 1.0), 0.6)
+    occlusion = 1.0 - 0.35 * cavity(height, 1.5, 0.0012)
+    save_set("rail_plates", albedo, rough, occlusion, 1.0, height=height, strength=1.0, texel=0.84 / 1024.0)
 
 
 def text_mask(items, resolution=2048):
@@ -1070,6 +1133,7 @@ makers = {
     "rail_signs": make_signs,
     "leather_brown": make_leather,
     "platform_edge": make_platform_edge,
+    "rail_plates": make_plates,
 }
 
 rail_catalog = {
@@ -1086,6 +1150,7 @@ rail_catalog = {
     "rail_signs": {"tile": 1.0, "kind": "atlas"},
     "leather_brown": {"tile": 0.6, "kind": "local"},
     "platform_edge": {"tile": 2.0, "kind": "strips"},
+    "rail_plates": {"tile": 1.0, "kind": "atlas"},
 }
 
 
@@ -1095,6 +1160,8 @@ def register():
         kit.catalog.setdefault(name, entry)
     for name, (paint, primer, seed) in painted_sets.items():
         kit.catalog.setdefault(name, {"tile": 1.0, "kind": "boards", "boards": kit.board_layout(np.random.default_rng(seed), 1.0, 0.09, 0.16)})
+    for name in glow_sets:
+        kit.hero(name, os.path.join(library_root, "rail_signs_albedo.png"), "rail_signs")
     return kit.catalog
 
 
@@ -1103,7 +1170,8 @@ def build_library(names=None):
     for name, maker in makers.items():
         if not names or name in names:
             maker()
-    write_sheet(os.path.join(preview_root, "library_railway.png"))
+    if not names:
+        write_sheet(os.path.join(preview_root, "library_railway.png"))
     print("RAIL LIBRARY DONE", len(swatches), "sets", flush=True)
 
 
@@ -1572,6 +1640,23 @@ def apply_external(document, directory, material, template):
     material["name"] = name
 
 
+def apply_glow(document):
+    changed = False
+    for material in document.get("materials", []):
+        entry = glow_sets.get(material.get("name"))
+        if entry is None:
+            continue
+        color, strength = entry
+        material["emissiveFactor"] = [float(c) for c in color]
+        material.setdefault("extensions", {})["KHR_materials_emissive_strength"] = {"emissiveStrength": float(strength)}
+        changed = True
+    if changed:
+        used = document.setdefault("extensionsUsed", [])
+        if "KHR_materials_emissive_strength" not in used:
+            used.append("KHR_materials_emissive_strength")
+    return changed
+
+
 def export_model(folder, objects, externals=None):
     path, document = kit.export_building(folder, objects)
     if externals:
@@ -1580,6 +1665,7 @@ def export_model(folder, objects, externals=None):
             template = externals.get(material.get("name"))
             if template is not None:
                 apply_external(document, directory, material, template)
+    if apply_glow(document) or externals:
         with open(path, "w", encoding="utf-8") as handle:
             json.dump(document, handle, indent=1)
     return path, document
@@ -1811,8 +1897,8 @@ def swatch_geo(geo, region):
     return geo
 
 
-def swatch(part, geo, region, matrix=None, smooth=True):
-    emit(part, swatch_geo(geo, region), "rail_signs", matrix, "texture", smooth)
+def swatch(part, geo, region, matrix=None, smooth=True, name="rail_signs"):
+    emit(part, swatch_geo(geo, region), name, matrix, "texture", smooth)
 
 
 def axis_matrix(position, axis, hint=None):
@@ -1827,8 +1913,13 @@ def lathe(part, name, position, axis, profile, segments=16, smooth=True, hint=No
     emit(part, kit.geo_lathe(profile, segments, phase), name, frame_along(position, axis, hint), "given", smooth)
 
 
+quality = 1
+
+
 def rivet_geo(radius=0.009, height=None):
     h = height if height is not None else radius * 0.62
+    if quality > 1:
+        return kit.geo_lathe([(radius, 0.0), (radius * 0.88, h * 0.52), (radius * 0.52, h * 0.9), (0.0, h)], 8)
     return kit.geo_lathe([(radius, 0.0), (radius * 0.72, h * 0.7), (0.0, h)], 6)
 
 
@@ -1836,7 +1927,7 @@ rivet_cache = {}
 
 
 def rivet(part, name, position, normal, radius=0.009):
-    key = round(radius, 4)
+    key = (round(radius, 4), quality)
     if key not in rivet_cache:
         rivet_cache[key] = rivet_geo(radius)
     emit(part, rivet_cache[key], name, frame_along(position, normal), "box", True)
@@ -2026,9 +2117,11 @@ def buffer(part, base, direction, body="loco_black", head="rust_iron", stock=0.2
     for sx in (-1.0, 1.0):
         for sy in (-1.0, 1.0):
             prism_bolt(part, head, frame @ V(sx * 0.115, sy * 0.115, 0.025), forward, 0.032, 0.016, 6)
-    emit(part, kit.geo_lathe([(0.118, 0.025), (0.112, 0.06), (0.092, stock), (0.1, stock), (0.1, stock + 0.03), (0.06, stock + 0.03)], 20), body, frame, "given", True)
-    emit(part, kit.geo_lathe([(0.056, stock + 0.03), (0.056, length - 0.05)], 14), head, frame, "given", True)
-    face = kit.geo_lathe([(0.06, length - 0.06), (0.19, length - 0.032), (0.19, length - 0.012), (0.13, length - 0.003), (0.0, length)], 24)
+    fine = quality > 1
+    emit(part, kit.geo_lathe([(0.118, 0.025), (0.112, 0.06), (0.092, stock), (0.1, stock), (0.1, stock + 0.03), (0.06, stock + 0.03)], 32 if fine else 20), body, frame, "given", True)
+    emit(part, kit.geo_lathe([(0.056, stock + 0.03), (0.056, length - 0.05)], 20 if fine else 14), head, frame, "given", True)
+    rim = [(0.06, length - 0.06), (0.19, length - 0.032), (0.192, length - 0.022), (0.19, length - 0.012), (0.16, length - 0.006), (0.13, length - 0.003), (0.0, length)] if fine else [(0.06, length - 0.06), (0.19, length - 0.032), (0.19, length - 0.012), (0.13, length - 0.003), (0.0, length)]
+    face = kit.geo_lathe(rim, 40 if fine else 24)
     if oval != 1.0:
         face = Geo([V(p.x * oval, p.y, p.z) for p in face.points], face.faces, face.uvs)
     emit(part, face, head, frame, "given", True)

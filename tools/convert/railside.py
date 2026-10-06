@@ -455,6 +455,216 @@ def crossing_far():
     return b
 
 
+gate_length = 2.35
+gate_pivot = 0.205
+gate_low = 0.14
+gate_high = 1.42
+gate_hinges = (gate_low + 0.07, gate_high - 0.07)
+gate_heel = (0.035, 0.165)
+gate_head = gate_length - 0.09
+gate_pales = 18
+gate_target = V(gate_length * 0.5 + 0.06, 0.0, 0.98)
+post_half = 0.13
+post_height = 1.95
+post_lamp = V(0.0, 0.0, post_height + 0.36)
+sign_plate = (0.84, 0.56)
+sign_center = 1.85
+sign_post = 2.25
+
+
+def card(part, name, x0, x1, z0, z1, y, side, mapping="board"):
+    geo = kit.Geo([V(x0, y, z0), V(x1, y, z0), V(x1, y, z1), V(x0, y, z1)], [(0, 1, 2, 3)])
+    emit(part, rk.facing(geo, V(0.0, side, 0.0)), name, None, mapping)
+
+
+def pale_positions():
+    pitch = (gate_head - gate_heel[1] - 0.07) / (gate_pales - 1)
+    return [gate_heel[1] + 0.035 + index * pitch for index in range(gate_pales)]
+
+
+def crossing_gate():
+    b = rk.Build("rail_crossing_gate", 261)
+    rng = b.rng
+    wood = b.part("leaf", 40.0, 50)
+    iron = b.part("iron", 40.0)
+    paint = "painted_wood_white"
+    heel0, heel1 = gate_heel
+    block(wood, paint, V(heel0, -0.055, gate_low - 0.04), V(heel1, 0.055, gate_high + 0.1), 0.008, "board")
+    emit(wood, kit.geo_frustum(0.069, 0.059, 0.03, 0.024, 0.05), paint, Matrix.Translation(V((heel0 + heel1) * 0.5, 0.0, gate_high + 0.1)), "board")
+    block(wood, paint, V(gate_head, -0.04, gate_low), V(gate_length, 0.04, gate_high - 0.01), 0.006, "board")
+    emit(wood, kit.geo_frustum(0.047, 0.042, 0.02, 0.018, 0.03), paint, Matrix.Translation(V(gate_head + 0.045, 0.0, gate_high - 0.01)), "board")
+    block(wood, paint, V(heel1 - 0.01, -0.055, gate_high - 0.12), V(gate_head + 0.01, 0.055, gate_high), 0.008, "board")
+    for z0, z1 in ((gate_low, gate_low + 0.1), (0.72, 0.8)):
+        block(wood, paint, V(heel1 - 0.01, -0.035, z0), V(gate_head + 0.01, 0.035, z1), 0.006, "board")
+    for index, x in enumerate(pale_positions()):
+        if index == 11:
+            for z in (gate_low + 0.05, 0.76):
+                rk.prism_bolt(iron, "rust_iron", V(x, 0.035, z), Y, 0.014, 0.004, 4)
+            continue
+        top = 0.62 + rng.uniform(-0.03, 0.03) if index == 4 else gate_high - 0.12
+        lean = rng.uniform(-0.004, 0.004)
+        block(wood, paint, V(x - 0.034 + lean, 0.035, gate_low + 0.012), V(x + 0.034 + lean, 0.056, top), 0.004, "board")
+        for z in (gate_low + 0.05, 0.76):
+            rk.prism_bolt(iron, "rust_iron", V(x, 0.056, z), Y, 0.014, 0.004, 4)
+    start = V(heel1 + 0.03, -0.0575, gate_low + 0.08)
+    end = V(gate_head - 0.03, -0.0575, gate_high - 0.15)
+    kit.member(wood, paint, start, end, 0.095, 0.045, Y, 0.006, "board")
+    block(wood, paint, V(gate_target.x - 0.035, -0.08, 0.72), V(gate_target.x + 0.035, -0.035, gate_high - 0.12), 0.004, "board")
+    for z, face in ((gate_hinges[0], 0.035), (gate_hinges[1], 0.055)):
+        for side in (-1.0, 1.0):
+            block(iron, "rust_iron", V(0.0, side * face, z - 0.025), V(0.72, side * (face + 0.008), z + 0.025), 0.002)
+            for x in (0.26, 0.47, 0.68):
+                rk.prism_bolt(iron, "rust_iron", V(x, side * (face + 0.008), z), V(0.0, side, 0.0), 0.024, 0.008, 6)
+        block(iron, "rust_iron", V(0.012, -face - 0.008, z - 0.025), V(0.045, face + 0.008, z + 0.025), 0.002)
+        rk.lathe(iron, "rust_iron", V(0.0, 0.0, z - 0.03), Z, [(0.014, 0.0), (0.03, 0.0), (0.03, 0.06), (0.014, 0.06), (0.014, 0.0)], 12, False)
+    for side, y in ((1.0, 0.056), (-1.0, -0.08)):
+        center = V(gate_target.x, y, gate_target.z)
+        rk.lathe(iron, "rust_iron", center, V(0.0, side, 0.0), [(0.0, 0.0), (0.31, 0.0), (0.31, 0.012), (0.0, 0.012)], 24, False)
+        rk.atlas_disc(iron, "target", center + V(0.0, side * 0.0125, 0.0), V(0.0, side, 0.0), Z, 0.3, 24, "rail_signs", 0.98)
+        for angle in (0.6, 2.2, 3.8, 5.4):
+            rk.prism_bolt(iron, "rust_iron", center + V(math.cos(angle) * 0.27, side * 0.0125, math.sin(angle) * 0.27), V(0.0, side, 0.0), 0.016, 0.005, 6)
+    block(iron, "rust_iron", V(gate_head - 0.02, -0.012, 0.93), V(gate_length + 0.07, 0.012, 0.975), 0.003)
+    block(iron, "rust_iron", V(gate_head - 0.03, 0.04, 0.89), V(gate_head + 0.06, 0.048, 1.01), 0.002)
+    rk.pipe(iron, "rust_iron", [V(gate_length - 0.05, 0.048, 0.9), V(gate_length - 0.05, 0.1, 0.9), V(gate_length - 0.05, 0.1, 1.0), V(gate_length - 0.05, 0.048, 1.0)], 0.008, 6, 0.02)
+    return b
+
+
+def crossing_gate_far():
+    b = rk.Build("rail_crossing_gate_far", 262)
+    part = b.part("leaf", 40.0)
+    paint = "painted_wood_white"
+    heel0, heel1 = gate_heel
+    block(part, paint, V(heel0, -0.055, gate_low - 0.04), V(heel1, 0.055, gate_high + 0.14), 0.0, "board")
+    block(part, paint, V(gate_head, -0.04, gate_low), V(gate_length, 0.04, gate_high), 0.0, "board")
+    block(part, paint, V(heel1, -0.055, gate_high - 0.12), V(gate_head, 0.055, gate_high), 0.0, "board")
+    for z0, z1 in ((gate_low, gate_low + 0.1), (0.72, 0.8)):
+        block(part, paint, V(heel1, -0.035, z0), V(gate_head, 0.035, z1), 0.0, "board")
+    for index, x in enumerate(pale_positions()):
+        if index == 11:
+            continue
+        top = 0.62 if index == 4 else gate_high - 0.12
+        card(part, paint, x - 0.034, x + 0.034, gate_low, top, 0.056, 1.0)
+        card(part, paint, x - 0.034, x + 0.034, gate_low, top, 0.034, -1.0)
+    kit.member(part, paint, V(heel1 + 0.03, -0.0575, gate_low + 0.08), V(gate_head - 0.03, -0.0575, gate_high - 0.15), 0.095, 0.045, Y, 0.0, "board")
+    for side, y in ((1.0, 0.068), (-1.0, -0.092)):
+        rk.atlas_disc(part, "target", V(gate_target.x, y, gate_target.z), V(0.0, side, 0.0), Z, 0.3, 10, "rail_signs", 0.98)
+    return b
+
+
+def gate_lamp(part, detail, center):
+    body = "loco_black"
+    base = center - Z * 0.14
+    rk.lathe(part, body, base, Z, [(0.0, 0.0), (0.098, 0.0), (0.104, 0.015), (0.104, 0.27), (0.096, 0.282), (0.068, 0.335), (0.044, 0.352), (0.044, 0.4), (0.0, 0.4)], 20, False)
+    rk.lathe(part, body, base + Z * 0.41, Z, [(0.0, 0.035), (0.072, 0.012), (0.074, 0.0), (0.0, 0.0)], 16, False)
+    for angle in (0.5, 2.6, 4.7):
+        rk.pipe(detail, body, [base + V(math.cos(angle) * 0.04, math.sin(angle) * 0.04, 0.395), base + V(math.cos(angle) * 0.05, math.sin(angle) * 0.05, 0.415)], 0.004, 4, 0.0, False)
+    for direction, radius, lens in ((Y, 0.068, "lens_red"), (-Y, 0.068, "lens_red"), (X, 0.042, "lens_clear"), (-X, 0.042, "lens_clear")):
+        rim = center + direction * 0.1
+        rk.lathe(part, body, rim, direction, [(radius + 0.006, -0.04), (radius + 0.008, 0.0), (radius + 0.012, 0.012), (radius + 0.008, 0.026), (radius - 0.004, 0.022)], 20, False)
+        rk.atlas_disc(detail, lens, rim + direction * 0.016, direction, Z, radius, 18)
+    side = V(math.cos(0.8), math.sin(0.8), 0.0)
+    rk.pipe(detail, body, [center + side * 0.106 + Z * 0.1, center + side * 0.106 - Z * 0.1], 0.006, 6, 0.0)
+    handle = [base + V(-0.06, 0.0, 0.33), base + V(-0.05, 0.0, 0.47), base + V(0.05, 0.0, 0.47), base + V(0.06, 0.0, 0.33)]
+    rk.pipe(detail, "rust_iron", handle, 0.006, 6, 0.03)
+    rk.lathe(detail, body, base - Z * 0.03, Z, [(0.0, 0.0), (0.06, 0.0), (0.075, 0.03), (0.0, 0.03)], 16, False)
+
+
+def crossing_post():
+    b = rk.Build("rail_crossing_post", 263)
+    rng = b.rng
+    wood = b.part("post", 40.0)
+    iron = b.part("iron", 40.0)
+    lamp = b.part("lamp", 40.0)
+    plants = b.part("plants", 70.0)
+    half = post_half
+    paint = "painted_wood_white"
+    block(wood, paint, V(-half, -half, -0.6), V(half, half, post_height), 0.014, "board")
+    emit(wood, kit.geo_frustum(half + 0.02, half + 0.02, 0.03, 0.03, 0.12), paint, Matrix.Translation(V(0.0, 0.0, post_height)), "board")
+    block(wood, "soot", V(-half - 0.004, -half - 0.004, -0.6), V(half + 0.004, half + 0.004, 0.32 + rng.uniform(-0.02, 0.02)), 0.01)
+    block(wood, "concrete", V(-half - 0.09, -half - 0.09, -0.3), V(half + 0.09, half + 0.09, 0.03), 0.02)
+    for z in (0.5, 1.72):
+        block(iron, "rust_iron", V(-half - 0.006, -half - 0.006, z), V(half + 0.006, half + 0.006, z + 0.045), 0.003)
+    for z in gate_hinges:
+        block(iron, "rust_iron", V(half - 0.004, -0.05, z - 0.06), V(half + 0.012, 0.05, z + 0.05), 0.003)
+        for dy in (-0.03, 0.03):
+            for dz in (-0.04, 0.03):
+                rk.prism_bolt(iron, "rust_iron", V(half + 0.012, dy, z + dz), X, 0.02, 0.008, 6)
+        block(iron, "rust_iron", V(half + 0.012, -0.019, z - 0.055), V(gate_pivot + 0.016, 0.019, z - 0.031), 0.003)
+        rk.pipe(iron, "rust_iron", [V(gate_pivot, 0.0, z - 0.05), V(gate_pivot, 0.0, z + 0.04)], 0.0135, 8)
+    for side in (-1.0, 1.0):
+        center = V(0.0, side * (half + 0.004), 1.62)
+        rk.lathe(iron, "rust_iron", center, V(0.0, side, 0.0), [(0.0, 0.0), (0.205, 0.0), (0.205, 0.01), (0.0, 0.01)], 24, False)
+        rk.atlas_disc(iron, "target", center + V(0.0, side * 0.0105, 0.0), V(0.0, side, 0.0), Z, 0.2, 24, "rail_signs", 0.98)
+        for dz in (-0.14, 0.14):
+            rk.prism_bolt(iron, "rust_iron", center + V(0.0, side * 0.0105, dz), V(0.0, side, 0.0), 0.02, 0.006, 6)
+    rk.pipe(iron, "loco_black", [V(0.0, 0.0, post_height + 0.1), post_lamp - Z * 0.17], 0.022, 8)
+    gate_lamp(lamp, iron, post_lamp)
+    b.light("warm", post_lamp)
+    for index in range(7):
+        angle = rng.uniform(0.0, tau)
+        kit.grass_tuft(plants, V(math.cos(angle) * rng.uniform(0.25, 0.42), math.sin(angle) * rng.uniform(0.25, 0.42), 0.0), rng, (0.15, 0.42), (5, 11), 0.06)
+    b.col("wood", "post", V(-half, -half, 0.0), V(half, half, post_height + 0.12))
+    return b
+
+
+def crossing_post_far():
+    b = rk.Build("rail_crossing_post_far", 264)
+    part = b.part("post", 40.0)
+    half = post_half
+    block(part, "painted_wood_white", V(-half, -half, -0.3), V(half, half, post_height), 0.0, "board")
+    emit(part, kit.geo_frustum(half + 0.02, half + 0.02, 0.03, 0.03, 0.12), "painted_wood_white", Matrix.Translation(V(0.0, 0.0, post_height)), "board")
+    block(part, "soot", V(-half - 0.004, -half - 0.004, -0.3), V(half + 0.004, half + 0.004, 0.32), 0.0, "box", None, ("top", "bottom"))
+    block(part, "loco_black", V(-0.02, -0.02, post_height + 0.1), V(0.02, 0.02, post_lamp.z - 0.14))
+    rk.lathe(part, "loco_black", post_lamp - Z * 0.14, Z, [(0.0, 0.0), (0.104, 0.0), (0.104, 0.27), (0.044, 0.352), (0.0, 0.42)], 8, False)
+    for side in (-1.0, 1.0):
+        rk.atlas_disc(part, "target", V(0.0, side * (half + 0.015), 1.62), V(0.0, side, 0.0), Z, 0.2, 10, "rail_signs", 0.98)
+        rk.atlas_disc(part, "lens_red", post_lamp + V(0.0, side * 0.106, 0.0), V(0.0, side, 0.0), Z, 0.07, 6)
+    for z in gate_hinges:
+        block(part, "rust_iron", V(half, -0.019, z - 0.055), V(gate_pivot + 0.016, 0.019, z + 0.04))
+    return b
+
+
+def crossing_sign():
+    b = rk.Build("rail_crossing_sign", 265)
+    rng = b.rng
+    post = b.part("post", 40.0)
+    plate = b.part("plate", 40.0)
+    plants = b.part("plants", 70.0)
+    width, height = sign_plate
+    emit(post, kit.geo_frustum(0.065, 0.065, 0.052, 0.052, sign_post + 0.5), "concrete", Matrix.Translation(V(0.0, 0.0, -0.5)), "box")
+    emit(post, kit.geo_frustum(0.052, 0.052, 0.004, 0.004, 0.07), "concrete", Matrix.Translation(V(0.0, 0.0, sign_post)), "box")
+    block(post, "dirt_debris", V(-0.16, -0.16, -0.12), V(0.16, 0.16, 0.012), 0.03)
+    face = -0.0545
+    back = face - 0.004
+    front = back - 0.014
+    rk.atlas_panel(plate, "cast_beware", V(0.0, front - 0.0005, sign_center), -Y, Z, width, height, 0, "rail_plates")
+    block(plate, "loco_black", V(-width * 0.5, front, sign_center - height * 0.5), V(width * 0.5, back, sign_center + height * 0.5), 0.0, "box", None, ("front",))
+    for dz in (-0.17, 0.0, 0.17):
+        block(plate, "rust_iron", V(-width * 0.5 + 0.03, back, sign_center + dz - 0.012), V(width * 0.5 - 0.03, face + 0.01, sign_center + dz + 0.012), 0.002)
+    for dz in (0.205, -0.21):
+        bolt = V(0.0, front - 0.0005, sign_center + dz)
+        rk.prism_bolt(plate, "rust_iron", bolt, -Y, 0.022, 0.007, 6)
+        rk.prism_bolt(plate, "rust_iron", V(0.0, -face - 0.001, sign_center + dz), Y, 0.03, 0.012, 6, 0.045)
+        rk.pipe(plate, "rust_iron", [V(0.0, -face - 0.004, sign_center + dz), V(0.0, -face + 0.03, sign_center + dz)], 0.007, 6)
+    for index in range(9):
+        angle = rng.uniform(0.0, tau)
+        kit.grass_tuft(plants, V(math.cos(angle) * rng.uniform(0.12, 0.4), math.sin(angle) * rng.uniform(0.12, 0.4), 0.0), rng, (0.15, 0.5), (5, 12), 0.06)
+    b.col("concrete", "post", V(-0.065, -0.065, 0.0), V(0.065, 0.065, sign_post + 0.07))
+    b.col("metal", "plate", V(-width * 0.5, front, sign_center - height * 0.5), V(width * 0.5, -0.0545, sign_center + height * 0.5))
+    return b
+
+
+def crossing_sign_far():
+    b = rk.Build("rail_crossing_sign_far", 266)
+    part = b.part("sign", 40.0)
+    width, height = sign_plate
+    block(part, "concrete", V(-0.06, -0.06, -0.2), V(0.06, 0.06, sign_post + 0.05), 0.0, "box", None, ("bottom",))
+    front = -0.0545 - 0.018
+    rk.atlas_panel(part, "cast_beware", V(0.0, front - 0.0005, sign_center), -Y, Z, width, height, 0, "rail_plates")
+    block(part, "loco_black", V(-width * 0.5, front, sign_center - height * 0.5), V(width * 0.5, -0.0545, sign_center + height * 0.5), 0.0, "box", None, ("front",))
+    return b
+
+
 tower_half = 1.3
 tower_top = 3.45
 tank_half = 1.5
@@ -884,6 +1094,8 @@ def station_canopy():
 
 
 def bench(b, part, start, end, inward, rng, paint="painted_wood_green", frame="timber_beam", collide=True):
+    if (end - start).cross(inward).z < 0.0:
+        start, end = end, start
     direction = (end - start).normalized()
     length = (end - start).length
     matrix = Matrix((tuple((direction.x, inward.x, 0.0, start.x)), (direction.y, inward.y, 0.0, start.y), (0.0, 0.0, 1.0, start.z), (0.0, 0.0, 0.0, 1.0)))
@@ -987,6 +1199,109 @@ def valance(part, rng, a, b, top, paint="painted_wood_white", width=0.12, depth=
         emit(part, geo, paint, None, "given", False)
 
 
+step_width = 1.5
+step_landing = 1.0
+step_risers = 8
+step_going = 0.3
+step_cheek = 0.35
+
+
+step_parapet = 0.9
+step_foot = 0.55
+
+
+def step_layout(center_x, wall_y):
+    y_land = wall_y + step_landing
+    y_end = y_land + step_going * (step_risers - 1)
+    return center_x - step_width * 0.5, center_x + step_width * 0.5, y_land, y_end
+
+
+def parapet_top(y, y_land, y_foot, drop):
+    t = max(0.0, min((y - y_land) / (y_foot - y_land), 1.0))
+    return step_parapet + (step_foot - drop - step_parapet) * t
+
+
+def rear_steps(b, shell, floors, plants, rng, center_x, wall_y, drop=platform_top):
+    stone = "granite_rubble"
+    dressed = "granite_ashlar"
+    rise = drop / step_risers
+    x0, x1, y_land, y_end = step_layout(center_x, wall_y)
+    y_foot = y_end + 0.15
+    base = -drop - 0.3
+    cap = 0.12
+    block(shell, stone, V(x0, wall_y, base), V(x1, y_land, -0.14), 0.0, "world")
+    joint = center_x + rng.uniform(-0.2, 0.2)
+    for a0, a1 in ((x0, joint), (joint, x1)):
+        block(floors, dressed, V(a0 + 0.006, wall_y + 0.01, -0.14), V(a1 - 0.006, y_land - 0.004, -0.02), 0.012)
+    for index in range(step_risers - 1):
+        top = -rise * (index + 1) - rng.uniform(0.0, 0.008)
+        y0 = y_land + step_going * index
+        joint = center_x + rng.uniform(-0.45, 0.45)
+        for a0, a1 in ((x0, joint), (joint, x1)):
+            block(floors, dressed, V(a0 + 0.005, y0 + 0.004, top - rise - 0.03), V(a1 - 0.005, y0 + step_going + 0.02, top), 0.014)
+        block(shell, stone, V(x0, y0 + 0.02, base), V(x1, y0 + step_going, top - rise - 0.03), 0.0, "world")
+    for side, edge in ((-1.0, x0), (1.0, x1)):
+        outer = edge + side * step_cheek
+        frame = kit.plane(V(outer, 0.0, 0.0), V(side, 0.0, 0.0))
+        flip = frame[1].y
+        profile = [(wall_y, base), (y_foot, base), (y_foot, parapet_top(y_foot, y_land, y_foot, drop)), (y_land, step_parapet), (wall_y, step_parapet)]
+        kit.wall(shell, stone, frame, [(flip * y, z) for y, z in profile], [], step_cheek)
+        middle = edge + side * step_cheek * 0.5
+        kit.member(shell, dressed, V(middle, wall_y, step_parapet + cap * 0.5), V(middle, y_land, step_parapet + cap * 0.5), step_cheek + 0.08, cap, Z, 0.012, "box")
+        kit.member(shell, dressed, V(middle, y_land - 0.06, step_parapet + cap * 0.5), V(middle, y_foot, parapet_top(y_foot, y_land, y_foot, drop) + cap * 0.5), step_cheek + 0.08, cap, Z, 0.012, "box")
+        newel = parapet_top(y_foot, y_land, y_foot, drop) + cap
+        block(shell, dressed, V(middle - step_cheek * 0.5 - 0.05, y_end - 0.12, base + 0.2), V(middle + step_cheek * 0.5 + 0.05, y_end + 0.28, newel), 0.015)
+        block(shell, dressed, V(middle - step_cheek * 0.5 - 0.07, y_end - 0.14, newel), V(middle + step_cheek * 0.5 + 0.07, y_end + 0.3, newel + 0.08), 0.015)
+        xa, xb = sorted((edge, outer))
+        b.col("rock", "cheek", V(xa, wall_y, -drop), V(xb, y_land, step_parapet + cap))
+        segments = 5
+        for index in range(segments):
+            ya = y_land + (y_end + 0.3 - y_land) * index / segments
+            yb = y_land + (y_end + 0.3 - y_land) * (index + 1) / segments
+            b.col("rock", "cheek", V(xa, ya, -drop), V(xb, yb, parapet_top((ya + yb) * 0.5, y_land, y_foot, drop) + cap))
+        for index in range(step_risers - 1):
+            if rng.random() < 0.6:
+                y = y_land + step_going * (index + rng.uniform(0.3, 0.9))
+                kit.grass_tuft(plants, V(edge - side * rng.uniform(0.03, 0.08), y, -rise * (index + 1)), rng, (0.08, 0.22), (4, 9), 0.05)
+    for x in (x0 - step_cheek - 0.2, x1 + step_cheek + 0.2):
+        for index in range(4):
+            kit.grass_tuft(plants, V(x + rng.uniform(-0.15, 0.15), rng.uniform(wall_y + 0.2, y_end), -drop - 0.02), rng, (0.2, 0.5), (6, 14), 0.1)
+    b.ramp("ny", "rock", "steps", V(x0, y_land, -drop), V(x1, y_end + step_going * 0.5, -rise * 0.5))
+    b.col("rock", "landing", V(x0, wall_y, -drop), V(x1, y_land, -0.02))
+
+
+def base_course(shell, frame, rng, a_low, a_high, gaps, c0, c1, start=0.0):
+    edges = [a_low + start]
+    for g0, g1 in sorted(gaps):
+        edges += [max(a_low, min(a_high, g0)), max(a_low, min(a_high, g1))]
+    edges.append(a_high)
+    for s0, s1 in zip(edges[0::2], edges[1::2]):
+        a = s0
+        while a < s1 - 0.1:
+            width = rng.uniform(0.5, 0.95)
+            if s1 - (a + width) < 0.3:
+                width = s1 - a
+            frame_block(shell, "granite_ashlar", frame, a + 0.008, a + width - 0.008, c0, c1 + rng.uniform(-0.04, 0.04), -0.04 * rng.uniform(0.7, 1.2), 0.25, 0.022)
+            a += width
+
+
+def rear_steps_far(part, center_x, wall_y, drop=platform_top):
+    x0, x1, y_land, y_end = step_layout(center_x, wall_y)
+    y_foot = y_end + 0.15
+    rise = drop / step_risers
+    block(part, "granite_ashlar", V(x0, wall_y, -drop - 0.2), V(x1, y_land, -0.02))
+    outline = [(y_land, -drop - 0.2), (y_end, -drop - 0.2)]
+    for index in reversed(range(step_risers - 1)):
+        outline += [(y_land + step_going * (index + 1), -rise * (index + 1)), (y_land + step_going * index, -rise * (index + 1))]
+    kit.wall(part, "granite_ashlar", kit.plane(V(x1, 0.0, 0.0), X), outline, [], step_width)
+    for side, edge in ((-1.0, x0), (1.0, x1)):
+        outer = edge + side * step_cheek
+        frame = kit.plane(V(outer, 0.0, 0.0), V(side, 0.0, 0.0))
+        flip = frame[1].y
+        cheek = [(wall_y, -drop - 0.2), (y_foot, -drop - 0.2), (y_foot, parapet_top(y_foot, y_land, y_foot, drop) + 0.12), (y_land, step_parapet + 0.12), (wall_y, step_parapet + 0.12)]
+        kit.wall(part, "granite_rubble", frame, [(flip * y, z) for y, z in cheek], [], step_cheek)
+
+
 def station():
     b = rk.Build("bld_station", 301)
     rng = b.rng
@@ -1018,7 +1333,7 @@ def station():
     left = kit.facade("left", hx, hy)
     right = kit.facade("right", hx, hy)
     wait_door = (-3.55, -2.45, 0.0, 2.2)
-    office_door = (3.2, 4.2, 0.0, 2.15)
+    office_door = (3.15, 4.25, 0.0, 2.2)
     rear_door = (2.45, 3.55, 0.0, 2.2)
     front_windows = [(-5.15, -4.25, 0.95, 2.35), (-1.75, -0.85, 0.95, 2.35), (1.0, 1.9, 0.95, 2.35)]
     back_windows = [(4.25, 5.15, 0.95, 2.35), (0.85, 1.75, 0.95, 2.35), (-2.5, -1.6, 0.95, 2.35), (-4.8, -3.9, 0.95, 2.35)]
@@ -1035,7 +1350,7 @@ def station():
     bd.gable_cols(b, "left_gable", -hx, -ix, gable, wall_top, parapet)
     bd.gable_cols(b, "right_gable", ix, hx, gable, wall_top, parapet)
     for corner, ua, ub in ((V(-hx, -hy, 0.0), X, Y), (V(hx, -hy, 0.0), -X, Y), (V(hx, hy, 0.0), -X, -Y), (V(-hx, hy, 0.0), X, -Y)):
-        kit.quoins(shell, dressed, corner, ua, ub, -0.4, gable.top(hy) + parapet - 0.02, rng)
+        kit.quoins(shell, dressed, corner, ua, ub, -platform_top - 0.25, gable.top(hy) + parapet - 0.02, rng)
     for frame, windows in ((front, front_windows), (back, back_windows)):
         for w in windows:
             bd.window_surround(shell, joinery, frame, w, wall_t)
@@ -1048,19 +1363,17 @@ def station():
         frame_block(joinery, "timber_beam", frame, door[0] - 0.2, door[1] + 0.2, door[3], door[3] + 0.16, wall_t - 0.3, wall_t + 0.004, 0.008)
         kit.door_frame(joinery, green, frame, door[0] + 0.02, door[1] - 0.02, 0.0, door[3], 0.18)
     kit.door_leaf(joinery, green, front, wait_door[1] - 0.09, -1.0, 0.3, 0.02, 2.1, 0.92, 100.0, rng, "panel")
-    kit.door_leaf(joinery, green, front, office_door[0] + 0.09, 1.0, 0.3, 0.02, 2.05, 0.82, 78.0, rng, "panel", 2.0)
+    kit.door_leaf(joinery, green, front, office_door[0] + 0.09, 1.0, 0.3, 0.02, 2.1, 0.92, 78.0, rng, "panel", 2.0)
     kit.door_leaf(joinery, green, back, rear_door[0] + 0.09, 1.0, 0.3, 0.02, 2.1, 0.92, 95.0, rng, "panel")
-    for frame, a_low, a_high, doors in ((front, -ix, ix, front_doors), (back, -ix, ix, [rear_door]), (left, -hy, hy, []), (right, -hy, hy, [])):
-        a = a_low + (0.0 if frame in (left, right) else 0.02)
-        while a < a_high - 0.15:
-            width = rng.uniform(0.5, 0.95)
-            if a_high - (a + width) < 0.3:
-                width = a_high - a
-            if not any(a + width > d[0] - 0.3 and a < d[1] + 0.3 for d in doors):
-                frame_block(shell, dressed, frame, a + 0.008, a + width - 0.008, -0.6, 0.22 + rng.uniform(-0.04, 0.04), -0.04 * rng.uniform(0.7, 1.2), 0.25, 0.022)
-            a += width
-        if frame is not front:
-            bd.damp_band(shell, frame, a_low, a_high, rng, 0.3, 1.0, "granite_rubble_damp", -0.6, 0.003, [(d[0] - 0.02, d[1] + 0.02) for d in doors])
+    ground = -platform_top
+    stair_x = -(rear_door[0] + rear_door[1]) * 0.5
+    stair_reach = step_width * 0.5 + step_cheek + 0.07
+    stair_gap = (-stair_x - stair_reach, -stair_x + stair_reach)
+    base_course(shell, front, rng, -ix, ix, [(d[0] - 0.3, d[1] + 0.3) for d in front_doors], -0.6, 0.22, 0.02)
+    for frame, a_low, a_high, gaps in ((back, -ix, ix, [stair_gap]), (left, -hy, hy, []), (right, -hy, hy, [])):
+        base_course(shell, frame, rng, a_low, a_high, gaps, ground - 0.3, ground + 0.36)
+        base_course(shell, frame, rng, a_low, a_high, gaps, -0.14, 0.16)
+        bd.damp_band(shell, frame, a_low, a_high, rng, ground + 0.4, ground + 1.05, "granite_rubble_damp", ground - 0.05, 0.003, gaps)
     bd.plaster_wall(interior, kit.facade("front", ix, iy), -ix, ix, 0.0, wall_top - 0.12, front_doors + front_windows, rng, 9)
     bd.plaster_wall(interior, kit.facade("back", ix, iy), -ix, ix, 0.0, wall_top - 0.12, [rear_door] + back_windows, rng, 9)
     bd.plaster_wall(interior, kit.facade("left", ix, hy), -iy, iy, 0.0, wall_top - 0.12, [], rng, 4, [(-1.05, 1.05, 0.0, wall_top)])
@@ -1103,23 +1416,23 @@ def station():
     kit.ridge_tiles(roof, gable, -ix, ix, rng)
     gutter_z = kit.gutter(roof, gable, 1.0, -ix - 0.3, ix + 0.3, rng, 0.04, "rusty_metal", 0.06, 0.05, -1.4)
     kit.gutter(roof, gable, -1.0, -ix - 0.3, ix + 0.3, rng, 0.03)
-    kit.downpipe(roof, ix + 0.15, gable.edge + 0.04, hy, gutter_z - 0.03, -0.4, rng, "rusty_metal", 0.035, 0.9, 0.04)
-    kit.downpipe(roof, -ix - 0.15, gable.edge + 0.04, hy, gutter_z - 0.03, -0.4, rng)
+    kit.downpipe(roof, ix + 0.15, gable.edge + 0.04, hy, gutter_z - 0.03, -platform_top, rng, "rusty_metal", 0.035, 1.6, 0.04)
+    kit.downpipe(roof, -ix - 0.15, gable.edge + 0.04, hy, gutter_z - 0.03, -platform_top, rng)
     bd.roof_cols(b, gable, -hx, hx, 6)
     room = 0.6
     partition = kit.plane(V(room, 0.0, 0.0), X)
-    doorway = (0.7, 1.7, 0.0, 2.1)
+    doorway = (0.65, 1.75, 0.0, 2.15)
     hatch = (-1.3, -0.6, 1.05, 1.8)
     outline = [(-iy, 0.0), (doorway[0], 0.0), (doorway[0], doorway[3]), (doorway[1], doorway[3]), (doorway[1], 0.0), (iy, 0.0), (iy, wall_top), (0.0, gable.under(0.0, 0.26)), (-iy, wall_top)]
     kit.wall(interior, "plaster_interior", partition, outline, [kit.rect(*hatch)], 0.14, 0.07)
     kit.wall_boxes(b, "wood", "partition", partition, -iy, iy, 0.0, wall_top, 0.14, [doorway, hatch], 0.07)
     kit.door_frame(joinery, green, kit.plane(V(room + 0.07, 0.0, 0.0), X), doorway[0], doorway[1], 0.0, doorway[3], 0.0, 0.07, 0.14)
-    kit.door_leaf(joinery, green, kit.plane(V(room + 0.07, 0.0, 0.0), X), doorway[1] - 0.07, -1.0, 0.0, 0.01, 2.02, 0.84, -96.0, rng, "panel", 2.0)
-    for side, offset in ((-1.0, -0.07), (1.0, 0.07)):
-        block(joinery, "timber_beam", V(room + offset - 0.2 if side < 0 else room + offset, hatch[0] - 0.06, hatch[2] - 0.05), V(room + offset if side < 0 else room + offset + 0.26, hatch[1] + 0.06, hatch[2]), 0.006)
-        for y in (hatch[0] - 0.035, hatch[1]):
-            block(joinery, green, V(room - 0.085, y, hatch[2]), V(room + 0.085, y + 0.035, hatch[3] + 0.035), 0.004, "board")
-        block(joinery, green, V(room - 0.085, hatch[0], hatch[3]), V(room + 0.085, hatch[1], hatch[3] + 0.035), 0.004, "board")
+    kit.door_leaf(joinery, green, kit.plane(V(room + 0.07, 0.0, 0.0), X), doorway[1] - 0.07, -1.0, 0.0, 0.01, 2.07, 0.94, -96.0, rng, "panel", 2.0)
+    block(joinery, "timber_beam", V(room - 0.27, hatch[0] - 0.06, hatch[2] - 0.05), V(room - 0.07, hatch[1] + 0.06, hatch[2]), 0.006)
+    block(joinery, "timber_beam", V(room + 0.07, hatch[0] - 0.06, hatch[2] - 0.05), V(room + 0.33, hatch[1] + 0.06, hatch[2]), 0.006)
+    for y in (hatch[0] - 0.035, hatch[1]):
+        block(joinery, green, V(room - 0.085, y, hatch[2]), V(room + 0.085, y + 0.035, hatch[3] + 0.035), 0.004, "board")
+    block(joinery, green, V(room - 0.085, hatch[0], hatch[3]), V(room + 0.085, hatch[1], hatch[3] + 0.035), 0.004, "board")
     for index in range(6):
         y = hatch[0] + 0.06 + index * (hatch[1] - hatch[0] - 0.12) / 5.0
         rk.swatch(detail, kit.geo_tube([V(room, y, hatch[2] + 0.12), V(room, y, hatch[3])], kit.circle(0.008, 6), False), "brass", None, True)
@@ -1146,11 +1459,11 @@ def station():
         kit.corrugated_sheet(canopy, canopy_roof.point(-1.0, x1 + 0.02, canopy_roof.run, 0.012 + rng.uniform(0.0, 0.004)), -X, -canopy_roof.upslope(-1.0), 2.0 * canopy_half / count + 0.04, canopy_roof.run, rng, "corrugated_rusty", 0.012, 12.0, 4, 0.002, 0.0, 1, 0.0, rng.uniform(-0.01, 0.015))
     for index in range(20):
         x = -canopy_half + 0.1 + index * (2.0 * canopy_half - 0.2) / 19.0
-        kit.roof_rafters(canopy, canopy_roof, -1.0, [x], 0.05, canopy_roof.run, -0.002, "timber_beam", 0.05, 0.1)
+        kit.roof_rafters(canopy, canopy_roof, -1.0, [x], 0.05, canopy_roof.run, -0.03, "timber_beam", 0.05, 0.1)
     for d in (0.35, 1.25, 2.1):
-        a = canopy_roof.point(-1.0, -canopy_half, d, -0.002)
-        c = canopy_roof.point(-1.0, canopy_half, d, -0.002)
-        kit.segmented(canopy, "timber_beam", a, c, 0.06, 0.04, canopy_roof.normal(-1.0), 1.9, "box")
+        a = canopy_roof.point(-1.0, -canopy_half, d, -0.015)
+        c = canopy_roof.point(-1.0, canopy_half, d, -0.015)
+        kit.segmented(canopy, "timber_beam", a, c, 0.06, 0.03, canopy_roof.normal(-1.0), 1.9, "box")
     edge_z = canopy_roof.point(-1.0, 0.0, 0.06, -0.06).z
     block(canopy, white, V(-canopy_half, front_y - 0.08, edge_z - 0.09), V(canopy_half, front_y - 0.05, edge_z + 0.06), 0.004, "board")
     block(canopy, "timber_beam", V(-canopy_half, -hy - 0.1, canopy_top - 0.17), V(canopy_half, -hy, canopy_top - 0.05), 0.006)
@@ -1163,8 +1476,8 @@ def station():
             level = canopy_roof.top((ya + yb) * 0.5) - 0.12
             valance(canopy, rng, V(end * (canopy_half + 0.01), ya, 0.0), V(end * (canopy_half + 0.01), yb, 0.0), level)
             block(canopy, white, V(end * canopy_half - 0.015, ya, level - 0.03), V(end * canopy_half + 0.015, yb, level + 0.11), 0.0, "board")
-    for x in (-5.2, -3.95, -2.1, -0.1, 2.55, 4.7):
-        canopy_bracket(canopy, detail, x, -hy - 0.03, canopy_roof.under(-hy - 0.4, 0.1) - 0.02)
+    for x in (-5.4, -3.9, -2.1, 0.08, 2.55, 5.35):
+        canopy_bracket(canopy, detail, x, -hy - 0.03, canopy_roof.under(-hy - 0.4, 0.13) - 0.02)
     board = V(0.0, front_y - 0.05, edge_z + 0.42)
     block(canopy, "timber_beam", board + V(-1.4, -0.02, -0.29), board + V(1.4, 0.02, 0.29), 0.006)
     rk.atlas_panel(detail, "halt", board + V(0.0, -0.022, 0.0), -Y, Z, 2.72, 0.51)
@@ -1179,13 +1492,13 @@ def station():
         b.light("warm", hook - V(0.0, 0.0, 0.5))
     rk.atlas_panel(detail, "waiting_room", V((wait_door[0] + wait_door[1]) * 0.5, -hy - 0.035, wait_door[3] + 0.47), -Y, Z, 1.05, 0.19)
     rk.atlas_panel(detail, "private", V((office_door[0] + office_door[1]) * 0.5, -hy - 0.035, office_door[3] + 0.47), -Y, Z, 0.5, 0.2)
-    for name, x, width, height in (("timetable", -2.1, 0.5, 0.72), ("notice", 2.45, 0.56, 0.69)):
-        block(joinery, "timber_beam", V(x - width * 0.5 - 0.04, -hy - 0.035, 1.18), V(x + width * 0.5 + 0.04, -hy, 1.26 + height), 0.006)
-        rk.atlas_panel(detail, name, V(x, -hy - 0.037, 1.22 + height * 0.5), -Y, Z, width, height)
-    block(joinery, "timber_beam", V(4.55, -hy - 0.06, 1.72), V(5.75, -hy, 1.8), 0.006)
-    for x in (4.75, 5.15, 5.55):
-        fire_bucket(clutter, detail, V(x, -hy - 0.03, 1.74))
-    rk.atlas_panel(detail, "fire", V(5.15, -hy - 0.005, 2.0), -Y, Z, 0.24, 0.24)
+    for name, x, width, height in (("timetable", -2.1, 0.5, 0.72), ("notice", 2.55, 0.56, 0.69)):
+        block(joinery, "timber_beam", V(x - width * 0.5 - 0.04, -hy - 0.035, 0.96), V(x + width * 0.5 + 0.04, -hy, 1.04 + height), 0.006)
+        rk.atlas_panel(detail, name, V(x, -hy - 0.037, 1.0 + height * 0.5), -Y, Z, width, height)
+    block(joinery, "timber_beam", V(4.4, -hy - 0.06, 1.62), V(5.2, -hy, 1.7), 0.006)
+    for x in (4.55, 4.8, 5.05):
+        fire_bucket(clutter, detail, V(x, -hy - 0.03, 1.64))
+    rk.atlas_panel(detail, "fire", V(4.8, -hy - 0.005, 1.9), -Y, Z, 0.22, 0.22)
     bench(b, interior, V(-0.75, -hy - 0.02, 0.0), V(0.9, -hy - 0.02, 0.0), -Y, rng)
     bench(b, interior, V(-5.7, -hy - 0.02, 0.0), V(-4.0, -hy - 0.02, 0.0), -Y, rng, green, "timber_beam")
     cart = trolley(b, interior, detail, V(2.2, -hy - 1.55, 0.0), math.radians(8.0), rng)
@@ -1195,7 +1508,7 @@ def station():
     for x, y in ((5.05, -3.15), (5.4, -3.55), (4.75, -3.6), (5.3, -2.95)):
         rk.churn(clutter, V(x, y, 0.0), "rusty_metal", rng.uniform(0.95, 1.05))
     b.col("metal", "churns", V(4.55, -3.8, 0.0), V(5.6, -2.75, 0.76))
-    bd.bicycle(clutter, V(-0.05, -hy - 0.72, 0.0), 0.12, -0.2, rng)
+    bd.bicycle(clutter, V(2.6, -hy - 0.4, 0.0), 0.06, -0.22, rng)
     lamp = V(-3.0, 0.4, gable.under(0.4, 0.2))
     rod(clutter, "rusty_metal", lamp, lamp - V(0.0, 0.0, 1.35), 0.004, 4)
     bd.lantern(clutter, lamp - V(0.0, 0.0, 1.65), rng)
@@ -1209,7 +1522,6 @@ def station():
     rk.atlas_panel(detail, "advert", V(-ix + 0.004 + 0.015, -1.55, 1.75), X, Z, 0.78, 0.47)
     rk.atlas_panel(detail, "timetable", V(-0.2, iy - 0.02, 1.75), -Y, Z, 0.5, 0.72)
     block(joinery, "timber_beam", V(-0.5, iy - 0.018, 1.35), V(0.1, iy, 2.15), 0.004)
-    rk.atlas_panel(detail, "beware", V(-4.6, -iy + 0.02, 2.6), Y, Z, 0.75, 0.5)
     bd.bucket(clutter, stove_at + V(0.45, 0.5, -0.025), rng)
     bd.long_tool(clutter, V(-ix + 0.6, 1.2, 0.0), V(-ix + 0.52, 1.0, 1.35), "broom", rng)
     b.loot("box", V(-4.7, iy - 0.8, 0.0))
@@ -1230,14 +1542,11 @@ def station():
     b.light("warm", V(2.3, -iy + 0.3, 1.0))
     block_instrument(interior, detail, V(2.0, -iy + 0.55, 0.76) + V(0.0, -0.3, 0.0), 2)
     rk.swatch(clutter, kit.geo_cbox(0.34, 0.26, 0.03, 0.004), "cream", Matrix.Translation(V(1.75, -iy + 0.45, 0.775)) @ Matrix.Rotation(-0.15, 4, 'Z'), False)
-    safe(b, interior, detail, V(ix - 0.36, iy - 0.34, 0.0), math.pi)
-    bd.shelf(interior, V(2.9, iy, 1.55), V(4.6, iy, 1.55), 0.3, -Y, rng)
-    rk.crate(clutter, rng, V(3.2, iy - 0.17, 1.55), (0.36, 0.26, 0.22), 0.05)
-    bd.books(clutter, V(3.6, iy - 0.22, 1.55), X, 0.5, rng)
-    rk.swatch(clutter, kit.geo_cbox(0.3, 0.12, 0.22, 0.008), "white", Matrix.Translation(V(4.35, iy - 0.08, 1.66)), False)
-    rk.swatch(clutter, kit.geo_box(0.1, 0.004, 0.03), "red", Matrix.Translation(V(4.35, iy - 0.142, 1.66)), False)
-    rk.swatch(clutter, kit.geo_box(0.03, 0.004, 0.1), "red", Matrix.Translation(V(4.35, iy - 0.142, 1.66)), False)
-    b.loot("medical", V(4.35, iy - 0.17, 1.78))
+    safe(b, interior, detail, V(ix - 0.36, iy - 0.34, 0.0), 0.0)
+    bd.shelf(interior, V(2.6, iy, 1.55), V(3.8, iy, 1.55), 0.3, -Y, rng)
+    rk.crate(clutter, rng, V(2.85, iy - 0.17, 1.55), (0.36, 0.26, 0.22), 0.05)
+    bd.books(clutter, V(3.08, iy - 0.22, 1.55), X, 0.36, rng)
+    b.loot("medical", V(3.62, iy - 0.16, 1.55))
     bd.coat_rail(interior, clutter, V(room + 0.075, -0.2, 1.7), V(room + 0.075, 0.55, 1.7), X, rng, 2)
     rk.crate(clutter, rng, V(3.3, iy - 0.45, 0.0), (0.7, 0.55, 0.45), 0.1)
     rk.crate(clutter, rng, V(3.35, iy - 0.4, 0.468), (0.45, 0.4, 0.3), -0.2)
@@ -1254,13 +1563,12 @@ def station():
     kit.scatter_chips(debris, "glass_dirty", -1.8, -0.8, -iy + 0.05, -iy + 0.5, 0.0, 12, rng, (0.02, 0.06), (0.003, 0.004))
     kit.scatter_chips(debris, "foliage", -3.7, -2.3, -iy + 0.02, 0.6, 0.0, 40, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
     kit.scatter_chips(debris, "slate_roof", 2.2, 3.4, 0.6, 1.6, 0.0, 9, rng, (0.1, 0.18), (0.006, 0.008))
-    block(floors, dressed, V(-rear_door[1] - 0.2, hy + 0.01, -0.22), V(-rear_door[0] + 0.2, hy + 0.5, -0.02), 0.02)
-    b.col("rock", "step", V(-rear_door[1] - 0.2, hy, -0.4), V(-rear_door[0] + 0.2, hy + 0.5, -0.02))
+    rear_steps(b, shell, floors, plants, rng, stair_x, hy)
     rk.atlas_panel(detail, "halt", V(-(rear_door[0] + rear_door[1]) * 0.5, hy + 0.035, rear_door[3] + 0.52), Y, Z, 1.4, 0.2625)
     block(joinery, "timber_beam", V(-rear_door[1] - 0.2, hy, rear_door[3] + 0.37), V(-rear_door[0] + 0.2, hy + 0.033, rear_door[3] + 0.67), 0.006)
-    bd.base_weeds(plants, -hx, hx, hy - 0.2, hy, rng, 1.2, lambda p: p.y < hy - 0.05 or abs(p.x + 3.0) < 0.9, 0.1, 0.2, -0.05)
-    kit.ivy(plants, V(hx + 0.02, 1.6, -0.2), X, rng, 3.6, 0.9, 7, 30.0)
-    kit.ivy(plants, V(2.6, hy + 0.02, -0.2), Y, rng, 2.7, 0.8, 5, 26.0)
+    bd.base_weeds(plants, -hx, hx, -hy, hy, rng, 1.2, lambda p: p.y < -hy + 0.1 or (p.y > hy - 0.1 and abs(p.x - stair_x) < stair_reach + 0.1), 0.1, 0.25, ground - 0.02)
+    kit.ivy(plants, V(hx + 0.02, 1.6, ground - 0.02), X, rng, 5.0, 1.0, 8, 30.0)
+    kit.ivy(plants, V(2.6, hy + 0.02, ground - 0.02), Y, rng, 4.2, 0.8, 6, 26.0)
     for index in range(10):
         lump(plants, "roof_moss", V(rng.uniform(-ix, ix), rng.uniform(-0.05, 0.08), gable.ridge_top + 0.085), (rng.uniform(0.06, 0.14), 0.09, 0.035), rng, 0.3, 1)
     return b
@@ -1282,7 +1590,7 @@ def station_far():
     for side in ("left", "right"):
         outline = [(-hy, station_plinth), (hy, station_plinth), (hy, gable.top(hy) + 0.16), (0.0, gable.ridge_top + 0.16), (-hy, gable.top(hy) + 0.16)]
         kit.wall(shell, "granite_rubble", kit.facade(side, hx, hy), outline, [], wall_t)
-    openings = ((front, [(-3.55, -2.45, 0.0, 2.2), (3.2, 4.2, 0.0, 2.15), (-5.15, -4.25, 0.95, 2.35), (-1.75, -0.85, 0.95, 2.35), (1.0, 1.9, 0.95, 2.35)]), (back, [(2.45, 3.55, 0.0, 2.2), (4.25, 5.15, 0.95, 2.35), (0.85, 1.75, 0.95, 2.35), (-2.5, -1.6, 0.95, 2.35), (-4.8, -3.9, 0.95, 2.35)]))
+    openings = ((front, [(-3.55, -2.45, 0.0, 2.2), (3.15, 4.25, 0.0, 2.2), (-5.15, -4.25, 0.95, 2.35), (-1.75, -0.85, 0.95, 2.35), (1.0, 1.9, 0.95, 2.35)]), (back, [(2.45, 3.55, 0.0, 2.2), (4.25, 5.15, 0.95, 2.35), (0.85, 1.75, 0.95, 2.35), (-2.5, -1.6, 0.95, 2.35), (-4.8, -3.9, 0.95, 2.35)]))
     for frame, holes in openings:
         for a0, a1, b0, b1 in holes:
             kit.skin(shell, "soot", frame, kit.rect(a0, a1, b0, b1), [], 0.004, 0.002, False)
@@ -1299,6 +1607,9 @@ def station_far():
     block(shell, "timber_beam", board + V(-1.4, -0.02, -0.29), board + V(1.4, 0.02, 0.29))
     rk.atlas_panel(shell, "halt", board + V(0.0, -0.022, 0.0), -Y, Z, 2.72, 0.51)
     bd.far_trim(shell, gable, hx, hy, wall_t, [gable.top(hy) + 0.14] * 4, 0.16)
+    for sx, sy in ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)):
+        block(shell, "granite_ashlar", V(sx * (hx - 0.45), sy * (hy - 0.45), -platform_top - 0.2), V(sx * (hx + 0.025), sy * (hy + 0.025), -0.3))
+    rear_steps_far(shell, -3.0, hy)
     return b
 
 
@@ -1308,6 +1619,10 @@ models = {
     "rail_buffer": (buffer, buffer_far, 40000, 300),
     "rail_signal": (signal, signal_far, 40000, 300),
     "rail_crossing": (crossing, crossing_far, 60000, 400),
+    "rail_crossing_gate": (crossing_gate, crossing_gate_far, 30000, 300),
+    "rail_crossing_post": (crossing_post, crossing_post_far, 30000, 300),
+    "rail_crossing_sign": (crossing_sign, crossing_sign_far, 10000, 120),
     "rail_water_tower": (water_tower, water_tower_far, 80000, 500),
     "rail_signal_box": (signal_box, signal_box_far, 120000, 600),
+    "bld_station": (station, station_far, 250000, 1200),
 }
