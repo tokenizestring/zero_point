@@ -175,6 +175,13 @@ namespace zp
 				hud.set_prompt(text);
 			}
 
+			else if (const auto carcass{ fauna.carcass(player.eye, forward) }; carcass >= 0)
+			{
+				std::snprintf(text, sizeof(text), "%s carcass   [LMB] carve", species_table[fauna.animals[carcass].species].name);
+
+				hud.set_prompt(text);
+			}
+
 			else
 			{
 				const auto result{ world.trace(player.eye, player.eye + forward * 2.4f, { 0.05f, 0.05f, 0.05f }, structures::contents_solid) };
@@ -215,6 +222,19 @@ namespace zp
 			if (authoritative && combat.melee(player.eye, forward, std::max(definition.reach, 1.6f) + 0.3f, std::max(definition.damage, 5.0f)))
 			{
 				held.condition -= held.item && held.item != structures::item_rock ? 0.006f : 0.0f;
+			}
+
+			else if (authoritative && fauna.melee(survival, player.eye, forward, std::max(definition.reach, 1.6f) + 0.3f, std::max(definition.damage, 5.0f), struck_point) > 0u)
+			{
+				particles.impact(structures::surface_flesh, struck_point, forward * -1.0f);
+
+				marks.bleed(struck_point, forward);
+
+				mixer.play(structures::sound_hit_flesh, struck_point, 1.0f, 0.9f + random() * 0.2f);
+
+				combat.hit_marker = 1.0f;
+
+				held.condition -= held.item && held.item != structures::item_rock ? 0.004f : 0.0f;
 			}
 
 			else
