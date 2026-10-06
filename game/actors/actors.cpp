@@ -29,6 +29,9 @@ namespace zp
 
 		logger.write("actors: locomotion speeds walk %.2f run %.2f sprint %.2f m/s", speeds[1], speeds[2], speeds[3]);
 
+		clothed = characters.find(remote_character);
+		bare = clothed ? characters.find(nude_character) : nullptr;
+
 		return std::all_of(std::begin(clips), std::end(clips), [](std::uint32_t clip_index) { return clip_index < characters.clips.size(); });
 	}
 	/*
@@ -37,6 +40,31 @@ namespace zp
 	void actors_c::clear()
 	{
 		list.clear();
+	}
+	/*
+	//=====================================================================================
+	*/
+	const char* actors_c::survivor() const
+	{
+		return bare && censored == false ? nude_character : (clothed ? remote_character : viewmodel_character);
+	}
+	/*
+	//=====================================================================================
+	*/
+	void actors_c::dress(bool censor)
+	{
+		censored = censor;
+
+		if (const auto body{ bare && censored == false ? bare : clothed }; body)
+		{
+			for (auto& actor : list)
+			{
+				if ((actor.behavior == structures::actor_behavior_player || actor.behavior == structures::actor_behavior_remote || actor.behavior == structures::actor_behavior_corpse) && (actor.character == bare || actor.character == clothed))
+				{
+					actor.character = body;
+				}
+			}
+		}
 	}
 	/*
 	//=====================================================================================
@@ -69,6 +97,11 @@ namespace zp
 				actor.rig[index] = characters.bone(*character, actor_rig_bones[index]);
 			}
 
+			if (behavior == structures::actor_behavior_player)
+			{
+				mask(actor);
+			}
+
 			list.push_back(std::move(actor));
 
 			return &list.back();
@@ -79,13 +112,43 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void actors_c::mask(structures::actor_s& actor)
+	{
+		const auto& character{ *actor.character };
+
+		actor.view_world = mathematics.identity();
+		actor.previous_view_world = mathematics.identity();
+		actor.view_palette.resize(character.bones.size());
+		actor.previous_view_palette.resize(character.bones.size());
+		actor.collapse.assign(character.bones.size(), -1);
+
+		for (const auto hidden : first_person_hidden_bones)
+		{
+			if (const auto root{ characters.bone(character, hidden) }; root >= 0)
+			{
+				for (auto index{ 0u }; index < character.bones.size(); index++)
+				{
+					for (auto walk{ static_cast<std::int32_t>(index) }; walk >= 0 && actor.collapse[index] < 0; walk = character.bones[walk].parent)
+					{
+						actor.collapse[index] = walk == root ? root : -1;
+					}
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void actors_c::update(std::float_t delta)
 	{
 		for (auto& actor : list)
 		{
 			actor.previous_world = actor.world;
+			actor.previous_view_world = actor.view_world;
+			actor.previous_held_world = actor.held_world;
 
 			std::swap(actor.palette, actor.previous_palette);
+			std::swap(actor.view_palette, actor.previous_view_palette);
 
 			actor.dormant = actor.behavior == structures::actor_behavior_hostile && mathematics.distance(actor.position, passive ? focus : player.state.position) > hostile_active_range;
 
@@ -489,18 +552,53 @@ namespace zp
 			pose_arms(actor);
 		}
 
+		const auto was_holding{ actor.holding };
+
+		actor.holding = actor.held && actor.dead == false && hold(actor);
+
 		const auto twist_yaw{ std::clamp(mathematics.angle_difference(actor.body_yaw, actor.look_yaw), -actor_twist_yaw_limit, actor_twist_yaw_limit) };
 		const auto twist_pitch{ std::clamp(actor.look_pitch + actor.hurt * 0.4f, -actor_twist_pitch_limit, actor_twist_pitch_limit) };
 		const auto fallen{ actor.dead ? std::min(1.0f, actor.death * actor.death * 2.6f) : 0.0f };
 
-		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data());
+		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data(), actor.holding ? actor.blade : 0.0f);
+
+		if (actor.holding)
+		{
+			actor.held_world = mathematics.multiply(actor.held_offset, characters.globals[actor.held_bone]);
+		}
+
+		if (actor.collapse.size())
+		{
+			characters.palette(character, locomotion, twist_yaw, 0.0f, actor.view_palette.data());
+
+			for (auto bone{ 0u }; bone < actor.collapse.size(); bone++)
+			{
+				if (actor.collapse[bone] >= 0)
+				{
+					actor.view_palette[bone] = mathematics.multiply(mathematics.scaling({ first_person_collapse, first_person_collapse, first_person_collapse }), mathematics.translation(characters.globals[actor.collapse[bone]].row3(3u)));
+				}
+			}
+		}
 
 		actor.world = mathematics.multiply(mathematics.multiply(mathematics.rotation_x(fallen * half_pi * 0.97f), mathematics.rotation_z(fallen * actor.fall_roll)), mathematics.multiply(mathematics.rotation_y(actor.body_yaw + character_facing_offset), mathematics.translation(actor.position + structures::vec3_s{ 0.0f, fallen * 0.11f, 0.0f })));
+		actor.view_world = mathematics.multiply(actor.world, mathematics.translation(mathematics.flat_forward(actor.look_yaw) * -first_person_body_back));
+
+		if (actor.holding)
+		{
+			actor.held_world = mathematics.multiply(actor.held_world, actor.world);
+		}
 
 		if (actor.frames == 0u)
 		{
 			actor.previous_world = actor.world;
 			actor.previous_palette = actor.palette;
+			actor.previous_view_world = actor.view_world;
+			actor.previous_view_palette = actor.view_palette;
+		}
+
+		if (actor.frames == 0u || was_holding == false)
+		{
+			actor.previous_held_world = actor.held_world;
 		}
 
 		actor.frames++;
@@ -523,13 +621,71 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	bool actors_c::hold(structures::actor_s& actor)
+	{
+		const auto weapon{ item_definitions[actor.held].weapon };
+		const auto style{ weapon == structures::weapon_rifle || weapon == structures::weapon_assault ? structures::hold_long : (weapon == structures::weapon_pistol ? structures::hold_pistol : (weapon == structures::weapon_bow ? structures::hold_bow : structures::hold_tool)) };
+		const auto& pose{ hold_poses[style] };
+		const auto& gun{ gun_models[weapon] };
+		const structures::vec3_s forward{ std::sin(pose.blade) * std::cos(pose.pitch), std::sin(pose.pitch), -std::cos(pose.blade) * std::cos(pose.pitch) };
+		const structures::vec3_s up{ -std::sin(pose.blade) * std::sin(pose.pitch), std::cos(pose.pitch), std::cos(pose.blade) * std::sin(pose.pitch) };
+		const structures::vec3_s outward{ -1.0f, 0.0f, 0.0f };
+		const auto aligned{ mathematics.basis(forward, up, mathematics.cross(forward, up), pose.anchor) };
+		const auto frame{ style == structures::hold_tool ? mathematics.basis(outward, forward, mathematics.cross(outward, forward), pose.anchor) : mathematics.multiply(mathematics.rotation_z(-gun.tilt), aligned) };
+		const auto holder{ actor.rig[pose.left ? structures::actor_rig_left_hand : structures::actor_rig_right_hand] };
+
+		if (viewmodel.tools[actor.held].index_count && holder >= 0)
+		{
+			if (pose.left)
+			{
+				characters.reach(*actor.character, locomotion, actor.rig[structures::actor_rig_left_upper], actor.rig[structures::actor_rig_left_lower], holder, pose.anchor + pose.wrist, hold_left_pole, 1.0f);
+			}
+
+			else
+			{
+				characters.reach(*actor.character, locomotion, actor.rig[structures::actor_rig_right_upper], actor.rig[structures::actor_rig_right_lower], holder, pose.anchor + pose.wrist, hold_right_pole, 1.0f);
+			}
+
+			if (style == structures::hold_long || style == structures::hold_pistol)
+			{
+				const auto support{ style == structures::hold_long ? mathematics.transform_point(gun.support - gun.grip, aligned) + pose.support : pose.anchor + pose.support };
+
+				characters.reach(*actor.character, locomotion, actor.rig[structures::actor_rig_left_upper], actor.rig[structures::actor_rig_left_lower], actor.rig[structures::actor_rig_left_hand], support, hold_left_pole, 1.0f);
+			}
+
+			characters.compute_globals(*actor.character, locomotion);
+
+			actor.held_offset = mathematics.multiply(frame, mathematics.inverse(characters.globals[holder]));
+			actor.held_bone = holder;
+			actor.blade = pose.blade;
+
+			return true;
+		}
+
+		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
 	void actors_c::submit()
 	{
 		for (const auto& actor : list)
 		{
 			if (actor.hidden == false && actor.dormant == false && actor.frames)
 			{
-				renderer.submit_skinned(actor.character, actor.world, actor.previous_world, actor.palette.data(), actor.previous_palette.data(), structures::draw_flag_character, actor.pallor);
+				const auto masked{ actor.first_person && actor.collapse.size() };
+
+				if (masked)
+				{
+					renderer.submit_skinned(actor.character, actor.view_world, actor.previous_view_world, actor.view_palette.data(), actor.previous_view_palette.data(), structures::draw_flag_character | structures::draw_flag_no_shadow, actor.pallor, first_person_clearance);
+				}
+
+				renderer.submit_skinned(actor.character, actor.world, actor.previous_world, actor.palette.data(), actor.previous_palette.data(), structures::draw_flag_character | (masked ? structures::draw_flag_shadow_only : 0u), actor.pallor);
+
+				if (actor.holding)
+				{
+					renderer.submit(&viewmodel.tools[actor.held], actor.held_world, actor.previous_held_world, -1.0f, masked ? structures::draw_flag_shadow_only : 0u);
+				}
 			}
 		}
 	}
