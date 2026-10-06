@@ -191,6 +191,37 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void platform_c::set_window_size(std::uint32_t width, std::uint32_t height)
+	{
+		if (window && display_mode == structures::display_mode_windowed)
+		{
+			MONITORINFO monitor{};
+
+			monitor.cbSize = sizeof(monitor);
+
+			GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor);
+
+			RECT frame{ 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+
+			AdjustWindowRectEx(&frame, WS_OVERLAPPEDWINDOW, FALSE, 0u);
+
+			const auto room_width{ monitor.rcWork.right - monitor.rcWork.left };
+			const auto room_height{ monitor.rcWork.bottom - monitor.rcWork.top };
+			const auto frame_width{ std::min(frame.right - frame.left, room_width) };
+			const auto frame_height{ std::min(frame.bottom - frame.top, room_height) };
+			const auto left{ monitor.rcWork.left + (room_width - frame_width) / 2 };
+			const auto top{ monitor.rcWork.top + (room_height - frame_height) / 2 };
+
+			windowed_rect = { left, top, left + frame_width, top + frame_height };
+
+			SetWindowPos(window, HWND_NOTOPMOST, left, top, frame_width, frame_height, SWP_NOACTIVATE);
+
+			apply_cursor_clip();
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void platform_c::set_mouse_captured(bool captured)
 	{
 		if (captured != mouse_captured)

@@ -39,6 +39,7 @@ namespace zp
 		void destroy();
 		void pump();
 		void set_display_mode(structures::display_mode_e mode);
+		void set_window_size(std::uint32_t width, std::uint32_t height);
 		void set_mouse_captured(bool captured);
 		void apply_cursor_clip();
 		void set_title(const char* text);
