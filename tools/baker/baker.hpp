@@ -104,7 +104,15 @@ namespace zp
 			"rocks_ground_05",
 			"mossy_rock",
 			"gravelly_sand",
-			"ganges_river_pebbles"
+			"ganges_river_pebbles",
+			"ground_needles",
+			"ground_heath",
+			"ground_moor",
+			"ground_turf",
+			"ground_soil",
+			"ground_dune",
+			"ground_shingle",
+			"ground_marsh"
 		};
 
 		constexpr const char* detailed_models[] =
@@ -124,7 +132,10 @@ namespace zp
 			"bld_",
 			"rail_",
 			"train_",
-			"fauna_"
+			"fauna_",
+			"flora_",
+			"bird_",
+			"fish_"
 		};
 
 		constexpr const char* neutralized_sets[] =
@@ -400,6 +411,7 @@ namespace zp
 		std::vector<std::float_t> route_near;
 		std::vector<std::uint8_t> route_kind;
 		std::vector<structures::route_path_s> routes;
+		std::vector<structures::station_s> stops;
 		std::vector<std::uint8_t> biomes;
 		std::vector<std::uint8_t> shading;
 		std::vector<std::uint8_t> splats[terrain_splat_count];
@@ -414,6 +426,7 @@ namespace zp
 		void add_blob(const char* name, const std::vector<std::uint8_t>& bytes);
 		void preview_biomes(const std::string& path);
 		void grade();
+		void stations(const std::vector<structures::vec2_s>& rail, std::float_t half, std::vector<std::float_t>& flat);
 		void route_path(const structures::world_route_s& route, std::vector<structures::vec2_s>& path);
 		void write_routes();
 		bool load_cache(const std::string& path);
