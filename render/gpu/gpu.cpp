@@ -146,6 +146,26 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void gpu_c::set_anisotropy(std::uint32_t anisotropy)
+	{
+		D3D11_SAMPLER_DESC sampler{};
+
+		sampler.Filter = anisotropy > 1u ? D3D11_FILTER_ANISOTROPIC : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		sampler.AddressU = sampler.AddressV = sampler.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		sampler.MaxAnisotropy = std::clamp(anisotropy, 1u, 16u);
+		sampler.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		sampler.MaxLOD = D3D11_FLOAT32_MAX;
+
+		if (ID3D11SamplerState* replacement{ nullptr }; SUCCEEDED(device->CreateSamplerState(&sampler, &replacement)))
+		{
+			functions::release(sampler_anisotropic_wrap);
+
+			sampler_anisotropic_wrap = replacement;
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	bool gpu_c::create_states(std::uint32_t anisotropy)
 	{
 		D3D11_SAMPLER_DESC sampler{};

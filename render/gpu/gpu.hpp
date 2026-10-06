@@ -55,6 +55,7 @@ namespace zp
 		bool create(HWND window, std::uint32_t initial_width, std::uint32_t initial_height);
 		void destroy();
 		bool create_states(std::uint32_t anisotropy);
+		void set_anisotropy(std::uint32_t anisotropy);
 		void destroy_states();
 		void resize(std::uint32_t new_width, std::uint32_t new_height);
 		void wait_for_frame();
