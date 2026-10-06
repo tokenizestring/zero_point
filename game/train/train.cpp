@@ -36,6 +36,11 @@ namespace zp
 
 			timetable();
 
+			if (gpu.device)
+			{
+				wheels();
+			}
+
 			for (auto vehicle{ 0u }; vehicle < structures::train_vehicle_count; vehicle++)
 			{
 				shape(vehicle);
@@ -57,6 +62,7 @@ namespace zp
 				movers += static_cast<std::uint32_t>(boxes[train_consist[index]].size());
 			}
 
+			extent = behind;
 			ready = legs.size() > 0u && length > 1.0f;
 
 			place(0.0);
@@ -87,13 +93,23 @@ namespace zp
 			distant[vehicle] = {};
 
 			boxes[vehicle].clear();
+			lamps[vehicle].clear();
 		}
+
+		functions::release(wheel.vertex_buffer);
+		functions::release(wheel.index_buffer);
+		functions::release(wheel_far.vertex_buffer);
+		functions::release(wheel_far.index_buffer);
+
+		wheel = {};
+		wheel_far = {};
 
 		reach.clear();
 		legs.clear();
 
 		line = -1;
 		length = 0.0f;
+		extent = 0.0f;
 		cycle = 0.0f;
 		throttle = 0.0f;
 		placed = -1.0;
@@ -107,31 +123,11 @@ namespace zp
 	*/
 	void train_c::timetable()
 	{
-		const auto& points{ maps.paths[line].points };
-
 		std::vector<std::float_t> stops;
 
-		for (const auto kind : train_stops)
+		for (const auto& station : maps.stations)
 		{
-			for (const auto& site : world_sites)
-			{
-				if (site.landmark == kind)
-				{
-					auto nearest{ 0u };
-					auto best{ FLT_MAX };
-
-					for (auto index{ 0u }; index < points.size(); index++)
-					{
-						if (const auto gap{ mathematics.length(structures::vec2_s{ points[index].x - site.position.x, points[index].z - site.position.y }) }; gap < best)
-						{
-							best = gap;
-							nearest = index;
-						}
-					}
-
-					stops.push_back(reach[nearest]);
-				}
-			}
+			stops.push_back(reach[std::min(static_cast<std::size_t>(station.index), reach.size() - 2u)]);
 		}
 
 		std::sort(stops.begin(), stops.end());
@@ -164,6 +160,7 @@ namespace zp
 		const auto metal{ static_cast<std::uint32_t>(structures::surface_metal) };
 
 		boxes[vehicle].clear();
+		lamps[vehicle].clear();
 
 		if (const auto model{ models.find(kind.model) }; model)
 		{
@@ -172,6 +169,11 @@ namespace zp
 				if (std::strncmp(part.name, "col_", 4u) == 0)
 				{
 					boxes[vehicle].push_back({ (part.bounds_min + part.bounds_max) * 0.5f, (part.bounds_max - part.bounds_min) * 0.5f, maps.surface_named(part.name + 4) });
+				}
+
+				else if (std::strncmp(part.name, "light_", 6u) == 0)
+				{
+					lamps[vehicle].push_back((part.bounds_min + part.bounds_max) * 0.5f);
 				}
 			}
 		}
@@ -231,6 +233,29 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void train_c::wheels()
+	{
+		char far_name[64]{};
+
+		std::snprintf(far_name, sizeof(far_name), "%s_far", train_wheelset_model);
+
+		if (const auto model{ models.find(train_wheelset_model) }; model)
+		{
+			shop.clear();
+			shop.append(*model, 0u, static_cast<std::uint32_t>(model->indices.size()), mathematics.identity());
+			shop.upload(wheel);
+
+			if (const auto far_model{ models.find(far_name) }; far_model)
+			{
+				shop.clear();
+				shop.append(*far_model, 0u, static_cast<std::uint32_t>(far_model->indices.size()), mathematics.identity());
+				shop.upload(wheel_far);
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void train_c::mock(std::uint32_t vehicle)
 	{
 		const auto& kind{ train_vehicles[vehicle] };
@@ -241,15 +266,19 @@ namespace zp
 		shop.set_material(structures::material_metal_rust);
 		shop.box({ 0.0f, 0.78f, 0.0f }, { kind.width * 0.86f, 0.32f, kind.length - 0.5f }, identity);
 
-		for (auto axle{ -1.0f }; axle <= 1.0f; axle += 2.0f)
+		for (auto axle{ 0u }; axle < kind.axles && wheel.index_count == 0u; axle++)
 		{
 			shop.set_material(structures::material_steel);
-			shop.cylinder({ -0.86f, train_wheel_radius, axle * kind.wheelbase * 0.5f }, { 1.0f, 0.0f, 0.0f }, train_wheel_radius, 0.13f, 20u, true);
-			shop.cylinder({ 0.73f, train_wheel_radius, axle * kind.wheelbase * 0.5f }, { 1.0f, 0.0f, 0.0f }, train_wheel_radius, 0.13f, 20u, true);
-			shop.cylinder({ -0.8f, train_wheel_radius, axle * kind.wheelbase * 0.5f }, { 1.0f, 0.0f, 0.0f }, 0.07f, 1.6f, 10u, false);
+			shop.cylinder({ -0.86f, train_wheel_radius, kind.axle_offsets[axle] }, { 1.0f, 0.0f, 0.0f }, train_wheel_radius, 0.13f, 20u, true);
+			shop.cylinder({ 0.73f, train_wheel_radius, kind.axle_offsets[axle] }, { 1.0f, 0.0f, 0.0f }, train_wheel_radius, 0.13f, 20u, true);
+			shop.cylinder({ -0.8f, train_wheel_radius, kind.axle_offsets[axle] }, { 1.0f, 0.0f, 0.0f }, 0.07f, 1.6f, 10u, false);
+		}
+
+		for (auto end{ -1.0f }; end <= 1.0f; end += 2.0f)
+		{
 			shop.set_material(structures::material_metal_rust);
-			shop.cylinder({ -0.62f, 1.05f, axle * (half - 0.25f) }, { 0.0f, 0.0f, axle }, 0.17f, 0.4f, 12u, true);
-			shop.cylinder({ 0.62f, 1.05f, axle * (half - 0.25f) }, { 0.0f, 0.0f, axle }, 0.17f, 0.4f, 12u, true);
+			shop.cylinder({ -0.62f, 1.05f, end * (half - 0.25f) }, { 0.0f, 0.0f, end }, 0.17f, 0.4f, 12u, true);
+			shop.cylinder({ 0.62f, 1.05f, end * (half - 0.25f) }, { 0.0f, 0.0f, end }, 0.17f, 0.4f, 12u, true);
 		}
 
 		shop.set_material(kind.material);
@@ -447,6 +476,7 @@ namespace zp
 	{
 		if (ready)
 		{
+			trailing = head;
 			head = travel(clock, speed);
 
 			std::copy(std::begin(placements), std::end(placements), std::begin(previous));
@@ -460,6 +490,7 @@ namespace zp
 			{
 				std::copy(std::begin(placements), std::end(placements), std::begin(previous));
 
+				trailing = head;
 				history = true;
 			}
 
@@ -501,16 +532,16 @@ namespace zp
 
 			nearest = index == 0u || mathematics.distance(spot, ear) < mathematics.distance(nearest, ear) ? spot : nearest;
 
-			for (auto axle{ 0u }; axle < 4u; axle++)
+			for (auto axle{ 0u }; axle < kind.axles; axle++)
 			{
-				const auto along{ middle + (axle < 2u ? 0.5f : -0.5f) * kind.wheelbase + (axle % 2u ? 0.5f : -0.5f) * train_axle_spacing };
+				const auto along{ middle + kind.axle_offsets[axle] };
 				const auto joint{ static_cast<std::int32_t>(std::fmod(std::fmod(along, static_cast<std::double_t>(length)) + length, static_cast<std::double_t>(length)) / train_joint_spacing) };
 
 				if (joint != joints[index][axle] && steady && speed > 0.4f)
 				{
-					if (const auto wheel{ point(along) + structures::vec3_s{ 0.0f, rail_head, 0.0f } }; mathematics.distance(wheel, ear) < train_clack_range)
+					if (const auto contact{ point(along) + structures::vec3_s{ 0.0f, rail_head, 0.0f } }; mathematics.distance(contact, ear) < train_clack_range)
 					{
-						mixer.play(structures::sound_train_clack, wheel, 0.3f + 0.55f * rate, 0.9f + mixer.random() * 0.2f);
+						mixer.play(structures::sound_train_clack, contact, 0.3f + 0.55f * rate, 0.9f + mixer.random() * 0.2f);
 					}
 				}
 
@@ -532,6 +563,14 @@ namespace zp
 			}
 
 			if (steady && leg.travel_time > train_horn_approach * 2.0f && crossed(std::fmod(leg.start_time + leg.travel_time - train_horn_approach, cycle), phase, local))
+			{
+				mixer.blast(structures::drone_horn, structures::sound_train_horn);
+			}
+		}
+
+		for (const auto& crossing : maps.crossings)
+		{
+			if (steady && speed > train_horn_moving && crossed(std::fmod(crossing.along - train_horn_crossing + length, length), static_cast<std::float_t>(trailing), static_cast<std::float_t>(head)))
 			{
 				mixer.blast(structures::drone_horn, structures::sound_train_horn);
 			}
@@ -570,16 +609,68 @@ namespace zp
 	*/
 	void train_c::submit()
 	{
+		const auto dusk{ atmosphere.enabled ? mathematics.smoothstep(train_dusk_start, train_dusk_end, atmosphere.sun.y) : 0.0f };
+
 		for (auto index{ 0u }; index < std::size(train_consist) && ready; index++)
 		{
 			const auto vehicle{ train_consist[index] };
+			const auto& kind{ train_vehicles[vehicle] };
 			const auto gap{ mathematics.distance(placements[index].row3(3u), renderer.camera.position) };
+			const auto flags{ gap > train_shadow_distance ? static_cast<std::uint32_t>(structures::draw_flag_no_shadow) : 0u };
 
 			if (gap < train_view_distance)
 			{
-				renderer.submit(gap > train_detail_distance && distant[vehicle].index_count ? &distant[vehicle] : &bodies[vehicle], placements[index], previous[index], -1.0f, gap > train_shadow_distance ? structures::draw_flag_no_shadow : 0u);
+				renderer.submit(gap > train_detail_distance && distant[vehicle].index_count ? &distant[vehicle] : &bodies[vehicle], placements[index], previous[index], -1.0f, flags);
+			}
+
+			for (auto axle{ 0u }; axle < kind.axles && gap < train_wheel_distance && wheel.index_count; axle++)
+			{
+				const auto seat{ mathematics.translation({ 0.0f, train_wheel_radius, kind.axle_offsets[axle] }) };
+
+				renderer.submit(gap > train_detail_distance && wheel_far.index_count ? &wheel_far : &wheel, mathematics.multiply(mathematics.multiply(mathematics.rotation_x(roll(head - offsets[index])), seat), placements[index]), mathematics.multiply(mathematics.multiply(mathematics.rotation_x(roll(trailing - offsets[index])), seat), previous[index]), -1.0f, flags);
+			}
+
+			if (gap < train_light_distance)
+			{
+				glow(index, train_lights_day + (1.0f - train_lights_day) * dusk);
 			}
 		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void train_c::glow(std::uint32_t index, std::float_t shine)
+	{
+		const auto vehicle{ train_consist[index] };
+		const auto& kind{ train_vehicles[vehicle] };
+		const auto& placement{ placements[index] };
+
+		for (const auto& lamp : lamps[vehicle])
+		{
+			const auto spot{ mathematics.transform_point(lamp, placement) };
+
+			if (index == 0u && lamp.z > kind.length * 0.25f)
+			{
+				renderer.add_spot(spot, train_headlight_radius, train_headlight_color * shine, mathematics.normalize(placement.row3(2u) - placement.row3(1u) * train_headlight_tilt), train_headlight_cosine);
+			}
+
+			else
+			{
+				renderer.add_light(spot, train_lamp_radius, train_lamp_color * shine);
+			}
+		}
+
+		if (index + 1u == static_cast<std::uint32_t>(std::size(train_consist)))
+		{
+			renderer.add_light(mathematics.transform_point({ 0.0f, train_tail_height, -kind.length * 0.5f - 0.1f }, placement), train_tail_radius, train_tail_color * shine);
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t train_c::roll(std::double_t along)
+	{
+		return static_cast<std::float_t>(std::fmod(along / static_cast<std::double_t>(train_wheel_radius), static_cast<std::double_t>(two_pi)));
 	}
 }
 

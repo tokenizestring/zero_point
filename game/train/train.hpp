@@ -16,8 +16,11 @@ namespace zp
 		std::vector<std::float_t> reach;
 		std::vector<structures::train_leg_s> legs;
 		std::vector<structures::train_box_s> boxes[structures::train_vehicle_count];
+		std::vector<structures::vec3_s> lamps[structures::train_vehicle_count];
 		structures::mesh_s bodies[structures::train_vehicle_count]{};
 		structures::mesh_s distant[structures::train_vehicle_count]{};
+		structures::mesh_s wheel{};
+		structures::mesh_s wheel_far{};
 		structures::mat4_s placements[std::size(train_consist)]{};
 		structures::mat4_s previous[std::size(train_consist)]{};
 		structures::mat4_s posed[std::size(train_consist)]{};
@@ -26,8 +29,10 @@ namespace zp
 		builder_c shop;
 		std::int32_t line = -1;
 		std::float_t length = 0.0f;
+		std::float_t extent = 0.0f;
 		std::float_t cycle = 0.0f;
 		std::double_t head = 0.0;
+		std::double_t trailing = 0.0;
 		std::float_t speed = 0.0f;
 		std::float_t throttle = 0.0f;
 		std::float_t phase = 0.0f;
@@ -45,6 +50,7 @@ namespace zp
 		void timetable();
 		void shape(std::uint32_t vehicle);
 		void build(std::uint32_t vehicle);
+		void wheels();
 		void mock(std::uint32_t vehicle);
 		std::double_t travel(std::double_t time, std::float_t& rate);
 		structures::vec3_s point(std::double_t along);
@@ -59,6 +65,8 @@ namespace zp
 		void sounds(std::float_t delta);
 		bool crossed(std::float_t moment, std::float_t from, std::float_t to);
 		void submit();
+		void glow(std::uint32_t index, std::float_t shine);
+		std::float_t roll(std::double_t along);
 	};
 
 	extern train_c train;
