@@ -96,12 +96,33 @@ def loam(tile, name, dry=(128, 104, 82), damp=(60, 46, 36), grain=700.0):
     shader = kit.graph(name)
     place = shader.local() * shader.attribute("scl", True) + shader.attribute("ofs", True)
     coarse = shader.noise(place, 70.0, 3.0, 0.6)
+    crumb = shader.noise(place, 260.0, 3.0, 0.7)
     fine = shader.noise(place, grain, 2.0, 0.6)
     speck = shader.step(0.72, 0.8, shader.noise(place, 1500.0, 1.0, 0.5))
     dryness = shader.step(0.35, 1.0, shader.facing().z * 0.65 + coarse * 0.6)
-    albedo = shader.attribute("tint", True) * shader.mix(kit.rgb(*damp), kit.rgb(*dry), dryness) * (fine * 0.5 + 0.75)
-    albedo = shader.mix(albedo, kit.rgb(150, 136, 120), speck * 0.35)
-    tile.materials[name] = shader.finish(albedo, shader.lerp(0.86, 0.97, dryness), shader.bump(fine * 0.6 + coarse * 0.4, 0.8, 0.0007))
+    albedo = shader.attribute("tint", True) * shader.mix(kit.rgb(*damp), kit.rgb(*dry), dryness) * (fine * 0.4 + crumb * 0.3 + 0.65)
+    albedo = shader.mix(albedo, kit.rgb(140, 128, 114), speck * 0.3)
+    tile.materials[name] = shader.finish(albedo, shader.lerp(0.86, 0.97, dryness), shader.bump(fine * 0.45 + crumb * 0.55, 1.0, 0.0012))
+
+
+def cobble(tile, name):
+    shader = kit.graph(name)
+    place = shader.local() * shader.attribute("scl", True) + shader.attribute("ofs", True)
+    var = shader.attribute("var", True)
+    tint = shader.attribute("tint", True) * shader.attribute("col")
+    cell = shader.voronoi(place, 380.0, color=True)
+    broad = shader.noise(place, 40.0, 3.0, 0.6)
+    mottle = shader.noise(place, 140.0, 3.0, 0.6)
+    fleck = shader.noise(place, 1200.0, 2.0, 0.5)
+    plain = tint * ((broad - 0.5) * 0.3 + (mottle - 0.5) * 0.16 + (fleck - 0.5) * 0.08 + 1.0)
+    black = 1.0 - shader.step(0.07, 0.12, cell.x)
+    glassy = shader.step(0.58, 0.63, cell.x) * (1.0 - shader.step(0.86, 0.9, cell.x))
+    crystal = shader.mix(shader.mix(tint * (cell.y * 0.25 + 1.0), tint * 0.72, glassy), tint * 0.3, black)
+    albedo = shader.mix(plain, crystal, var.y * 2.0)
+    cortex = shader.step(0.6, 0.72, shader.noise(place, 22.0, 3.0, 0.6)) * var.z
+    albedo = shader.mix(albedo, (fleck * 0.2 + 0.9) * kit.rgb(196, 190, 178), cortex)
+    rough = var.x + (fleck - 0.5) * 0.08 + cortex * 0.2
+    tile.materials[name] = shader.finish(albedo, rough, shader.bump(cell.x * var.y * 0.8 + fleck * 0.25 + mottle * 0.15, 0.35, 0.0004))
 
 
 def straw(tile, name, rot=(92, 74, 52), amount=0.35):
@@ -565,24 +586,30 @@ def soil(tile):
     n = tile.field
     seed = tile.seed
     tone = kit.unit(kit.noise(n, seed + 1, 2.8, 1.5, 8.0))
+    x, y = numpy.meshgrid(tile.axis(), tile.axis())
+    phase = tau * 16.0 * y / size + kit.noise(n, seed + 8, 3.4, 1.0, 4.0) * 0.55 + kit.noise(n, seed + 9, 2.6, 4.0, 20.0) * 0.12
+    crest = numpy.sin(phase + 0.35 * numpy.sin(phase))
+    ridge = (0.5 + 0.5 * crest) ** 1.4
+    depth = 0.75 + 0.25 * kit.noise(n, seed + 10, 3.0, 1.0, 5.0)
     lumps = kit.smoothstep(-0.6, 1.2, kit.noise(n, seed + 2, 2.8, 2.0, 10.0))
-    tile.height = kit.noise(n, seed + 3, 3.0, 1.0, 9.0) * 0.009 + kit.noise(n, seed + 4, 2.2, 10.0, 60.0) * 0.003
+    tile.height = ridge * depth * 0.042 + kit.noise(n, seed + 3, 3.0, 1.0, 9.0) * 0.004 + kit.noise(n, seed + 4, 2.2, 10.0, 60.0) * 0.003
     fine = kit.unit(kit.noise(n, seed + 5, 1.0, 50.0))
     mottle = kit.unit(kit.noise(n, seed + 6, 2.2, 5.0, 70.0))
-    albedo = kit.tint(kit.rgb(54, 42, 33), kit.rgb(94, 74, 58), fine * 0.45 + mottle * 0.35 + tone * 0.2)
-    tile.soil("earth", albedo, 0.95 - 0.06 * fine, kit.noise(n, seed + 7, 1.2, 60.0) * 0.5)
+    albedo = kit.tint(kit.rgb(48, 37, 29), kit.rgb(82, 64, 50), fine * 0.45 + mottle * 0.35 + tone * 0.2)
+    albedo = kit.tint(albedo, kit.rgb(40, 31, 25), (1.0 - ridge) * 0.4)
+    tile.soil("earth", albedo, 0.95 - 0.06 * fine - 0.05 * (1.0 - ridge), kit.noise(n, seed + 7, 1.2, 60.0) * 0.5)
     tile.ground("earth")
-    loam(tile, "clod")
+    loam(tile, "clod", (100, 82, 66), (46, 36, 29))
     rock(tile, "stone")
     tile.plain("crumb", 400.0, 0.18)
     straw(tile, "straw", (110, 92, 66), 0.3)
     bark(tile, "root", (120, 100, 80), 0.1)
     floor = kit.bed(tile.height, size, 1024)
-    for index in range(6):
-        vertices, faces = kit.clod(seed + 20 + index, 4, 0.24)
+    for index in range(8):
+        vertices, faces = kit.chunk(seed + 20 + index, 4, int(rng.integers(8, 13)), float(rng.uniform(4.5, 7.0)), 0.14, 0.06)
         tile.variant("clod", vertices, faces, "clod")
     for index in range(10):
-        vertices, faces = kit.clod(seed + 40 + index, 3, 0.3)
+        vertices, faces = kit.chunk(seed + 40 + index, 3, int(rng.integers(7, 11)), float(rng.uniform(4.0, 6.0)), 0.18, 0.07)
         tile.variant("clod", vertices, faces, "clod")
     for index in range(8):
         vertices, faces = kit.pebble(seed + 60 + index, 3, 0.15)
@@ -590,40 +617,255 @@ def soil(tile):
     browns = [(1.0, 0.98, 0.96), (0.9, 0.88, 0.86), (1.1, 1.06, 1.02), (0.8, 0.78, 0.76), (1.18, 1.12, 1.06)]
     tints = lambda count: numpy.asarray(browns, dtype=numpy.float32)[rng.integers(0, len(browns), count)] * numpy.exp(rng.normal(0.0, 0.08, (count, 1))).astype(numpy.float32)
 
-    def clods(count, low, high, power, variants, field, sink, tries):
+    def clods(count, low, high, power, variants, field, sink, tries, spread, perch):
         spot = kit.scatter(rng, count, size, field)
-        scale = (low + (high - low) * rng.random((count, 1)) ** power) * numpy.column_stack([numpy.ones(count), rng.uniform(0.7, 1.0, count), rng.uniform(0.5, 0.85, count)])
+        scale = (low + (high - low) * rng.random((count, 1)) ** power) * numpy.column_stack([numpy.ones(count), rng.uniform(0.7, 1.0, count), rng.uniform(0.45, 0.75, count)])
         which = rng.integers(variants[0], variants[1], count)
         rank = numpy.argsort(-scale[:, 0])
         spot, scale, which = spot[rank], scale[rank], which[rank]
         extent = numpy.asarray(tile.extents["clod"], dtype=numpy.float64)[which]
-        where, turned = floor.drop(rng, spot, extent * scale * 0.88, numpy.column_stack([rng.normal(0.0, 0.35, count), rng.normal(0.0, 0.35, count), rng.uniform(0.0, tau, count)]), tries, 1.0, sink, 0.5)
-        tile.place("clod", where, turned, scale, which, tints(count))
+        where, turned = floor.drop(rng, spot, extent * scale * 0.88, numpy.column_stack([rng.normal(0.0, 0.35, count), rng.normal(0.0, 0.35, count), rng.uniform(0.0, tau, count)]), tries, spread, sink, 0.5, perch=perch)
+        keep = floor.kept
+        tile.place("clod", where[keep], turned[keep], scale[keep], which[keep], tints(int(keep.sum())))
 
-    clods(520, 0.022, 0.05, 1.6, (0, 6), 0.15 + lumps, 0.3, 2)
-    clods(4200, 0.009, 0.022, 1.5, (6, 16), 0.3 + lumps, 0.2, 3)
+    clods(380, 0.015, 0.032, 1.8, (0, 8), (0.1 + lumps) * ridge ** 2.5, 0.4, 2, 0.3, 0.5)
+    clods(5600, 0.007, 0.016, 1.5, (8, 18), (0.3 + lumps) * (0.03 + ridge ** 1.5), 0.3, 3, 0.4, 0.7)
     tile.note("large clods dropped")
-    stones(tile, floor, "stone", 260, 0.004, 0.016, 2.0, [(150, 140, 130), (168, 150, 138), (120, 116, 112), (186, 178, 166), (140, 120, 106)], (0, 8), sink=0.35)
-    clods(30000, 0.003, 0.009, 1.4, (6, 16), None, 0.15, 3)
+    stones(tile, floor, "stone", 120, 0.004, 0.013, 2.0, [(120, 112, 104), (134, 122, 112), (100, 96, 92), (150, 142, 132), (116, 100, 88)], (0, 8), sink=0.5, tries=3, speckle=(0.1, 0.25))
+    clods(30000, 0.0025, 0.007, 1.4, (8, 18), 0.12 + ridge, 0.25, 3, 0.8, 1.2)
     tile.note("small clods dropped")
-    count = 130000
+    count = 150000
     spot = kit.scatter(rng, count, size)
     girth = rng.uniform(0.0008, 0.003, count) * rng.uniform(0.6, 1.3, count)
-    tile.grit("crumb", numpy.column_stack([spot, floor.at(spot[:, 0], spot[:, 1]) + girth * 0.3]), girth[:, None] * rng.uniform(0.6, 1.2, (count, 3)), swatch(rng, [(84, 66, 52), (104, 84, 66), (66, 52, 41), (122, 100, 80), (54, 43, 35)], count, 0.14, 0.04), 0.95, 0)
-    count = 700
+    shade = (0.78 + 0.22 * kit.sample(ridge, spot[:, 0], spot[:, 1], size))[:, None]
+    tile.grit("crumb", numpy.column_stack([spot, floor.at(spot[:, 0], spot[:, 1]) + girth * 0.3]), girth[:, None] * rng.uniform(0.6, 1.2, (count, 3)), swatch(rng, [(74, 58, 46), (92, 74, 58), (58, 46, 37), (108, 88, 70), (48, 38, 31)], count, 0.14, 0.04) * shade, 0.95, 0)
+    count = 260
     spot = kit.scatter(rng, count, size)
-    reach = rng.uniform(0.015, 0.09, count)
+    reach = rng.uniform(0.015, 0.08, count)
     track = kit.paths(rng, spot, rng.uniform(0.0, tau, count), reach, 8, rng.normal(0.0, 0.15, count))
-    girth = rng.uniform(0.0009, 0.0019, (count, 1)) * numpy.ones((1, 8))
+    girth = rng.uniform(0.0007, 0.0015, (count, 1)) * numpy.ones((1, 8))
     level = floor.rest(rng, track, girth, rigid=True, batch=8, steep=0.3)
-    tile.tubes("straw", lift(track, level + girth * 0.6), girth, 5, swatch(rng, [(190, 168, 116), (172, 150, 104), (204, 186, 138), (150, 128, 90), (128, 108, 80)], count, 0.12, 0.04), rng.uniform(0.6, 0.78, count), 0.55, cap=True)
-    count = 520
+    tile.tubes("straw", lift(track, level + girth * 0.2), girth, 5, swatch(rng, [(150, 136, 106), (128, 116, 92), (170, 154, 118), (112, 98, 78), (96, 84, 68)], count, 0.12, 0.04), rng.uniform(0.62, 0.8, count), 0.55, cap=True)
+    count = 300
     spot = kit.scatter(rng, count, size)
-    reach = rng.uniform(0.03, 0.16, count)
+    reach = rng.uniform(0.03, 0.14, count)
     track = kit.paths(rng, spot, rng.uniform(0.0, tau, count), reach, 16, rng.normal(0.0, 1.2, count), rng.uniform(0.15, 0.5, count), 2.5)
-    girth = numpy.linspace(1.0, 0.35, 16)[None, :] * rng.uniform(0.0004, 0.0011, (count, 1))
+    girth = numpy.linspace(1.0, 0.35, 16)[None, :] * rng.uniform(0.0004, 0.001, (count, 1))
     level = floor.rest(rng, track, girth, 0.3, batch=8)
-    tile.tubes("root", lift(track, level + girth), girth, 4, swatch(rng, [(150, 128, 100), (120, 98, 76), (92, 72, 56), (170, 150, 122)], count, 0.12, 0.04), 0.88)
+    tile.tubes("root", lift(track, level + girth * 0.5), girth, 4, swatch(rng, [(124, 106, 84), (100, 82, 64), (80, 64, 50), (140, 124, 102)], count, 0.12, 0.04), 0.88)
+
+
+def shards(tile, floor, count, low, high, power, colors, field=None, rough=(0.45, 0.6), bury=0.35, curve=0.25, corners=5, material="shell"):
+    rng = tile.rng
+    spot = kit.scatter(rng, count, tile.size, field)
+    span = low + (high - low) * rng.random(count) ** power
+    thick = span * rng.uniform(0.06, 0.14, count) + 0.0002
+    base = floor.at(spot[:, 0], spot[:, 1]) - thick * bury
+    color = swatch(rng, colors, count, 0.06, 0.03)
+    tile.plates(material, numpy.column_stack([spot, base]), span, thick, color, rng.uniform(rough[0], rough[1], count), 2, 12, 0.3, dome=curve, tilt=0.15, edge=color * 0.92, corners=corners)
+    floor.lift(spot[:, 0], spot[:, 1], base + thick + span * curve)
+
+
+def dune(tile):
+    rng = tile.rng
+    size = tile.size
+    n = tile.field
+    seed = tile.seed
+    x, y = numpy.meshgrid(tile.axis(), tile.axis())
+    warp = kit.noise(n, seed + 1, 3.0, 4.0, 9.0) * 1.1 + kit.noise(n, seed + 2, 2.6, 8.0, 24.0) * 0.3
+
+    def wave(a, b):
+        phase = tau * (a * x + b * y) / size + warp
+        return numpy.sin(phase + 0.55 * numpy.sin(phase))
+
+    swap = kit.smoothstep(-0.3, 0.3, kit.noise(n, seed + 3, 3.0, 4.0, 10.0))
+    crest = wave(2, 28) * (1.0 - swap) + wave(-1, 31) * swap
+    strength = 0.6 + 0.4 * kit.unit(kit.noise(n, seed + 4, 2.6, 4.0, 10.0))
+    tile.height = crest * strength * 0.0026 + kit.noise(n, seed + 5, 3.4, 1.0, 5.0) * 0.0015
+    trough = kit.smoothstep(0.2, -0.9, crest) * strength
+    grain = kit.noise(n, seed + 6, 0.3, 1.0)
+    fine = kit.unit(kit.noise(n, seed + 7, 1.2, 30.0))
+    streak = kit.unit(kit.warp(kit.noise(n, seed + 8, 2.6, 4.0, 30.0), seed + 9, 0.02))
+    albedo = kit.tint(kit.rgb(198, 184, 156), kit.rgb(220, 208, 182), fine * 0.65 + streak * 0.35)
+    albedo = albedo * (1.0 + 0.06 * numpy.clip(grain, -2.0, 2.0))[..., None]
+    albedo = kit.tint(albedo, kit.rgb(178, 166, 144), trough * 0.2)
+    speck = kit.smoothstep(2.3, 3.0, grain)
+    albedo = kit.tint(albedo, kit.rgb(96, 92, 88), speck * 0.7 * (0.4 + trough))
+    tile.soil("sand", albedo, numpy.clip(0.9 + 0.04 * (fine - 0.5), 0.0, 1.0), grain * 0.12, 1.0)
+    tile.ground("sand", 1280)
+    tile.plain("shell", 900.0, 0.08)
+    tile.plain("grit", 600.0, 0.12)
+    straw(tile, "marram", (140, 130, 112), 0.25)
+    rock(tile, "stone")
+    floor = kit.bed(tile.height, size, 1024)
+    for index in range(6):
+        vertices, faces = kit.pebble(seed + 30 + index, 3, 0.15)
+        tile.variant("stone", vertices, faces, "stone")
+    shells = [(236, 230, 218), (226, 216, 196), (214, 196, 176), (222, 186, 170), (212, 172, 136), (172, 176, 182), (196, 190, 180), (240, 236, 228)]
+    shards(tile, floor, 16000, 0.0009, 0.0042, 2.0, shells, 0.25 + trough, (0.45, 0.6), 0.45, 0.2, 5)
+    shards(tile, floor, 300, 0.003, 0.009, 2.2, shells, 0.2 + trough, (0.4, 0.55), 0.4, 0.3, 5)
+    count = 30000
+    spot = kit.scatter(rng, count, size, 0.2 + trough)
+    girth = rng.uniform(0.0004, 0.0012, count)
+    tile.grit("grit", numpy.column_stack([spot, floor.at(spot[:, 0], spot[:, 1]) + girth * 0.1]), girth[:, None] * rng.uniform(0.6, 1.2, (count, 3)), swatch(rng, [(232, 226, 214), (220, 206, 180), (200, 176, 150), (140, 136, 130), (100, 96, 92), (214, 190, 170)], count, 0.08, 0.03), 0.7, 0)
+    stones(tile, floor, "stone", 26, 0.002, 0.006, 2.0, [(130, 124, 118), (150, 140, 128), (110, 106, 102), (170, 156, 140)], (0, 6), sink=0.5, tries=1, speckle=(0.15, 0.3))
+    count = 22
+    spot = kit.scatter(rng, count, size)
+    reach = rng.uniform(0.07, 0.22, count)
+    track = kit.paths(rng, spot, rng.uniform(0.0, tau, count), reach, 14, rng.normal(0.0, 0.5, count), rng.uniform(0.0, 0.05, count))
+    girth = numpy.linspace(1.0, 0.45, 14)[None, :] * rng.uniform(0.0011, 0.0016, (count, 1))
+    level = floor.rest(rng, track, girth, rigid=True, batch=4, steep=0.1)
+    tile.tubes("marram", lift(track, level + girth * 0.35), girth, 5, swatch(rng, [(216, 206, 178), (202, 192, 164), (226, 216, 190), (190, 180, 154)], count, 0.06, 0.03), 0.66, 0.6, cap=True)
+    count = 60
+    spot = kit.scatter(rng, count, size, 0.2 + trough)
+    reach = rng.uniform(0.015, 0.06, count)
+    track = kit.paths(rng, spot, rng.uniform(0.0, tau, count), reach, 6, rng.normal(0.0, 0.3, count))
+    girth = rng.uniform(0.0008, 0.0013, (count, 1)) * numpy.ones((1, 6))
+    level = floor.rest(rng, track, girth, rigid=True, batch=8, steep=0.1)
+    tile.tubes("marram", lift(track, level + girth * 0.3), girth, 5, swatch(rng, [(212, 202, 174), (196, 186, 160), (180, 170, 146)], count, 0.06, 0.03), 0.68, 0.6, cap=True)
+
+
+def shingle(tile):
+    rng = tile.rng
+    size = tile.size
+    n = tile.field
+    seed = tile.seed
+    tile.height = kit.noise(n, seed + 1, 3.2, 1.0, 6.0) * 0.01 + kit.noise(n, seed + 2, 2.4, 6.0, 40.0) * 0.002
+    sandy = kit.smoothstep(0.5, 1.5, kit.warp(kit.noise(n, seed + 3, 2.8, 3.0, 14.0), seed + 4, 0.03))
+    fine = kit.unit(kit.noise(n, seed + 5, 1.0, 60.0))
+    grain = kit.noise(n, seed + 6, 0.3, 1.0)
+    albedo = kit.tint(kit.rgb(150, 138, 120), kit.rgb(176, 164, 142), fine)
+    albedo = albedo * (1.0 + 0.08 * numpy.clip(grain, -2.0, 2.0))[..., None]
+    tile.soil("sand", albedo, 0.9 - 0.04 * fine, grain * 0.15, 1.0)
+    cobble(tile, "pebble")
+    tile.plain("grit", 600.0, 0.15)
+    tile.plain("wrack", 260.0, 0.2)
+    tile.plain("shell", 900.0, 0.08)
+    floor = kit.bed(tile.height, size, 1024)
+    for index in range(24):
+        vertices, faces = kit.pebble(seed + 30 + index, 4, float(rng.uniform(0.05, 0.1)), 0.005)
+        tile.variant("pebble", vertices, faces, "pebble")
+    kinds = [(0.3, [(150, 146, 140), (164, 158, 150), (136, 132, 128), (146, 140, 134)], (0.66, 0.8), (0.12, 0.26), (0.0, 0.0), 1.0), (0.2, [(172, 150, 138), (184, 160, 146), (160, 138, 126), (168, 150, 140)], (0.66, 0.8), (0.12, 0.26), (0.0, 0.0), 1.0), (0.3, [(100, 100, 102), (84, 84, 88), (114, 112, 110), (74, 72, 70), (124, 120, 114), (108, 98, 88)], (0.42, 0.58), (0.0, 0.03), (0.0, 0.7), 0.9), (0.14, [(120, 118, 114), (98, 98, 98), (134, 128, 120), (88, 86, 82)], (0.58, 0.72), (0.06, 0.15), (0.0, 0.0), 1.0), (0.04, [(206, 202, 194), (196, 192, 186)], (0.5, 0.62), (0.0, 0.04), (0.0, 0.0), 0.55), (0.02, [(60, 62, 64), (68, 68, 72)], (0.5, 0.65), (0.04, 0.1), (0.0, 0.0), 0.8)]
+
+    def pebbles(count, low, high, power, tries, sink, perch, reach):
+        floor.base = kit.blur(floor.h, 10.0)
+        spot = kit.scatter(rng, count, size)
+        kind = rng.choice(len(kinds), count, p=numpy.array([entry[0] for entry in kinds]) / sum(entry[0] for entry in kinds))
+        scale = (low + (high - low) * rng.random((count, 1)) ** power) * numpy.column_stack([numpy.ones(count), rng.uniform(0.62, 0.95, count), rng.uniform(0.42, 0.72, count)])
+        scale *= numpy.array([kinds[k][5] for k in kind])[:, None]
+        tint = numpy.zeros((count, 3), dtype=numpy.float32)
+        var = numpy.zeros((count, 3), dtype=numpy.float32)
+        for index, (weight, colors, rough, speckle, patches, shrink) in enumerate(kinds):
+            mask = kind == index
+            total = int(mask.sum())
+            tint[mask] = swatch(rng, colors, total, 0.08, 0.025)
+            var[mask] = numpy.column_stack([rng.uniform(rough[0], rough[1], total), rng.uniform(speckle[0], speckle[1], total), rng.uniform(patches[0], patches[1], total) * (rng.random(total) < 0.4)])
+        which = rng.integers(0, 24, count)
+        extent = numpy.asarray(tile.extents["pebble"], dtype=numpy.float64)[which]
+        euler = numpy.column_stack([rng.normal(0.0, 0.25, count), rng.normal(0.0, 0.25, count), rng.uniform(0.0, tau, count)])
+        where, turned = floor.drop(rng, spot, extent * scale * 0.92, euler, tries, reach, sink, 0.55, perch=perch)
+        keep = floor.kept
+        tile.place("pebble", where[keep], turned[keep], scale[keep], which[keep], tint[keep], var[keep])
+        tile.note("pebbles kept %d of %d, centre height mean %.4f max %.4f" % (int(keep.sum()), count, where[keep, 2].mean(), where[keep, 2].max()))
+
+    pebbles(6000, 0.012, 0.04, 1.6, 14, 0.12, 1.5, 1.5)
+    tile.note("lower pebbles dropped")
+    pebbles(5000, 0.01, 0.038, 1.9, 14, 0.1, 1.5, 1.5)
+    pebbles(1800, 0.006, 0.011, 1.0, 14, 0.1, 1.1, 1.2)
+    tile.note("upper pebbles dropped")
+    stack = floor.h.copy()
+    base = kit.resize(tile.height, floor.size)
+    level = kit.blur(stack, 7.0) - 0.012
+    cover = kit.resize(sandy, floor.size)
+    sand = base + cover * numpy.maximum(level - base, 0.0)
+    floor.h = numpy.maximum(stack, sand)
+    tile.height = kit.resize(sand, n)
+    tile.ground("sand")
+    exposed = kit.resize(kit.smoothstep(-0.002, 0.0005, sand - stack), n)
+    count = 60000
+    spot = kit.scatter(rng, count, size, exposed + 0.002)
+    girth = rng.uniform(0.0004, 0.0016, count)
+    tile.grit("grit", numpy.column_stack([spot, floor.at(spot[:, 0], spot[:, 1]) + girth * 0.1]), girth[:, None] * rng.uniform(0.6, 1.2, (count, 3)), swatch(rng, [(176, 164, 144), (150, 140, 124), (198, 188, 170), (110, 104, 98), (90, 86, 82), (214, 206, 192), (160, 136, 120)], count, 0.1, 0.03), 0.8, 0)
+    shards(tile, floor, 900, 0.001, 0.005, 2.0, [(226, 218, 204), (212, 200, 182), (196, 186, 172), (176, 168, 160)], exposed + 0.05, (0.45, 0.6), 0.5, 0.2, 5)
+    count = 22
+    spot = kit.spaced(rng, count, size, 0.3)
+    count = len(spot)
+    reach = rng.uniform(0.05, 0.2, count)
+    track = kit.paths(rng, spot, rng.uniform(0.0, tau, count), reach, 22, rng.normal(0.0, 0.9, count), rng.uniform(0.05, 0.18, count), 3.0)
+    half = numpy.interp(numpy.linspace(0.0, 1.0, 22), [0.0, 0.15, 0.85, 1.0], [0.5, 1.0, 0.9, 0.4])[None, :] * rng.uniform(0.0025, 0.0045, (count, 1))
+    level = floor.rest(rng, track, 0.0005, 0.12, half=half, batch=2)
+    crinkle = rng.normal(0.0, 0.0004, (count, 22, 1)).astype(numpy.float32)
+    weed = [(62, 54, 38), (74, 64, 42), (54, 48, 34), (86, 74, 50), (48, 42, 30)]
+    tile.ribbons("wrack", lift(track, level + 0.0006), half, 5, shades(swatch(rng, weed, count, 0.12, 0.04), numpy.linspace(0.9, 1.1, 22)), rng.uniform(0.5, 0.68, count), fold=rng.uniform(-0.15, 0.15, count), curl=rng.uniform(-0.25, 0.1, count), twist=rng.normal(0.0, 0.06, (count, 22)), wave=crinkle)
+    count = 50
+    spot = kit.scatter(rng, count, size)
+    span = rng.uniform(0.003, 0.011, count)
+    base = floor.at(spot[:, 0], spot[:, 1])
+    tile.plates("wrack", numpy.column_stack([spot, base]), span, span * 0.06 + 0.0003, swatch(rng, weed, count, 0.12, 0.04), 0.6, 2, 14, 0.4, tilt=0.2, bend=0.3)
+
+
+def marsh(tile):
+    rng = tile.rng
+    size = tile.size
+    n = tile.field
+    seed = tile.seed
+    near, far, ident = kit.worley(n, 9, seed + 1, 0.9)
+    tussock = kit.smoothstep(0.75, 0.1, kit.warp(near, seed + 2, 0.015)) ** 1.3 * rng.uniform(0.3, 1.0, 81)[ident]
+    tile.height = kit.noise(n, seed + 3, 3.0, 4.0, 16.0) * 0.007 + kit.noise(n, seed + 4, 2.4, 8.0, 60.0) * 0.0015 + tussock * 0.016
+    tile.water = float(numpy.percentile(tile.height, 30.0))
+    depth = numpy.clip((tile.water - tile.height) / 0.01, 0.0, 1.0)
+    damp = kit.smoothstep(0.012, -0.002, tile.height - tile.water)
+    fine = kit.unit(kit.noise(n, seed + 5, 1.0, 60.0))
+    mottle = kit.unit(kit.noise(n, seed + 6, 2.2, 4.0, 60.0))
+    tone = kit.unit(kit.noise(n, seed + 7, 2.8, 3.0, 12.0))
+    albedo = kit.tint(kit.rgb(52, 43, 35), kit.rgb(76, 63, 50), fine * 0.5 + mottle * 0.5)
+    albedo = kit.tint(albedo, kit.rgb(38, 32, 27), damp * 0.7)
+    albedo = kit.tint(albedo, kit.rgb(62, 66, 40), kit.smoothstep(0.55, 0.9, kit.unit(kit.noise(n, seed + 8, 2.4, 3.0, 30.0))) * damp * 0.6)
+    rough = numpy.clip(0.82 - 0.5 * damp - 0.08 * (fine - 0.5), 0.2, 1.0)
+    tile.soil("mud", albedo, rough, kit.noise(n, seed + 9, 1.2, 70.0) * 0.25 * (1.0 - 0.6 * damp), 1.0)
+    tile.ground("mud")
+    straw(tile, "rush", (70, 60, 44), 0.4)
+    straw(tile, "sedge", (78, 66, 48), 0.45)
+    tile.plain("shoot", 700.0, 0.1, (0.05, 1.0, 1.0))
+    tile.plain("scum", 500.0, 0.15)
+    floor = kit.bed(tile.height, size, 1024)
+    angle = kit.noise(512, seed + 10, 3.4, 2.0, 6.0) * 1.1
+    flow = numpy.stack([numpy.cos(angle), numpy.sin(angle)], axis=-1).astype(numpy.float32)
+    cover = numpy.clip(0.2 + 0.8 * kit.smoothstep(-0.6, 0.9, kit.noise(n, seed + 11, 2.8, 3.0, 14.0)), 0.05, 1.0) * (1.0 - 0.6 * depth)
+    dead = [(0.35, 0.2, [(104, 88, 62), (92, 78, 56), (116, 98, 70)]), (0.3, 0.45, [(130, 116, 86), (142, 128, 96), (122, 108, 80)]), (0.2, 0.2, [(80, 68, 52), (70, 60, 46)]), (0.15, 0.15, [(56, 48, 38), (46, 40, 33)])]
+
+    def litter(count, low, high, depth_of, field, material, wide, palette, steps, sides):
+        start = kit.scatter(rng, count, size, field)
+        track = kit.streams(rng, start, flow, size, rng.uniform(low, high, count), steps, 0.75, 0.04)
+        level = floor.slab(rng, track, depth_of, field, floor.mat(0.025), 0.03)
+        color = kit.vary(rng, pick(rng, kit.sample(tone, start[:, 0], start[:, 1], size), palette), 0.1, 0.03)
+        t = numpy.linspace(0.0, 1.0, steps)
+        if material == "rush":
+            girth = numpy.interp(t, [0.0, 0.1, 0.85, 1.0], [0.8, 1.0, 0.9, 0.3])[None, :] * rng.uniform(wide[0], wide[1], (count, 1))
+            tile.tubes("rush", lift(track, level + girth * 0.7), girth, sides, shades(color, numpy.interp(t, [0.0, 0.2, 1.0], [0.8, 1.0, 1.05])), rng.uniform(0.5, 0.7, count), 0.8)
+        else:
+            width = numpy.interp(t, [0.0, 0.15, 0.75, 1.0], [0.6, 1.0, 0.8, 0.1])[None, :] * rng.uniform(wide[0], wide[1], (count, 1))
+            tile.ribbons("sedge", lift(track, level + 0.0006), width, 3, shades(color, numpy.interp(t, [0.0, 0.25, 1.0], [0.8, 1.0, 1.06])), rng.uniform(0.5, 0.72, count), fold=rng.uniform(0.2, 0.6, count), twist=rng.normal(0.0, 0.4, (count, 1)) * (t[None, :] - 0.3), shade=0.12)
+        floor.swell(field * depth_of)
+
+    litter(6000, 0.06, 0.2, 0.004, cover, "sedge", (0.0012, 0.0024), dead, 12, 3)
+    litter(3400, 0.1, 0.35, 0.004, cover, "rush", (0.0008, 0.0013), dead, 14, 5)
+    tile.note("lower litter laid")
+    litter(1900, 0.12, 0.4, 0.006, cover * cover, "sedge", (0.0014, 0.0028), dead, 14, 3)
+    litter(1500, 0.15, 0.45, 0.006, cover * cover, "rush", (0.0009, 0.0014), dead[:2] + [(0.2, 0.3, [(70, 84, 46), (80, 90, 50), (62, 76, 42)])], 16, 5)
+    tile.note("upper litter laid")
+    count = 9000
+    spot = kit.scatter(rng, count, size, (0.15 + kit.smoothstep(0.1, 0.6, tussock)) * (1.0 - depth))
+    base = numpy.column_stack([spot, floor.at(spot[:, 0], spot[:, 1]) - 0.006])
+    spine, side = kit.upright(base, rng.uniform(0.0, tau, count), rng.uniform(0.025, 0.07, count), 6, numpy.clip(rng.normal(0.9, 0.3, count), 0.3, 1.4), rng.uniform(0.0, 0.4, count))
+    taper = numpy.array([0.8, 1.0, 0.9, 0.7, 0.45, 0.1])[None, :]
+    green = swatch(rng, [(80, 104, 48), (92, 112, 54), (72, 94, 44), (102, 116, 60)], count, 0.1, 0.04)
+    tile.ribbons("shoot", spine, taper * rng.uniform(0.0009, 0.0016, (count, 1)), 3, green[:, None, :] * numpy.array([[1.3, 1.2, 1.25], [1.1, 1.05, 1.08], [1.0, 1.0, 1.0], [0.96, 0.98, 0.95], [1.0, 0.96, 0.9], [1.15, 0.98, 0.82]])[None, :, :], rng.uniform(0.4, 0.55, count), side, 0.5, shade=0.15)
+    scum = kit.smoothstep(0.3, 1.3, kit.warp(kit.noise(n, seed + 12, 2.2, 6.0, 40.0), seed + 13, 0.02)) * kit.smoothstep(0.2, 0.6, depth)
+    count = int(scum.mean() * size * size / 0.00004) + 1
+    spot = kit.scatter(rng, count, size, scum)
+    tile.plates("scum", numpy.column_stack([spot, numpy.full(count, tile.water + 0.0002)]), rng.uniform(0.001, 0.0022, count), 0.0001, swatch(rng, [(66, 82, 38), (76, 90, 42), (58, 72, 34), (84, 92, 48)], count, 0.12, 0.04), 0.3, 1, 8, 0.2)
+    tile.marks["water"] = [(((numpy.argmax(depth) % n) + 0.5) * size / n, ((numpy.argmax(depth) // n) + 0.5) * size / n)]
 
 
 catalog = {
@@ -631,5 +873,8 @@ catalog = {
     "ground_heath": {"size": 2.0, "seed": 2203, "build": heath, "grid": 1024, "reach": 0.03, "compose": {"cavity": 0.35, "occlusion": 0.6, "fill": 2, "soften": 1.0, "keep": 0.4}, "text": "Coastal heath floor: dark peaty soil with dead heather sprigs and wiry stems, fine leaf litter, grey-green lichen and moss cushions, granite grit and a few quartz pebbles."},
     "ground_moor": {"size": 2.5, "seed": 3307, "build": moor, "grid": 1024, "reach": 0.04, "compose": {"cavity": 0.4, "occlusion": 0.6, "fill": 4, "soften": 3.0, "keep": 0.25}, "text": "Upland moor: matted thatch of bleached straw-gold dead grass lying in swirls over low tussocks, fresh green shoots, dark wet peat in the gaps and sphagnum patches."},
     "ground_turf": {"size": 2.0, "seed": 4409, "build": turf, "grid": 768, "reach": 0.03, "compose": {"cavity": 0.4, "occlusion": 0.6, "fill": 4, "soften": 2.5, "keep": 0.25}, "text": "Short dense meadow turf seen from above: fine grass blades in tufts with clover leaves, small moss patches, dry thatch and a little bare earth."},
-    "ground_soil": {"size": 2.0, "seed": 5501, "build": soil, "grid": 768, "reach": 0.04, "compose": {"cavity": 0.4, "occlusion": 0.7}, "text": "Tilled field soil: dark brown crumbly clods of varied size with small stones, bits of straw and fine roots, no furrows."},
+    "ground_soil": {"size": 2.0, "seed": 5501, "build": soil, "grid": 1024, "reach": 0.04, "compose": {"cavity": 0.3, "occlusion": 0.7}, "text": "Dark ploughed loam for fields and garden plots: crumbly clods of varied size over a fine furrow texture (16 shallow ridges per tile, along the texture U axis), small stones, straw bits and fine roots."},
+    "ground_dune": {"size": 2.5, "seed": 6603, "build": dune, "grid": 1024, "reach": 0.02, "compose": {"cavity": 0.2, "occlusion": 1.0}, "text": "Dune sand: fine pale wind-blown shell sand in gentle asymmetric ripples with merging crests, fine shell grit gathered in the troughs, a few dry marram grass blades and tiny pebbles."},
+    "ground_shingle": {"size": 2.5, "seed": 7707, "build": shingle, "grid": 1024, "reach": 0.04, "compose": {"cavity": 0.3, "occlusion": 0.8}, "text": "Beach shingle: densely packed rounded pebbles 2 to 8 cm in several layers, grey and pinkish granite with flint greys, a little quartz and dark basalt, coarse sand in the gaps and a few strands of dried seaweed."},
+    "ground_marsh": {"size": 2.5, "seed": 8803, "build": marsh, "grid": 1024, "reach": 0.03, "compose": {"cavity": 0.3, "occlusion": 0.7, "stretch": 2.2}, "water": (0.62, 0.06, 0.0015), "text": "Marsh: dark wet peaty mud with glossy standing water films in the hollows, flattened rush stems and sedge leaf litter, a few green shoots and a little algae scum."},
 }

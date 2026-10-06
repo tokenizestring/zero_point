@@ -27,7 +27,7 @@ def bake(name, resolution, samples, target, work):
     passes = kit.read_passes(path, 2)
     if target != textures:
         numpy.savez(os.path.join(work, name + "_raw.npz"), **passes)
-    maps = kit.compose(passes, entry["size"] / (resolution // 2), **entry.get("compose", {}))
+    maps = kit.compose(passes, entry["size"] / (resolution // 2), water=entry.get("water"), level=tile.water, **entry.get("compose", {}))
     os.remove(path)
     kit.export(maps, os.path.join(target, name), name)
     tile.note("exported, relief %.4f m" % maps["relief"])

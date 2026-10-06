@@ -297,6 +297,18 @@ def shard(seed, level=4, planes=14, sharp=16.0, grain=0.02):
     return vertices * radius[:, None], faces
 
 
+def chunk(seed, level=4, planes=10, sharp=6.0, lump=0.14, grain=0.05):
+    rng = numpy.random.default_rng(seed)
+    vertices, faces = icosphere(level)
+    normals = rng.normal(0.0, 1.0, (planes, 3))
+    normals = (normals / numpy.linalg.norm(normals, axis=1, keepdims=True)).astype(numpy.float32)
+    offsets = rng.uniform(0.62, 1.0, planes).astype(numpy.float32)
+    reach = numpy.maximum(vertices @ normals.T, 1e-4) / offsets
+    radius = ((reach ** sharp).sum(axis=1) + 0.35 ** sharp) ** (-1.0 / sharp)
+    radius = radius * (1.0 + lump * ripple(vertices, seed + 5, 1.6, 2, 0.5)) * (1.0 + grain * ripple(vertices, seed + 9, 7.0, 3, 0.6))
+    return vertices * radius[:, None], faces
+
+
 def clod(seed, level=3, lump=0.26):
     vertices, faces = icosphere(level)
     radius = numpy.maximum(1.0 + lump * ripple(vertices, seed, 1.5, 3, 0.62), 0.4)
@@ -689,6 +701,8 @@ class bed:
         self.cell = extent / size
         center = (numpy.arange(size) + 0.5) * self.cell
         self.h = numpy.ascontiguousarray(sample(height, center[None, :], center[:, None], extent), dtype=numpy.float32)
+        self.base = self.h.copy()
+        self.kept = None
 
     def index(self, x, y):
         return numpy.floor(numpy.asarray(y) / self.cell).astype(numpy.int64) % self.size, numpy.floor(numpy.asarray(x) / self.cell).astype(numpy.int64) % self.size
@@ -777,7 +791,7 @@ class bed:
                     self.lift(fx + ax * lane, fy + ay * lane, top)
         return level
 
-    def drop(self, rng, position, axes, euler, tries=5, spread=1.0, sink=0.1, lean=0.6, order=None):
+    def drop(self, rng, position, axes, euler, tries=5, spread=1.0, sink=0.1, lean=0.6, order=None, perch=None):
         count = len(position)
         axes = numpy.asarray(axes, dtype=numpy.float64)
         rotation = euler_matrix(euler)
@@ -790,6 +804,7 @@ class bed:
         jitter[:, 0] = 0.0
         size = self.size
         cell = self.cell
+        self.kept = numpy.ones(count, dtype=bool)
         for item in (range(count) if order is None else order):
             a = shape[item]
             rx = max(1, int(math.ceil(extent[item, 0] / cell)))
@@ -816,6 +831,10 @@ class bed:
                 if best is None or level < best[0]:
                     best = (level, ix, iy, rows, columns, patch)
             level, ix, iy, rows, columns, patch = best
+            if perch is not None and level - float((self.base[numpy.ix_(rows, columns)] - bottom)[valid].max()) > perch * extent[item, 2]:
+                self.kept[item] = False
+                result[item] = ((ix + 0.5) * cell, (iy + 0.5) * cell, level)
+                continue
             if lean > 0.0:
                 weight = valid.astype(numpy.float64)
                 total = weight.sum()
@@ -847,6 +866,7 @@ class tile:
         self.groups = {}
         self.extents = {}
         self.marks = {}
+        self.water = None
         self.triangles = 0
         self.instances = 0
         self.started = time.time()
@@ -1218,13 +1238,49 @@ def bounded(across, along, steep):
     return across * limit, along * limit
 
 
-def compose(passes, pixel, bump=1.0, occlusion=1.0, cavity=0.35, trim=0.2, fill=0, soften=1.0, keep=1.0, steep=2.5, meso=8.0, envelope=1.0):
+def levels(height, trim, stretch):
+    low, high = numpy.percentile(height, [trim, 100.0 - trim])
+    probe = height.ravel()[::7]
+
+    def scales(pivot):
+        below = max(pivot - low, 1e-9)
+        above = max(high - pivot, 1e-9)
+        base = 0.49 / max(below, above)
+        return min(0.49 / below, base * stretch), min(0.49 / above, base * stretch)
+
+    first, last = float(low), float(high)
+    for step in range(48):
+        pivot = (first + last) * 0.5
+        under, over = scales(pivot)
+        shifted = probe - pivot
+        if 0.5 + float(numpy.where(shifted < 0.0, shifted * under, shifted * over).mean()) > 0.5:
+            first = pivot
+        else:
+            last = pivot
+    pivot = (first + last) * 0.5
+    under, over = scales(pivot)
+    shifted = height - pivot
+    return numpy.clip(0.5 + numpy.where(shifted < 0.0, shifted * under, shifted * over), 0.0, 1.0), 1.0 / over, low, high
+
+
+def compose(passes, pixel, bump=1.0, occlusion=1.0, cavity=0.35, trim=0.2, fill=0, soften=1.0, keep=1.0, steep=2.5, meso=8.0, envelope=1.0, water=None, level=None, stretch=1.0):
     albedo = numpy.clip(passes["albedo"], 0.0, 1.0)
     normal = passes["normal"].astype(numpy.float32)
     across, along = bounded(normal[..., 0] / numpy.maximum(normal[..., 2], 1e-3) * bump, -normal[..., 1] / numpy.maximum(normal[..., 2], 1e-3) * bump, steep)
     ao = numpy.clip(passes["ao"], 0.0, 1.0) ** occlusion
     albedo = albedo * (1.0 - cavity * (1.0 - ao))[..., None]
     height = passes["height"].astype(numpy.float32)
+    rough = numpy.clip(passes["rough"], 0.03, 1.0).astype(numpy.float32)
+    wet = numpy.zeros_like(height)
+    if water is not None and level is not None:
+        dark, gloss, edge = water
+        depth = numpy.maximum(level - height, 0.0)
+        wet = smoothstep(0.0, edge, depth)
+        absorb = numpy.exp(-depth[..., None] / numpy.array([0.02, 0.016, 0.011], dtype=numpy.float32))
+        albedo = albedo * (1.0 - wet[..., None] * (1.0 - dark * absorb))
+        rough = rough * (1.0 - wet) + gloss * wet
+        ao = ao + (1.0 - ao) * 0.6 * wet
+        height = numpy.maximum(height, level)
     if fill:
         height = blur(dilate(height, fill), soften) * (1.0 - keep) + height * keep
     if meso:
@@ -1232,15 +1288,14 @@ def compose(passes, pixel, bump=1.0, occlusion=1.0, cavity=0.35, trim=0.2, fill=
         across = across - blur(across, meso) - (numpy.roll(smooth, -1, axis=1) - numpy.roll(smooth, 1, axis=1)) * (envelope * 0.5 / pixel)
         along = along - blur(along, meso) - (numpy.roll(smooth, -1, axis=0) - numpy.roll(smooth, 1, axis=0)) * (envelope * 0.5 / pixel)
         across, along = bounded(across, along, steep)
+    across = across * (1.0 - wet)
+    along = along * (1.0 - wet)
     normal = numpy.stack([across, along, numpy.ones_like(across)], axis=-1)
     normal /= numpy.linalg.norm(normal, axis=-1, keepdims=True)
     height = height.astype(numpy.float64)
-    low, high = numpy.percentile(height, [trim, 100.0 - trim])
-    mean = float(height.mean())
-    span = max(mean - low, high - mean, 1e-6) / 0.49
-    print("GROUND height metres min %.4f low %.4f mean %.4f high %.4f max %.4f, ao mean %.3f, up mean %.3f" % (height.min(), low, mean, high, height.max(), ao.mean(), normal[..., 2].mean()), flush=True)
-    height = numpy.clip(0.5 + (height - mean) / span, 0.0, 1.0)
-    return {"albedo": albedo.astype(numpy.float32), "normal": normal, "ao": ao.astype(numpy.float32), "rough": numpy.clip(passes["rough"], 0.03, 1.0).astype(numpy.float32), "height": height.astype(numpy.float32), "relief": span}
+    mapped, span, low, high = levels(height, trim, stretch)
+    print("GROUND height metres min %.4f low %.4f mean %.4f high %.4f max %.4f, ao mean %.3f, up mean %.3f" % (height.min(), low, height.mean(), high, height.max(), ao.mean(), normal[..., 2].mean()), flush=True)
+    return {"albedo": albedo.astype(numpy.float32), "normal": normal, "ao": ao.astype(numpy.float32), "rough": rough, "height": mapped.astype(numpy.float32), "relief": span}
 
 
 def export(maps, directory, name):

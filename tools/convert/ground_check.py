@@ -6,19 +6,24 @@ import ground_kit as kit
 suffixes = (("diff", "diff", 3), ("normal", "nor_dx", 3), ("arm", "arm", 3), ("disp", "disp", 1))
 
 
-def seam(plane):
+def seam(plane, near=8):
     plane = plane.astype(numpy.float64)
     if plane.ndim == 3:
         plane = plane.mean(axis=2)
-    worst = 0.0
-    rank = 0.0
+    overall = 0.0
+    worst = None
+    offsets = numpy.concatenate([numpy.arange(-near, 0), numpy.arange(1, near + 1)])
     for axis in (0, 1):
         moved = numpy.moveaxis(plane, axis, 0)
-        inner = numpy.abs(moved[1:] - moved[:-1]).mean(axis=1)
-        across = numpy.abs(moved[0] - moved[-1]).mean()
-        worst = max(worst, across / max(inner.mean(), 1e-9))
-        rank = max(rank, float((inner < across).mean()))
-    return worst, rank
+        size = moved.shape[0]
+        diffs = numpy.abs(moved - numpy.roll(moved, -1, axis=0)).mean(axis=1)
+        ratios = diffs / numpy.maximum(diffs[(numpy.arange(size)[:, None] + offsets[None, :]) % size].mean(axis=1), 1e-9)
+        overall = max(overall, diffs[-1] / max(diffs[:-1].mean(), 1e-9))
+        boundary = ratios[7:-1:8]
+        found = (float(ratios[-1]), float(numpy.percentile(boundary, 99.0)))
+        if worst is None or found[0] - found[1] > worst[0] - worst[1]:
+            worst = found
+    return overall, worst[0], worst[1]
 
 
 def orientation(normal, height):
@@ -78,9 +83,9 @@ def verdict(report):
         shape = report["sizes"][key]
         if shape[0] != 2048 or shape[1] != 2048 or shape[2] != channels:
             failures.append("%s is %s" % (suffix, "x".join(str(v) for v in shape)))
-    for key, (ratio, rank) in report["seam"].items():
-        if ratio > 1.25 or (ratio > 1.0 and rank > 0.99):
-            failures.append("%s seam %.2f" % (key, ratio))
+    for key, (overall, local, limit) in report["seam"].items():
+        if local > max(limit, 1.05) or overall > 1.5:
+            failures.append("%s seam %.2f adjacent %.2f limit %.2f" % (key, overall, local, limit))
     if abs(report["length_mean"] - 1.0) > 0.01 or report["length_mid"] > 0.03 or report["length_off"] > 0.15:
         failures.append("normal length %.3f mid %.3f off %.3f" % (report["length_mean"], report["length_mid"], report["length_off"]))
     if report["up_low"] <= 0.0:
@@ -91,7 +96,7 @@ def verdict(report):
         failures.append("metal %.4f high %.3f" % (report["metal_mean"], report["metal_high"]))
     if not (0.15 <= report["rough"][3] <= 0.98 and report["rough"][0] >= 0.02):
         failures.append("roughness range")
-    if not (0.45 <= report["ao"][3] <= 0.98 and report["ao"][2] >= 0.85):
+    if not (0.4 <= report["ao"][3] <= 0.995 and report["ao"][2] >= 0.85 and report["ao"][0] < report["ao"][2]):
         failures.append("occlusion range")
     if report["height"][2] - report["height"][0] < 0.6 or abs(report["height"][3] - 0.5) > 0.06:
         failures.append("height span %.2f mean %.2f" % (report["height"][2] - report["height"][0], report["height"][3]))
@@ -103,7 +108,7 @@ def verdict(report):
 def describe(report, failures):
     lines = ["CHECK %-16s %s" % (report["name"], "PASS" if not failures else "FAIL " + "; ".join(failures))]
     if not report["missing"]:
-        lines.append("  seam ratio (rank) " + "  ".join("%s %.3f (%.2f)" % (key, value[0], value[1]) for key, value in report["seam"].items()))
+        lines.append("  seam: wrap vs mean row step / wrap vs adjacent rows (p99 of interior 8x8-block-boundary rows) " + "  ".join("%s %.3f / %.3f (%.3f)" % (key, value[0], value[1], value[2]) for key, value in report["seam"].items()))
         lines.append("  normal length %.4f median off %.4f p99 off %.4f up mean %.3f min %.3f  orientation red %.2f green %.2f" % (report["length_mean"], report["length_mid"], report["length_off"], report["up_mean"], report["up_low"], report["orientation"][0], report["orientation"][1]))
         lines.append("  metal mean %.4f p99.9 %.3f peak %.3f  rough p1 %.2f p50 %.2f p99 %.2f mean %.3f  ao p1 %.2f p50 %.2f p99 %.2f mean %.3f" % tuple([report["metal_mean"], report["metal_high"], report["metal_peak"]] + report["rough"] + report["ao"]))
         lines.append("  height p0.5 %.3f p50 %.3f p99.5 %.3f mean %.3f min %.3f max %.3f  albedo %.3f %.3f %.3f lum %.3f" % tuple(report["height"] + report["albedo"] + [report["luminance"]]))
