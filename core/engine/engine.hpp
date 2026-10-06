@@ -187,6 +187,17 @@ namespace zp
 	constexpr auto audio_drone_range = 1800.0f;
 	constexpr auto audio_drone_floor = 0.002f;
 	constexpr auto audio_listener_speed = 60.0f;
+	constexpr auto audio_tail_voices = 12u;
+	constexpr auto audio_tail_reference = 70.0f;
+	constexpr auto audio_mechanism_range = 25.0f;
+	constexpr auto audio_casing_range = 30.0f;
+	constexpr auto audio_casing_delay = 0.38f;
+	constexpr auto audio_deafen_range = 9.0f;
+	constexpr auto audio_ring_threshold = 0.3f;
+	constexpr auto audio_ring_decay = 0.045f;
+	constexpr auto audio_ring_volume = 0.3f;
+	constexpr auto audio_ring_muffle = 0.42f;
+	constexpr auto audio_room_deafening = 2.2f;
 	constexpr auto viewmodel_equip_time = 0.4f;
 	constexpr auto viewmodel_grip_forward = 0.085f;
 	constexpr auto viewmodel_grip_palm = 0.03f;
@@ -292,6 +303,7 @@ namespace zp
 	constexpr auto character_backpedal_angle = 1.95f;
 	constexpr const char* character_twist_bones[] = { "Bip01 Spine", "Bip01 Spine1", "Bip01 Spine2", "Bip01 Neck", "Bip01 Head" };
 	constexpr std::float_t character_twist_shares[] = { 0.15f, 0.2f, 0.25f, 0.2f, 0.2f };
+	constexpr std::float_t character_blade_shares[] = { 0.25f, 0.35f, 0.4f, 0.0f, -1.0f };
 	constexpr const char* character_roster[] = { "military_male_01", "military_male_04", "police_male_02", "male_adult_05", "construction_male_01" };
 	constexpr auto clip_idle = "m_idle_neutral_01";
 	constexpr auto clip_walk = "m_walk_neutral_01";
@@ -320,6 +332,10 @@ namespace zp
 	constexpr auto actor_height = 1.8f;
 	constexpr std::float_t actor_avoid_angles[] = { 0.8f, -0.8f, 1.6f, -1.6f };
 	constexpr const char* actor_rig_bones[] = { "Bip01 R UpperArm", "Bip01 R Forearm", "Bip01 R Hand", "Bip01 L UpperArm", "Bip01 L Forearm", "Bip01 L Hand" };
+	constexpr const char* first_person_hidden_bones[] = { "Bip01 Head", "Bip01 R UpperArm", "Bip01 L UpperArm" };
+	constexpr auto first_person_body_back = 0.12f;
+	constexpr auto first_person_collapse = 0.001f;
+	constexpr auto first_person_clearance = 0.32f;
 	constexpr auto third_person_distance = 2.6f;
 	constexpr auto third_person_side = 0.55f;
 	constexpr auto third_person_height = 0.15f;
@@ -475,6 +491,7 @@ namespace zp
 	constexpr auto mark_power_full = 90.0f;
 	constexpr auto mark_wet_steps = 14u;
 	constexpr auto mark_foot_offset = 0.1f;
+	constexpr auto mark_foot_follow = 0.5f;
 	constexpr auto mark_tread_speed = 0.8f;
 	constexpr auto mark_tread_slope = 0.72f;
 	constexpr auto mark_blood_reach = 2.6f;
@@ -488,10 +505,11 @@ namespace zp
 	constexpr auto maximum_ticks_per_frame = 6u;
 	constexpr auto default_mouse_sensitivity = 0.0021f;
 	constexpr auto server_log_file_name = "zero_point_server.log";
-	constexpr auto remote_character = "survivor";
+	constexpr auto remote_character = "survivor_male";
+	constexpr auto nude_character = "survivor_male_nude";
 	constexpr auto server_executable_name = "zero_point_server.exe";
 	constexpr auto net_protocol_id = 0x314E505Au;
-	constexpr auto net_protocol_version = 5u;
+	constexpr auto net_protocol_version = 8u;
 	constexpr auto net_time_scale = 4096.0;
 	constexpr auto net_time_window = 1.0;
 	constexpr auto net_time_lead = 0.1;
@@ -553,8 +571,9 @@ namespace zp
 	constexpr auto world_save_interval = 60.0f;
 	constexpr auto world_save_name = "zero_point_world.sav";
 	constexpr std::uint32_t world_save_magic = 0x5A505744u;
-	constexpr std::uint32_t world_save_version = 8u;
+	constexpr std::uint32_t world_save_version = 9u;
 	constexpr std::uint32_t world_save_marks = 8u;
+	constexpr std::uint32_t world_save_layout = 9u;
 	constexpr std::uint32_t world_save_oldest = 7u;
 	constexpr std::uint32_t world_save_tiers = 5u;
 	constexpr std::uint32_t world_save_claims = 5u;
@@ -586,6 +605,7 @@ namespace zp
 	constexpr auto net_grid_cell = 64.0f;
 	constexpr auto net_grid_size = 80u;
 	constexpr auto net_name_length = 32u;
+	constexpr auto net_name_copies = 16u;
 	constexpr auto net_password_length = 32u;
 	constexpr auto net_server_name_length = 64u;
 	constexpr auto net_chat_length = 120u;
@@ -731,6 +751,7 @@ namespace zp
 			font_hand_bold,
 			font_serif,
 			font_serif_caps,
+			font_display,
 			font_count
 		};
 		/*
@@ -1207,6 +1228,15 @@ namespace zp
 			item_radio_battery,
 			item_cupboard,
 			item_code_lock,
+			item_raw_venison,
+			item_cooked_venison,
+			item_raw_pork,
+			item_cooked_pork,
+			item_raw_horse,
+			item_cooked_horse,
+			item_animal_fat,
+			item_hide,
+			item_bone,
 			item_count
 		};
 		/*
@@ -1628,6 +1658,8 @@ namespace zp
 			std::float_t width;
 			std::float_t deck;
 			std::uint32_t material;
+			std::uint32_t axles;
+			std::float_t axle_offsets[4];
 		};
 		/*
 		//=====================================================================================
@@ -1650,6 +1682,58 @@ namespace zp
 			vec3_s center;
 			vec3_s half;
 			std::uint32_t surface;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct station_s
+		{
+			std::uint32_t landmark;
+			std::uint32_t index;
+			std::float_t side;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct station_kit_s
+		{
+			std::uint32_t landmark;
+			bool building;
+			bool signal_box;
+			bool water_tower;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct crossing_s
+		{
+			vec3_s position;
+			vec3_s rail;
+			vec3_s road;
+			std::float_t along;
+			std::float_t width;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct gate_s
+		{
+			vec3_s hinge;
+			std::float_t open;
+			std::float_t shut;
+			std::float_t angle;
+			std::float_t previous;
+			std::float_t stretch;
+			std::uint32_t crossing;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct gate_lamp_s
+		{
+			vec3_s position;
+			std::float_t phase;
+			std::uint32_t crossing;
 		};
 		/*
 		//=====================================================================================
@@ -1698,7 +1782,45 @@ namespace zp
 			page_settings,
 			page_notes,
 			page_servers,
-			page_controls
+			page_controls,
+			page_credits
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum settings_tab_e : std::uint32_t
+		{
+			tab_display,
+			tab_graphics,
+			tab_audio,
+			tab_controls,
+			tab_keys,
+			tab_gameplay,
+			tab_interface,
+			tab_accessibility,
+			tab_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum setting_row_e : std::uint32_t
+		{
+			row_header,
+			row_choice,
+			row_slider,
+			row_toggle,
+			row_preset
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum dialog_e : std::uint32_t
+		{
+			dialog_none,
+			dialog_display,
+			dialog_leave,
+			dialog_quit,
+			dialog_defaults
 		};
 		/*
 		//=====================================================================================
@@ -1715,7 +1837,8 @@ namespace zp
 			menu_quit,
 			menu_play,
 			menu_join,
-			menu_host
+			menu_host,
+			menu_credits
 		};
 		/*
 		//=====================================================================================
@@ -1724,6 +1847,15 @@ namespace zp
 		{
 			const char* label;
 			std::uint32_t action;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct guide_key_s
+		{
+			std::int32_t bind;
+			const char* key;
+			const char* action;
 		};
 		/*
 		//=====================================================================================
@@ -1767,6 +1899,72 @@ namespace zp
 			bool vsync;
 			bool invert;
 			std::uint8_t bindings[bind_count];
+			std::uint32_t display;
+			std::uint32_t window_size;
+			std::uint32_t frame_limit;
+			std::uint32_t anti_aliasing;
+			std::uint32_t shadows;
+			std::uint32_t ambient_occlusion;
+			std::uint32_t reflections;
+			std::uint32_t light_shafts;
+			std::uint32_t texture_filter;
+			std::uint32_t vegetation;
+			std::uint32_t grass;
+			std::uint32_t marks;
+			bool bloom;
+			bool motion_blur;
+			bool chromatic_aberration;
+			std::float_t sharpening;
+			bool show_fps;
+			std::float_t interface_volume;
+			bool mute_unfocused;
+			std::float_t aim_sensitivity;
+			std::uint32_t crouch_mode;
+			std::uint32_t aim_mode;
+			std::uint32_t sprint_mode;
+			std::uint32_t head_bob;
+			std::uint32_t crosshair;
+			bool hit_markers;
+			bool compass;
+			bool name_tags;
+			std::uint32_t vitals;
+			std::uint32_t hotbar;
+			bool chat;
+			bool hints;
+			std::float_t interface_scale;
+			std::uint32_t colour_filter;
+			bool reduce_flashing;
+			bool reverse_wheel;
+			bool strafe_tilt;
+			bool prompts;
+			bool damage_direction;
+			bool pickup_messages;
+			bool calm_camera;
+			bool ear_ringing;
+			bool censor;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct setting_row_s
+		{
+			std::uint32_t tab;
+			std::uint32_t kind;
+			const char* key;
+			const char* label;
+			const char* description;
+			std::uint32_t impact;
+			std::uint32_t user_settings_s::* choice;
+			std::float_t user_settings_s::* number;
+			bool user_settings_s::* flag;
+			const char* const* names;
+			std::uint32_t count;
+			std::float_t low;
+			std::float_t high;
+			std::float_t step;
+			std::float_t display;
+			const char* format;
+			bool graphics;
 		};
 		/*
 		//=====================================================================================
@@ -1806,6 +2004,18 @@ namespace zp
 			vec2_s center;
 			vec2_s half;
 			std::float_t yaw;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct gun_sound_s
+		{
+			std::uint32_t close;
+			std::uint32_t mechanism;
+			std::uint32_t distant;
+			std::uint32_t tail;
+			std::float_t deafening;
+			bool ejects;
 		};
 		/*
 		//=====================================================================================
@@ -2000,6 +2210,34 @@ namespace zp
 			sound_train_horn,
 			sound_train_brake,
 			sound_train_hiss,
+			sound_gun_pistol_close,
+			sound_gun_pistol_mech,
+			sound_gun_pistol_far,
+			sound_gun_pistol_tail_plain,
+			sound_gun_pistol_tail_forest,
+			sound_gun_pistol_tail_mountains,
+			sound_gun_pistol_tail_city,
+			sound_gun_pistol_tail_room,
+			sound_gun_bolt_close,
+			sound_gun_bolt_mech,
+			sound_gun_bolt_far,
+			sound_gun_bolt_tail_plain,
+			sound_gun_bolt_tail_forest,
+			sound_gun_bolt_tail_mountains,
+			sound_gun_bolt_tail_city,
+			sound_gun_bolt_tail_room,
+			sound_gun_auto_close,
+			sound_gun_auto_mech,
+			sound_gun_auto_far,
+			sound_gun_auto_tail_plain,
+			sound_gun_auto_tail_forest,
+			sound_gun_auto_tail_mountains,
+			sound_gun_auto_tail_city,
+			sound_gun_auto_tail_room,
+			sound_casing_hard,
+			sound_casing_wood,
+			sound_casing_soft,
+			sound_tinnitus,
 			sound_count
 		};
 		/*
@@ -2294,6 +2532,35 @@ namespace zp
 			std::float_t crops;
 			std::float_t plants;
 			std::float_t debris;
+			std::float_t gorse;
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum tree_kind_e : std::uint32_t
+		{
+			tree_fir,
+			tree_pine,
+			tree_birch,
+			tree_oak,
+			tree_hawthorn,
+			tree_willow,
+			tree_kind_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct tree_species_s
+		{
+			const char* prefix;
+			std::uint32_t variants;
+			std::float_t sway;
+			std::float_t trunk;
+			std::float_t height;
+			std::float_t girth;
+			std::float_t spread;
+			std::float_t smallest;
+			std::float_t largest;
 		};
 		/*
 		//=====================================================================================
@@ -2415,6 +2682,7 @@ namespace zp
 			std::vector<std::uint32_t> materials;
 			std::vector<std::vector<std::int32_t>> clip_tracks;
 			std::vector<std::float_t> twist_shares;
+			std::vector<std::float_t> blade_shares;
 			std::uint32_t alpha_first_index;
 			vec3_s bounds_min;
 			vec3_s bounds_max;
@@ -2491,6 +2759,10 @@ namespace zp
 			std::float_t voice_timer;
 			std::int32_t blocker;
 			std::int32_t rig[actor_rig_count];
+			std::uint32_t held;
+			std::int32_t held_bone;
+			std::float_t blade;
+			bool holding;
 			bool crouched;
 			bool grounded;
 			bool turning;
@@ -2500,10 +2772,275 @@ namespace zp
 			bool looted;
 			bool dormant;
 			bool struck;
+			bool first_person;
+			mat4_s world;
+			mat4_s previous_world;
+			mat4_s view_world;
+			mat4_s previous_view_world;
+			mat4_s held_offset;
+			mat4_s held_world;
+			mat4_s previous_held_world;
+			std::vector<mat4_s> palette;
+			std::vector<mat4_s> previous_palette;
+			std::vector<mat4_s> view_palette;
+			std::vector<mat4_s> previous_view_palette;
+			std::vector<std::int32_t> collapse;
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum hold_e : std::uint32_t
+		{
+			hold_none,
+			hold_long,
+			hold_pistol,
+			hold_tool,
+			hold_bow,
+			hold_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct hold_pose_s
+		{
+			vec3_s anchor;
+			vec3_s wrist;
+			vec3_s support;
+			std::float_t pitch;
+			std::float_t blade;
+			bool left;
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum species_e : std::uint32_t
+		{
+			species_stag,
+			species_hind,
+			species_boar,
+			species_horse,
+			species_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum animal_state_e : std::uint32_t
+		{
+			animal_graze,
+			animal_idle,
+			animal_rest,
+			animal_walk,
+			animal_alert,
+			animal_flee,
+			animal_charge,
+			animal_dead
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum animal_clip_e : std::uint32_t
+		{
+			animal_clip_idle,
+			animal_clip_look,
+			animal_clip_graze,
+			animal_clip_alert,
+			animal_clip_walk,
+			animal_clip_trot,
+			animal_clip_run,
+			animal_clip_hit,
+			animal_clip_death,
+			animal_clip_rest,
+			animal_clip_attack,
+			animal_clip_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct species_s
+		{
+			const char* name;
+			const char* character;
+			const char* lod;
+			const char* clips[animal_clip_count];
+			std::float_t health;
+			std::float_t radius;
+			std::float_t half;
+			std::float_t center;
+			std::float_t walk;
+			std::float_t trot;
+			std::float_t run;
+			std::float_t sight;
+			std::float_t hearing;
+			std::float_t courage;
+			std::uint32_t meat;
+			std::uint32_t meat_amount;
+			std::uint32_t hide_amount;
+			std::uint32_t fat_amount;
+			std::uint32_t bone_amount;
+			std::float_t facing;
+			std::float_t hoof;
+			bool enabled;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct herd_kind_s
+		{
+			std::uint32_t leader;
+			std::uint32_t member;
+			std::uint32_t minimum;
+			std::uint32_t maximum;
+			std::uint32_t count;
+			std::uint32_t habitat;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct herd_s
+		{
+			vec3_s home;
+			vec3_s goal;
+			std::float_t timer;
+			std::float_t empty;
+			std::uint32_t kind;
+			std::uint32_t first;
+			std::uint32_t count;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct watcher_s
+		{
+			vec3_s position;
+			std::float_t noise;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct animal_s
+		{
+			vec3_s position;
+			vec3_s velocity;
+			vec3_s goal;
+			vec3_s threat;
+			vec3_s from;
+			vec3_s to;
+			vec3_s shown;
+			std::float_t yaw;
+			std::float_t heading;
+			std::float_t from_yaw;
+			std::float_t to_yaw;
+			std::float_t shown_yaw;
+			std::float_t health;
+			std::float_t timer;
+			std::float_t think;
+			std::float_t fear;
+			std::float_t speed;
+			std::float_t shown_speed;
+			std::float_t dead_time;
+			std::float_t phase;
+			std::float_t clip_time;
+			std::float_t previous_time;
+			std::float_t blend;
+			std::float_t hurt;
+			std::float_t bleed;
+			std::float_t drip;
+			std::double_t from_time;
+			std::double_t to_time;
+			std::double_t seen;
+			std::uint32_t species;
+			std::uint32_t state;
+			std::uint32_t herd;
+			std::uint32_t yields;
+			std::uint32_t frames;
+			std::uint32_t mode;
+			std::uint32_t previous_mode;
+			std::uint16_t id;
+			bool alive;
 			mat4_s world;
 			mat4_s previous_world;
 			std::vector<mat4_s> palette;
 			std::vector<mat4_s> previous_palette;
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum creature_motion_e : std::uint32_t
+		{
+			creature_still,
+			creature_flap,
+			creature_swim
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum wildlife_kind_e : std::uint32_t
+		{
+			wildlife_gull,
+			wildlife_crow,
+			wildlife_mackerel,
+			wildlife_bass,
+			wildlife_kind_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct wildlife_kind_s
+		{
+			const char* model;
+			std::uint32_t motion;
+			std::float_t span;
+			std::float_t amplitude;
+			std::float_t beat;
+			std::float_t speed;
+			std::float_t radius;
+			std::float_t height;
+			std::float_t spread;
+			std::uint32_t minimum;
+			std::uint32_t maximum;
+			std::uint32_t groups;
+			std::float_t glide;
+			std::uint32_t habitat;
+			std::float_t roam;
+			std::float_t floor_low;
+			std::float_t floor_high;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct flock_s
+		{
+			vec3_s home;
+			vec3_s center;
+			vec3_s heading;
+			std::float_t drift;
+			std::float_t startle;
+			std::float_t lift;
+			std::uint32_t kind;
+			std::uint32_t first;
+			std::uint32_t count;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct creature_s
+		{
+			vec3_s position;
+			vec3_s offset;
+			vec3_s heading;
+			std::float_t angle;
+			std::float_t radius;
+			std::float_t phase;
+			std::float_t bob;
+			std::float_t flap;
+			std::float_t beat;
+			std::float_t timer;
+			std::float_t bank;
+			std::float_t scare;
+			std::float_t turn;
+			mat4_s world;
+			mat4_s previous_world;
+			bool drawn;
 		};
 		/*
 		//=====================================================================================
@@ -2517,6 +3054,7 @@ namespace zp
 			std::uint32_t previous_offset;
 			std::uint32_t flags;
 			std::float_t pallor;
+			std::float_t clearance;
 		};
 		/*
 		//=====================================================================================
@@ -2536,7 +3074,8 @@ namespace zp
 			draw_flag_viewmodel = 1u,
 			draw_flag_character = 2u,
 			draw_flag_no_shadow = 4u,
-			draw_flag_alpha = 8u
+			draw_flag_alpha = 8u,
+			draw_flag_shadow_only = 16u
 		};
 		/*
 		//=====================================================================================
@@ -2548,6 +3087,7 @@ namespace zp
 			mat4_s previous_world;
 			std::float_t material_override;
 			std::uint32_t flags;
+			vec4_s motion;
 		};
 		/*
 		//=====================================================================================
@@ -2683,6 +3223,7 @@ namespace zp
 			mat4_s previous_world;
 			vec4_s params;
 			vec4_s skin;
+			vec4_s motion;
 		};
 		/*
 		//=====================================================================================
@@ -2777,6 +3318,11 @@ namespace zp
 			std::float_t viewmodel_field_of_view;
 			bool vsync;
 			std::uint32_t frame_cap;
+			std::uint32_t colour_filter;
+			std::float_t vegetation;
+			std::float_t grass;
+			bool marks;
+			std::float_t flashes;
 		};
 		/*
 		//=====================================================================================
@@ -3541,6 +4087,7 @@ namespace zp
 			std::float_t camera[5];
 			bool camera_set;
 			bool walk_test;
+			bool walk_back;
 			bool net_test;
 			bool raid_test;
 			bool third_person;
@@ -3565,6 +4112,8 @@ namespace zp
 			bool pause_test;
 			bool loading_test;
 			std::int32_t menu_page;
+			std::uint32_t menu_tab;
+			std::uint32_t menu_dialog;
 			std::float_t start_hours;
 			std::float_t inspect_hands;
 			std::float_t showcase_angle;
@@ -3579,6 +4128,13 @@ namespace zp
 			bool ride_test;
 			bool impact_test;
 			bool trace;
+			std::double_t train_time;
+			std::int32_t herd_view;
+			std::int32_t hunt_herd;
+			bool carve_test;
+			std::float_t orbit;
+			std::float_t orbit_distance;
+			std::int32_t flock_view;
 		};
 	}
 
@@ -3740,14 +4296,14 @@ namespace zp
 		{ "terrain_cliff", "mossy_rock", { 0.95f, 0.97f, 1.05f }, 0.16f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_triplanar, {} },
 		{ "terrain_sand", "gravelly_sand", { 1.0f, 1.55f, 2.45f }, 0.38f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
 		{ "terrain_gravel", "ganges_river_pebbles", { 0.9f, 0.92f, 0.95f }, 0.42f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_needles", "forest_leaves_02", { 0.62f, 0.4f, 0.42f }, 0.34f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_heath", "withered_grass", { 0.3f, 0.27f, 0.34f }, 0.5f, 1.0f, 0.05f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_moor", "withered_grass", { 0.62f, 0.56f, 0.34f }, 0.4f, 1.0f, 0.05f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_marsh", "brown_mud_02", { 0.5f, 0.56f, 0.46f }, 0.5f, 0.55f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_dune", "gravelly_sand", { 1.25f, 1.8f, 2.6f }, 0.6f, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0u, {} },
-		{ "terrain_shingle", "ganges_river_pebbles", { 1.0f, 0.96f, 0.95f }, 0.3f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
-		{ "terrain_turf", "leafy_grass", { 0.33f, 0.52f, 0.34f }, 0.62f, 1.0f, 0.05f, 0.0f, 0.0f, 0.7f, 0u, {} },
-		{ "terrain_soil", "brown_mud_02", { 0.8f, 0.72f, 0.66f }, 0.75f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_needles", "ground_needles", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_heath", "ground_heath", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_moor", "ground_moor", { 1.0f, 1.0f, 1.0f }, 0.4f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_marsh", "ground_marsh", { 1.0f, 1.0f, 1.0f }, 0.4f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_dune", "ground_dune", { 0.62f, 0.62f, 0.62f }, 0.4f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_shingle", "ground_shingle", { 1.0f, 1.0f, 1.0f }, 0.4f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_turf", "ground_turf", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
+		{ "terrain_soil", "ground_soil", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
 		{ "berry", "painted_steel", { 0.9f, 0.04f, 0.08f }, 3.0f, 0.4f, 0.0f, 0.0f, 0.0f, 0.3f, 0u, {} },
 		{ "pond", "brown_mud_02", { 0.05f, 0.06f, 0.055f }, 0.9f, 0.0f, 0.13f, 0.0f, 0.0f, 0.22f, 0u, {} }
 	};
@@ -3805,7 +4361,16 @@ namespace zp
 		{ "Copper coil", "Hand-wound copper on a ceramic former. Radio parts.", structures::item_category_resource, 1u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
 		{ "Battery", "A heavy lead battery that still holds a charge.", structures::item_category_resource, 1u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
 		{ "Tool cupboard", "Claims the land around it. Only people you trust can build nearby or open your doors.", structures::item_category_construction, 1u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-		{ "Code lock", "Four digits between your door and everyone else. Wrong guesses bite.", structures::item_category_construction, 1u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
+		{ "Code lock", "Four digits between your door and everyone else. Wrong guesses bite.", structures::item_category_construction, 1u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ "Raw venison", "Dark red deer meat. Cook it before you eat it.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 25.0f, 2.0f, -6.0f },
+		{ "Cooked venison", "Lean, rich and filling.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 160.0f, 4.0f, 4.0f },
+		{ "Raw pork", "Wild boar meat. Never eat it raw.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 20.0f, 2.0f, -9.0f },
+		{ "Cooked pork", "Fatty, salty and very filling.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 190.0f, 2.0f, 3.0f },
+		{ "Raw horse meat", "Tough, dark meat. Cook it first.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 25.0f, 2.0f, -6.0f },
+		{ "Cooked horse meat", "Chewy, but it keeps you going.", structures::item_category_food, 20u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 150.0f, 4.0f, 3.0f },
+		{ "Animal fat", "Rendered from a carcass. Burns slowly and keeps leather supple.", structures::item_category_resource, 1000u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ "Hide", "A raw animal skin. Scrape it and it becomes leather.", structures::item_category_resource, 1000u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ "Bone", "Hard and sharp when broken. Good for tools.", structures::item_category_resource, 1000u, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 
 	constexpr structures::crop_definition_s crop_definitions[structures::crop_count] =
@@ -3818,7 +4383,7 @@ namespace zp
 	};
 
 	constexpr structures::conversion_s smelt_conversions[] = { { structures::item_metal_ore, structures::item_metal_fragments }, { structures::item_sulfur_ore, structures::item_sulfur } };
-	constexpr structures::conversion_s cook_conversions[] = { { structures::item_potato, structures::item_baked_potato }, { structures::item_corn, structures::item_roasted_corn }, { structures::item_pumpkin, structures::item_roasted_pumpkin } };
+	constexpr structures::conversion_s cook_conversions[] = { { structures::item_potato, structures::item_baked_potato }, { structures::item_corn, structures::item_roasted_corn }, { structures::item_pumpkin, structures::item_roasted_pumpkin }, { structures::item_raw_venison, structures::item_cooked_venison }, { structures::item_raw_pork, structures::item_cooked_pork }, { structures::item_raw_horse, structures::item_cooked_horse } };
 
 	constexpr structures::recipe_s recipes[] =
 	{
@@ -4076,7 +4641,7 @@ namespace zp
 	constexpr auto hammer_repair_wood = 10u;
 	constexpr const char* tier_marks[4] = { "", "I", "II", "III" };
 
-	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss" };
+	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss", "gun_pistol_close", "gun_pistol_mech", "gun_pistol_far", "gun_pistol_tail_plain", "gun_pistol_tail_forest", "gun_pistol_tail_mountains", "gun_pistol_tail_city", "gun_pistol_tail_room", "gun_bolt_close", "gun_bolt_mech", "gun_bolt_far", "gun_bolt_tail_plain", "gun_bolt_tail_forest", "gun_bolt_tail_mountains", "gun_bolt_tail_city", "gun_bolt_tail_room", "gun_auto_close", "gun_auto_mech", "gun_auto_far", "gun_auto_tail_plain", "gun_auto_tail_forest", "gun_auto_tail_mountains", "gun_auto_tail_city", "gun_auto_tail_room", "casing_hard", "casing_wood", "casing_soft", "tinnitus" };
 
 	constexpr std::uint32_t drone_sounds[structures::drone_count] = { structures::sound_train_engine, structures::sound_train_roll, structures::sound_count, structures::sound_count };
 
@@ -4089,6 +4654,86 @@ namespace zp
 		{ structures::item_rifle, structures::item_rifle_ammo, 5u, 1.2f, 3.4f, 0.04f, 0.002f, 0.12f, 600.0f, 0.8f, 120.0f, structures::sound_shot_rifle, structures::sound_reload_rifle, 0.3f, false, 0.015f, 0.02f, 0.0f, 0.1f, 0.0f, 0.38f, 1.2f, structures::sound_shot_rifle_far, 1.25f },
 		{ structures::item_hunting_bow, structures::item_wooden_arrow, 1u, 0.2f, 0.55f, 0.03f, 0.005f, 0.0f, 120.0f, 0.86f, 6.0f, structures::sound_swing, structures::sound_pickup },
 		{ structures::item_assault_rifle, structures::item_rifle_ammo, 30u, 0.095f, 2.9f, 0.05f, 0.011f, 0.022f, 350.0f, 0.82f, 110.0f, structures::sound_shot_assault, structures::sound_reload_rifle, 0.0f, true, 0.01f, 0.012f, 0.35f, 0.04f, 0.0035f, 0.95f, 1.3f, structures::sound_shot_assault_far, 1.0f }
+	};
+	constexpr structures::gun_sound_s gun_sounds[structures::weapon_count] =
+	{
+		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
+		{ structures::sound_gun_pistol_close, structures::sound_gun_pistol_mech, structures::sound_gun_pistol_far, structures::sound_gun_pistol_tail_plain, 0.07f, false },
+		{ structures::sound_gun_bolt_close, structures::sound_gun_bolt_mech, structures::sound_gun_bolt_far, structures::sound_gun_bolt_tail_plain, 0.12f, false },
+		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
+		{ structures::sound_gun_auto_close, structures::sound_gun_auto_mech, structures::sound_gun_auto_far, structures::sound_gun_auto_tail_plain, 0.08f, true }
+	};
+	constexpr std::float_t audio_tail_gains[structures::acoustic_count] = { 0.5f, 0.8f, 0.75f, 0.8f, 0.95f, 0.0f };
+
+	constexpr auto fauna_maximum = 220u;
+	constexpr auto fauna_think_interval = 0.1f;
+	constexpr auto fauna_sync_range = 280.0f;
+	constexpr auto fauna_snapshot_animals = 40u;
+	constexpr auto fauna_snapshot_reserve = 12u;
+	constexpr auto fauna_animal_bytes = 13u;
+	constexpr auto fauna_lod_distance = 45.0f;
+	constexpr auto fauna_draw_distance = 300.0f;
+	constexpr auto fauna_carcass_time = 900.0f;
+	constexpr auto fauna_respawn_time = 300.0f;
+	constexpr auto fauna_respawn_clearance = 200.0f;
+	constexpr auto fauna_herd_spread = 8.0f;
+	constexpr auto fauna_roam = 90.0f;
+	constexpr auto fauna_turn_rate = 2.4f;
+	constexpr auto fauna_acceleration = 3.5f;
+	constexpr auto fauna_shore = 1.0f;
+	constexpr auto fauna_steep = 0.74f;
+	constexpr auto fauna_calm_rate = 0.08f;
+	constexpr auto fauna_flee_time = 9.0f;
+	constexpr auto fauna_charge_reach = 1.8f;
+	constexpr auto fauna_charge_damage = 22.0f;
+	constexpr auto fauna_carve_reach = 2.4f;
+	constexpr auto fauna_carve_strikes = 5u;
+	constexpr auto fauna_blend_speed = 4.0f;
+	constexpr auto fauna_slope_follow = 0.75f;
+	constexpr auto fauna_victim = 0xFFFEu;
+	constexpr auto fauna_stale = 2.5;
+	constexpr auto fauna_dead_center = 0.32f;
+	constexpr auto fauna_fright = 1.3f;
+	constexpr auto fauna_head_zone = 0.85f;
+	constexpr auto fauna_heart_zone = 0.55f;
+	constexpr auto fauna_gut_zone = 0.25f;
+	constexpr std::float_t fauna_zone_damage[4] = { 3.0f, 2.4f, 1.0f, 0.8f };
+	constexpr std::float_t fauna_zone_bleed[4] = { 0.0f, 0.06f, 0.04f, 0.02f };
+	constexpr auto fauna_clot = 0.015f;
+	constexpr auto fauna_drip = 1.2f;
+	constexpr auto fauna_drip_threshold = 0.4f;
+	constexpr auto fauna_hoof_range = 45.0f;
+	constexpr auto fauna_hoof_volume = 0.07f;
+	constexpr structures::species_s species_table[structures::species_count] =
+	{
+		{ "Red deer stag", "deer_stag", "deer_stag_lod", { "deer_idle", "deer_idle_look", "deer_graze", "deer_alert", "deer_walk", "deer_trot", "deer_run", "deer_hit", "deer_death", "deer_rest", "deer_attack" }, 180.0f, 0.24f, 0.4f, 0.93f, 1.3f, 3.5f, 11.0f, 70.0f, 170.0f, 0.0f, structures::item_raw_venison, 10u, 4u, 3u, 6u, pi, 0.85f, true },
+		{ "Red deer hind", "deer_hind", "deer_hind_lod", { "deer_hind_idle", "deer_hind_idle_look", "deer_hind_graze", "deer_hind_alert", "deer_hind_walk", "deer_hind_trot", "deer_hind_run", "deer_hind_hit", "deer_hind_death", "deer_hind_rest", "deer_hind_attack" }, 120.0f, 0.21f, 0.35f, 0.81f, 1.216f, 3.272f, 10.285f, 75.0f, 180.0f, 0.0f, structures::item_raw_venison, 7u, 3u, 2u, 4u, pi, 0.95f, true },
+		{ "Wild boar", "boar", "boar_lod", { "boar_idle", "boar_idle_look", "boar_root", "boar_alert", "boar_walk", "boar_trot", "boar_run", "boar_hit", "boar_death", "boar_rest", "boar_attack" }, 150.0f, 0.22f, 0.45f, 0.55f, 1.2f, 3.2f, 9.0f, 40.0f, 120.0f, 0.6f, structures::item_raw_pork, 8u, 2u, 6u, 4u, pi, 1.05f, true },
+		{ "Horse", "horse", "horse_lod", { "horse_idle", "horse_idle_look", "horse_graze", "horse_alert", "horse_walk", "horse_trot", "horse_gallop", "horse_hit", "horse_death", "horse_idle", "horse_rear" }, 300.0f, 0.36f, 0.75f, 1.25f, 1.7f, 3.8f, 13.0f, 60.0f, 150.0f, 0.0f, structures::item_raw_horse, 16u, 6u, 4u, 8u, pi, 0.7f, true }
+	};
+	constexpr auto wildlife_maximum = 640u;
+	constexpr auto wildlife_bird_range = 420.0f;
+	constexpr auto wildlife_fish_range = 70.0f;
+	constexpr auto wildlife_active_margin = 180.0f;
+	constexpr auto wildlife_startle_time = 9.0f;
+	constexpr auto wildlife_startle_range = 260.0f;
+	constexpr auto wildlife_startle_lift = 22.0f;
+	constexpr auto wildlife_fish_scare = 5.0f;
+	constexpr auto wildlife_ground_clearance = 9.0f;
+	constexpr auto wildlife_surface_clearance = 0.5f;
+	constexpr auto wildlife_bed_clearance = 0.4f;
+	constexpr structures::wildlife_kind_s wildlife_kinds[structures::wildlife_kind_count] =
+	{
+		{ "bird_gull", structures::creature_flap, 0.05f, 0.5f, 2.4f, 8.5f, 22.0f, 18.0f, 8.0f, 4u, 9u, 10u, 0.6f, (1u << structures::biome_beach) | (1u << structures::biome_shore) | (1u << structures::biome_dunes), 90.0f, 0.0f, 0.0f },
+		{ "bird_crow", structures::creature_flap, 0.05f, 0.6f, 3.6f, 11.0f, 14.0f, 26.0f, 6.0f, 5u, 12u, 10u, 0.25f, (1u << structures::biome_farmland) | (1u << structures::biome_meadow) | (1u << structures::biome_woodland) | (1u << structures::biome_heath), 140.0f, 0.0f, 0.0f },
+		{ "fish_mackerel", structures::creature_swim, 0.354f, 0.03f, 3.2f, 1.1f, 3.5f, 2.5f, 1.0f, 14u, 26u, 12u, 0.0f, 1u << structures::biome_sea, 14.0f, 3.5f, 14.0f },
+		{ "fish_bass", structures::creature_swim, 0.603f, 0.045f, 1.6f, 0.7f, 2.5f, 4.5f, 0.8f, 3u, 6u, 10u, 0.0f, 1u << structures::biome_sea, 10.0f, 5.0f, 16.0f }
+	};
+	constexpr structures::herd_kind_s herd_kinds[] =
+	{
+		{ structures::species_stag, structures::species_hind, 3u, 7u, 16u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_heath) | (1u << structures::biome_meadow) | (1u << structures::biome_moor) },
+		{ structures::species_boar, structures::species_boar, 2u, 5u, 9u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_marsh) },
+		{ structures::species_horse, structures::species_horse, 3u, 7u, 6u, (1u << structures::biome_meadow) | (1u << structures::biome_farmland) | (1u << structures::biome_heath) | (1u << structures::biome_moor) | (1u << structures::biome_dunes) }
 	};
 	constexpr std::uint32_t ambience_sounds[structures::ambience_count] = { structures::sound_amb_forest, structures::sound_amb_crickets, structures::sound_amb_drone, structures::sound_amb_wind, structures::sound_amb_ocean };
 
@@ -4129,6 +4774,16 @@ namespace zp
 		{ "hunting_bow", { "hunting_bow_stave", nullptr, nullptr, nullptr, nullptr, nullptr }, { nullptr, nullptr }, {}, { 0.0f, 0.07f, 0.02f }, {}, { -0.129f, 0.68f, 0.0f }, { -0.129f, 0.07f, 0.0f }, {}, { 0.25f, 0.0f, -0.97f }, { 1.0f, 0.0f, 0.0f }, 0.0f, 0.3f, 0.0f, structures::action_draw },
 		{ "scrap_ar", { "scrap_ar_body", nullptr, nullptr, nullptr, nullptr, nullptr }, { "scrap_ar_bolt", nullptr }, { -0.1106f, -0.0435f, 0.0f }, { 0.445f, 0.036f, 0.0f }, { 0.13f, 0.046f, 0.0f }, { 0.0f, 0.036f, 0.0f }, { -0.1f, 0.04f, 0.028f }, { 1.0f, 0.0f, 0.0f }, { 0.6f, 0.1f, -0.8f }, { 0.1f, 1.0f, 0.15f }, 0.31f, 0.045f, 0.0f, structures::action_slide, "scrap_ar_mag", { -0.0077f, -0.06f, 0.0f } }
 	};
+	constexpr structures::hold_pose_s hold_poses[structures::hold_count] =
+	{
+		{},
+		{ { -0.12f, 1.3f, -0.26f }, { 0.0f, -0.03f, 0.07f }, { 0.0f, -0.03f, 0.06f }, -0.2f, 0.5f, false },
+		{ { -0.06f, 1.22f, -0.42f }, { 0.0f, -0.03f, 0.06f }, { 0.06f, -0.06f, 0.06f }, -0.4f, 0.0f, false },
+		{ { -0.25f, 0.95f, -0.12f }, { 0.0f, 0.06f, 0.03f }, {}, 0.5f, 0.0f, false },
+		{ { 0.25f, 0.97f, -0.14f }, { 0.0f, 0.06f, 0.03f }, {}, -0.9f, 0.0f, true }
+	};
+	constexpr structures::vec3_s hold_right_pole{ -1.0f, -0.5f, 0.35f };
+	constexpr structures::vec3_s hold_left_pole{ 1.0f, -0.5f, 0.35f };
 
 	constexpr structures::viewmodel_key_s reload_poses[structures::weapon_count] =
 	{
@@ -4188,24 +4843,84 @@ namespace zp
 	};
 	constexpr structures::train_vehicle_s train_vehicles[structures::train_vehicle_count] =
 	{
-		{ "train_locomotive", 8.0f, 3.2f, 3.5f, 2.5f, 1.25f, structures::material_metal_green },
-		{ "train_wagon_flat", 6.5f, 3.6f, 1.35f, 2.4f, 1.2f, structures::material_metal_rust },
-		{ "train_wagon_open", 6.5f, 3.6f, 2.3f, 2.4f, 1.2f, structures::material_metal_rust },
-		{ "train_wagon_box", 6.5f, 3.6f, 3.4f, 2.5f, 1.2f, structures::material_container_red },
-		{ "train_coach", 12.0f, 8.0f, 3.5f, 2.6f, 1.2f, structures::material_container_blue }
+		{ "train_locomotive", 8.0f, 2.8f, 3.7f, 2.6f, 1.3f, structures::material_metal_green, 3u, { 1.4f, 0.0f, -1.4f, 0.0f } },
+		{ "train_wagon_flat", 7.0f, 3.1f, 1.71f, 2.5f, 1.27f, structures::material_metal_rust, 2u, { 1.55f, -1.55f, 0.0f, 0.0f } },
+		{ "train_wagon_open", 7.0f, 3.1f, 2.52f, 2.5f, 1.27f, structures::material_metal_rust, 2u, { 1.55f, -1.55f, 0.0f, 0.0f } },
+		{ "train_wagon_box", 7.0f, 3.1f, 3.63f, 2.5f, 1.27f, structures::material_container_red, 2u, { 1.55f, -1.55f, 0.0f, 0.0f } },
+		{ "train_coach", 12.0f, 6.0f, 3.64f, 2.6f, 1.27f, structures::material_container_blue, 4u, { 4.0f, 2.0f, -2.0f, -4.0f } }
 	};
 	constexpr std::uint32_t train_consist[] = { structures::train_vehicle_locomotive, structures::train_vehicle_flat, structures::train_vehicle_open, structures::train_vehicle_box, structures::train_vehicle_coach };
 	constexpr std::uint32_t train_stops[] = { structures::landmark_halt, structures::landmark_harbour, structures::landmark_ouen, structures::landmark_battery, structures::landmark_portelet };
+	constexpr structures::station_kit_s station_kits[] = { { structures::landmark_ouen, true, false, true }, { structures::landmark_harbour, true, true, false }, { structures::landmark_halt, false, false, false }, { structures::landmark_battery, false, false, false }, { structures::landmark_portelet, false, true, false } };
+	constexpr auto station_crossing_reach = 3.0f;
+	constexpr auto station_crossing_search = 60.0f;
+	constexpr auto station_crossing_clear = 16.0f;
+	constexpr auto station_yard_ahead = 16.0f;
+	constexpr auto station_yard_behind = 62.0f;
+	constexpr auto station_yard_half = 12.0f;
+	constexpr auto station_yard_blend = 24.0f;
+	constexpr auto station_clearing = 15.0f;
+	constexpr auto station_clearing_step = 10.0f;
+	constexpr auto station_limit = 64u;
+	constexpr auto platform_offset = 3.5f;
+	constexpr auto platform_module = 12.0f;
+	constexpr auto platform_modules = 4u;
+	constexpr auto platform_ramp = 2.5f;
+	constexpr auto platform_lead = 2.0f;
+	constexpr auto station_offset = 8.0f;
+	constexpr auto station_floor = 1.7f;
+	constexpr auto signal_box_offset = 4.2f;
+	constexpr auto signal_box_back = 20.0f;
+	constexpr auto water_tower_offset = 3.6f;
+	constexpr auto water_tower_back = 10.0f;
+	constexpr auto signal_offset = 2.4f;
+	constexpr auto signal_back = 110.0f;
+	constexpr auto crossing_gate_model = "rail_crossing_gate";
+	constexpr auto crossing_post_model = "rail_crossing_post";
+	constexpr auto crossing_sign_model = "rail_crossing_sign";
+	constexpr auto crossing_gate_clear = 3.3f;
+	constexpr auto crossing_gate_margin = 0.45f;
+	constexpr auto crossing_pivot_offset = 0.205f;
+	constexpr auto crossing_slant_floor = 0.2f;
+	constexpr auto crossing_sign_back = 8.0f;
+	constexpr auto crossing_sign_margin = 0.9f;
+	constexpr auto crossing_post_turn = 0.0f;
+	constexpr auto crossing_sign_turn = 0.0f;
+	constexpr auto crossing_close_ahead = 260.0f;
+	constexpr auto crossing_open_behind = 15.0f;
+	constexpr auto crossing_swing = 0.7f;
+	constexpr auto crossing_stretch_low = 0.6f;
+	constexpr auto crossing_stretch_high = 1.8f;
+	constexpr auto crossing_view_distance = 260.0f;
+	constexpr auto crossing_detail_distance = 60.0f;
+	constexpr auto crossing_shadow_distance = 90.0f;
+	constexpr auto crossing_lamp_radius = 8.0f;
+	constexpr auto crossing_blink = 1.1f;
+	constexpr structures::vec3_s crossing_lamp_color{ 4.0f, 0.25f, 0.12f };
 	constexpr auto train_acceleration = 0.5f;
 	constexpr auto train_cruise = 13.0f;
 	constexpr auto train_dwell = 30.0f;
 	constexpr auto train_coupling = 0.4f;
 	constexpr auto train_wheel_radius = 0.48f;
+	constexpr auto train_wheelset_model = "train_wheelset";
 	constexpr auto train_view_distance = 1500.0f;
 	constexpr auto train_detail_distance = 170.0f;
 	constexpr auto train_shadow_distance = 230.0f;
+	constexpr auto train_wheel_distance = 400.0f;
+	constexpr auto train_light_distance = 700.0f;
+	constexpr auto train_headlight_radius = 80.0f;
+	constexpr auto train_headlight_cosine = 0.93f;
+	constexpr auto train_headlight_tilt = 0.06f;
+	constexpr structures::vec3_s train_headlight_color{ 120.0f, 108.0f, 88.0f };
+	constexpr auto train_lamp_radius = 6.0f;
+	constexpr structures::vec3_s train_lamp_color{ 1.8f, 1.3f, 0.7f };
+	constexpr auto train_tail_radius = 9.0f;
+	constexpr auto train_tail_height = 1.1f;
+	constexpr structures::vec3_s train_tail_color{ 2.5f, 0.12f, 0.08f };
+	constexpr auto train_lights_day = 0.1f;
+	constexpr auto train_dusk_start = 0.25f;
+	constexpr auto train_dusk_end = -0.05f;
 	constexpr auto train_joint_spacing = 12.0f;
-	constexpr auto train_axle_spacing = 1.8f;
 	constexpr auto train_clack_range = 45.0f;
 	constexpr auto train_engine_reference = 16.0f;
 	constexpr auto train_roll_reference = 9.0f;
@@ -4213,6 +4928,8 @@ namespace zp
 	constexpr auto train_brake_reference = 12.0f;
 	constexpr auto train_horn_lead = 2.5f;
 	constexpr auto train_horn_approach = 24.0f;
+	constexpr auto train_horn_crossing = 250.0f;
+	constexpr auto train_horn_moving = 1.0f;
 	constexpr auto train_brake_speed = 5.5f;
 	constexpr auto train_hiss_speed = 0.15f;
 	constexpr auto train_carry_limit = 3.0f;
@@ -4385,7 +5102,8 @@ namespace zp
 		{ L"Kalam", FW_NORMAL },
 		{ L"Kalam", FW_BOLD },
 		{ L"IM FELL English", FW_NORMAL },
-		{ L"IM FELL English SC", FW_NORMAL }
+		{ L"IM FELL English SC", FW_NORMAL },
+		{ L"Bahnschrift Bold Condensed", FW_BOLD }
 	};
 
 	namespace functions
@@ -4412,6 +5130,31 @@ namespace zp
 			return value;
 		}
 
+		constexpr structures::setting_row_s header_row(std::uint32_t tab, const char* label)
+		{
+			return { tab, structures::row_header, "", label, "", 0u, nullptr, nullptr, nullptr, nullptr, 0u, 0.0f, 0.0f, 0.0f, 1.0f, "", false };
+		}
+
+		constexpr structures::setting_row_s choice_row(std::uint32_t tab, const char* key, const char* label, const char* description, std::uint32_t impact, std::uint32_t structures::user_settings_s::* member, const char* const* names, std::uint32_t count, bool graphics)
+		{
+			return { tab, structures::row_choice, key, label, description, impact, member, nullptr, nullptr, names, count, 0.0f, 0.0f, 0.0f, 1.0f, "", graphics };
+		}
+
+		constexpr structures::setting_row_s slider_row(std::uint32_t tab, const char* key, const char* label, const char* description, std::uint32_t impact, std::float_t structures::user_settings_s::* member, std::float_t low, std::float_t high, std::float_t step, std::float_t display, const char* format)
+		{
+			return { tab, structures::row_slider, key, label, description, impact, nullptr, member, nullptr, nullptr, 0u, low, high, step, display, format, false };
+		}
+
+		constexpr structures::setting_row_s toggle_row(std::uint32_t tab, const char* key, const char* label, const char* description, std::uint32_t impact, bool structures::user_settings_s::* member, bool graphics)
+		{
+			return { tab, structures::row_toggle, key, label, description, impact, nullptr, nullptr, member, nullptr, 0u, 0.0f, 0.0f, 0.0f, 1.0f, "", graphics };
+		}
+
+		constexpr structures::setting_row_s preset_row(std::uint32_t tab, const char* label, const char* description)
+		{
+			return { tab, structures::row_preset, "quality", label, description, 3u, nullptr, nullptr, nullptr, nullptr, 0u, 0.0f, 0.0f, 0.0f, 1.0f, "", false };
+		}
+
 		template <typename type_t> void release(type_t*& object)
 		{
 			if (object)
@@ -4428,18 +5171,6 @@ namespace zp
 		bool write_file(const char* path, const void* data, std::size_t size);
 	}
 
-	constexpr auto paper_size = 512u;
-	constexpr auto ui_ink = functions::rgba(36u, 27u, 20u, 238u);
-	constexpr auto ui_faded = functions::rgba(36u, 27u, 20u, 150u);
-	constexpr auto ui_red = functions::rgba(138u, 30u, 18u, 240u);
-	constexpr auto ui_blue = functions::rgba(34u, 68u, 100u, 235u);
-	constexpr auto ui_ochre = functions::rgba(146u, 98u, 26u, 238u);
-	constexpr auto ui_cream = functions::rgba(238u, 228u, 206u, 240u);
-	constexpr auto ui_paper = functions::rgba(255u, 255u, 255u, 244u);
-	constexpr const char* ui_vital_labels[4] = { "Health", "Water", "Food", "Breath" };
-
-	constexpr auto page_width = 1280u;
-	constexpr auto page_height = 900u;
 	constexpr auto settings_file_name = "settings.ini";
 	constexpr auto save_file_name = "island.sav";
 	constexpr std::uint32_t save_magic = 0x3153505Au;
@@ -4458,8 +5189,150 @@ namespace zp
 	constexpr auto loading_minimum = 1.8f;
 	constexpr auto loading_fade = 0.5f;
 	constexpr auto loading_footprints = 16u;
-	constexpr auto ui_cream_bright = functions::rgba(250u, 243u, 226u, 255u);
-	constexpr auto ui_shade = functions::rgba(10u, 8u, 6u, 215u);
+
+	constexpr auto kit_text = functions::rgba(236u, 233u, 226u, 255u);
+	constexpr auto kit_dim = functions::rgba(170u, 167u, 160u, 255u);
+	constexpr auto kit_faint = functions::rgba(112u, 110u, 106u, 255u);
+	constexpr auto kit_accent = functions::rgba(226u, 170u, 80u, 255u);
+	constexpr auto kit_danger = functions::rgba(224u, 84u, 64u, 255u);
+	constexpr auto kit_cool = functions::rgba(124u, 178u, 214u, 255u);
+	constexpr auto kit_good = functions::rgba(132u, 190u, 120u, 255u);
+	constexpr auto kit_panel = functions::rgba(9u, 10u, 12u, 218u);
+	constexpr auto kit_raise = functions::rgba(255u, 255u, 255u, 14u);
+	constexpr auto kit_line = functions::rgba(255u, 255u, 255u, 30u);
+	constexpr auto kit_black = functions::rgba(0u, 0u, 0u, 255u);
+	constexpr auto kit_caps = 0.14f;
+	constexpr auto kit_wide = 0.24f;
+	constexpr auto kit_title_spacing = 0.035f;
+	constexpr auto kit_row = 50.0f;
+	constexpr auto kit_slots = 512u;
+	constexpr auto kit_hover_volume = 0.12f;
+	constexpr auto kit_click_volume = 0.5f;
+	constexpr auto kit_fade_speed = 12.0f;
+	constexpr auto kit_dialog_seconds = 15.0f;
+	constexpr auto kit_fps_window = 0.5f;
+	constexpr auto reduced_flash_scale = 0.3f;
+	constexpr auto motion_blur_shutter = 0.5f;
+
+	constexpr auto hud_belt_hold = 2.4f;
+	constexpr auto hud_vital_hold = 4.0f;
+	constexpr auto hud_vital_low = 0.5f;
+	constexpr auto hud_vital_step = 0.5f;
+	constexpr auto hud_fade_speed = 7.0f;
+	constexpr auto hud_belt_slot = 62.0f;
+	constexpr auto hud_grid_slot = 84.0f;
+	constexpr auto hud_slot_gap = 6.0f;
+	constexpr auto hud_grid_columns = 6u;
+	constexpr auto hud_box_columns = 4u;
+	constexpr auto hud_recipe_row = 34.0f;
+	constexpr auto hud_detail_height = 150.0f;
+	constexpr auto hud_meter_width = 190.0f;
+	constexpr auto hud_health = functions::rgba(230u, 226u, 218u, 255u);
+	constexpr auto hud_breath = functions::rgba(170u, 214u, 236u, 255u);
+	constexpr auto hud_blood = functions::rgba(206u, 58u, 44u, 255u);
+	constexpr const char* hud_vital_labels[4] = { "Health", "Water", "Food", "Breath" };
+	constexpr const char* keypad_labels[12] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "Clear", "0", "OK" };
+
+	constexpr auto preset_custom = static_cast<std::uint32_t>(structures::quality_count);
+	constexpr const char* option_off_on[] = { "Off", "On" };
+	constexpr const char* option_levels[] = { "Off", "Low", "Medium", "High", "Ultra" };
+	constexpr const char* option_occlusion[] = { "Off", "Low", "Medium", "High" };
+	constexpr std::uint32_t occlusion_levels[] = { 0u, 2u, 3u, 4u };
+	constexpr const char* option_presets[] = { "Low", "Medium", "High", "Ultra", "Custom" };
+	constexpr const char* option_display[] = { "Windowed", "Fullscreen" };
+	constexpr const char* option_window_sizes[] = { "1280 x 720", "1600 x 900", "1920 x 1080", "2560 x 1440", "3840 x 2160" };
+	constexpr std::uint32_t window_sizes[][2] = { { 1280u, 720u }, { 1600u, 900u }, { 1920u, 1080u }, { 2560u, 1440u }, { 3840u, 2160u } };
+	constexpr const char* option_frame_limits[] = { "Unlimited", "30 fps", "60 fps", "90 fps", "120 fps", "144 fps", "165 fps", "240 fps" };
+	constexpr std::float_t frame_limits[] = { 0.0f, 30.0f, 60.0f, 90.0f, 120.0f, 144.0f, 165.0f, 240.0f };
+	constexpr const char* option_anti_aliasing[] = { "Off", "Temporal" };
+	constexpr const char* option_filtering[] = { "2x", "4x", "8x", "16x" };
+	constexpr const char* option_distances[] = { "Near", "Medium", "Far", "Very far" };
+	constexpr std::float_t vegetation_scales[] = { 0.55f, 0.75f, 1.0f, 1.3f };
+	constexpr const char* option_density[] = { "Low", "Medium", "High", "Ultra" };
+	constexpr std::float_t grass_scales[] = { 0.6f, 0.8f, 1.0f, 1.2f };
+	constexpr const char* option_hold[] = { "Hold", "Toggle" };
+	constexpr const char* option_bob[] = { "Off", "Reduced", "Full" };
+	constexpr std::float_t bob_scales[] = { 0.0f, 0.5f, 1.0f };
+	constexpr const char* option_crosshair[] = { "Off", "Small dot", "Always on" };
+	constexpr auto calm_camera_scale = 0.3f;
+	constexpr const char* option_vitals[] = { "Always", "When needed" };
+	constexpr const char* option_hotbar[] = { "When switching", "Always", "Hidden" };
+	constexpr const char* option_colour[] = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
+	constexpr const char* settings_tab_names[structures::tab_count] = { "Display", "Graphics", "Audio", "Controls", "Key bindings", "Gameplay", "Interface", "Accessibility" };
+	constexpr const char* impact_names[] = { "None", "Low", "Medium", "High" };
+	constexpr structures::setting_row_s setting_rows[] =
+	{
+		functions::header_row(structures::tab_display, "Screen"),
+		functions::choice_row(structures::tab_display, "display", "Display mode", "Fullscreen fills your monitor without a border and switches instantly. Windowed runs the game in a window you can move and resize.", 0u, &structures::user_settings_s::display, option_display, static_cast<std::uint32_t>(std::size(option_display)), false),
+		functions::choice_row(structures::tab_display, "window_size", "Window size", "The size of the game window when it runs windowed. In fullscreen the game always uses your monitor's resolution.", 0u, &structures::user_settings_s::window_size, option_window_sizes, static_cast<std::uint32_t>(std::size(option_window_sizes)), false),
+		functions::toggle_row(structures::tab_display, "vsync", "Vertical sync", "Locks the frame rate to your monitor's refresh rate so the image never tears. Adds a little input delay.", 0u, &structures::user_settings_s::vsync, false),
+		functions::choice_row(structures::tab_display, "frame_limit", "Frame rate limit", "Caps how many frames the game draws each second. A limit keeps your graphics card cooler and quieter.", 0u, &structures::user_settings_s::frame_limit, option_frame_limits, static_cast<std::uint32_t>(std::size(option_frame_limits)), false),
+		functions::header_row(structures::tab_display, "Image"),
+		functions::slider_row(structures::tab_display, "render_scale", "Render scale", "Draws the world at a lower resolution and scales it up to your screen. Lower values run much faster but look softer.", 3u, &structures::user_settings_s::render_scale, 0.5f, 1.0f, 0.05f, 100.0f, "%.0f%%"),
+		functions::slider_row(structures::tab_display, "field_of_view", "Field of view", "How wide you can see. A wider view shows more around you but makes distant things look smaller.", 1u, &structures::user_settings_s::field_of_view, 70.0f, 110.0f, 1.0f, 1.0f, "%.0f\xB0"),
+		functions::slider_row(structures::tab_display, "brightness", "Brightness", "Raise it if nights are too dark on your screen, lower it if black looks grey.", 0u, &structures::user_settings_s::brightness, 0.7f, 1.3f, 0.01f, 100.0f, "%.0f%%"),
+		functions::toggle_row(structures::tab_display, "show_fps", "Show frame rate", "Shows frames per second and the time each frame takes in the top right corner.", 0u, &structures::user_settings_s::show_fps, false),
+		functions::preset_row(structures::tab_graphics, "Quality preset", "Sets every graphics option below at once. Changing any single option switches the preset to Custom."),
+		functions::header_row(structures::tab_graphics, "Detail"),
+		functions::choice_row(structures::tab_graphics, "shadows", "Shadows", "Quality and reach of the sun's shadows. Off removes shadows completely and is much faster.", 3u, &structures::user_settings_s::shadows, option_levels, static_cast<std::uint32_t>(std::size(option_levels)), true),
+		functions::choice_row(structures::tab_graphics, "ambient_occlusion", "Ambient occlusion", "Darkens corners, creases and the ground under objects so everything sits in the world.", 2u, &structures::user_settings_s::ambient_occlusion, option_occlusion, static_cast<std::uint32_t>(std::size(option_occlusion)), true),
+		functions::choice_row(structures::tab_graphics, "reflections", "Reflections", "Reflections of the shore, the sky and the sun on the sea.", 2u, &structures::user_settings_s::reflections, option_off_on, 2u, true),
+		functions::choice_row(structures::tab_graphics, "light_shafts", "Light shafts", "Beams of sunlight breaking through trees, haze and fog.", 1u, &structures::user_settings_s::light_shafts, option_off_on, 2u, true),
+		functions::choice_row(structures::tab_graphics, "texture_filter", "Texture filtering", "Keeps the ground, roads and walls sharp when you look along them.", 1u, &structures::user_settings_s::texture_filter, option_filtering, static_cast<std::uint32_t>(std::size(option_filtering)), true),
+		functions::choice_row(structures::tab_graphics, "vegetation", "Vegetation distance", "How far away trees and bushes keep their full detail before they swap to simpler versions.", 3u, &structures::user_settings_s::vegetation, option_distances, static_cast<std::uint32_t>(std::size(option_distances)), true),
+		functions::choice_row(structures::tab_graphics, "grass", "Grass density", "How thick the grass grows and how far out it is drawn around you.", 3u, &structures::user_settings_s::grass, option_density, static_cast<std::uint32_t>(std::size(option_density)), true),
+		functions::choice_row(structures::tab_graphics, "marks", "Bullet holes and footprints", "Marks left by bullets, blood and footsteps. Turning them off only hides them on your screen.", 1u, &structures::user_settings_s::marks, option_off_on, 2u, true),
+		functions::header_row(structures::tab_graphics, "Post processing"),
+		functions::choice_row(structures::tab_graphics, "anti_aliasing", "Anti-aliasing", "Smooths jagged edges. Temporal gives the cleanest image but can soften very fast motion slightly.", 1u, &structures::user_settings_s::anti_aliasing, option_anti_aliasing, static_cast<std::uint32_t>(std::size(option_anti_aliasing)), true),
+		functions::slider_row(structures::tab_graphics, "sharpening", "Sharpening", "Brings back fine detail softened by anti-aliasing or a lower render scale.", 0u, &structures::user_settings_s::sharpening, 0.0f, 1.0f, 0.05f, 100.0f, "%.0f%%"),
+		functions::toggle_row(structures::tab_graphics, "bloom", "Bloom", "The sun and bright lights glow softly into their surroundings.", 1u, &structures::user_settings_s::bloom, false),
+		functions::toggle_row(structures::tab_graphics, "motion_blur", "Motion blur", "Blurs the image while you turn quickly or move fast, like a camera would.", 1u, &structures::user_settings_s::motion_blur, false),
+		functions::toggle_row(structures::tab_graphics, "film_grain", "Film grain", "A fine moving grain over the image, like a film camera.", 0u, &structures::user_settings_s::film_grain, false),
+		functions::toggle_row(structures::tab_graphics, "vignette", "Vignette", "Gently darkens the corners of the screen.", 0u, &structures::user_settings_s::vignette, false),
+		functions::toggle_row(structures::tab_graphics, "chromatic_aberration", "Chromatic aberration", "Slight colour fringes towards the edges of the screen, like a real lens.", 0u, &structures::user_settings_s::chromatic_aberration, false),
+		functions::header_row(structures::tab_audio, "Volume"),
+		functions::slider_row(structures::tab_audio, "volume", "Master volume", "The overall loudness of the game.", 0u, &structures::user_settings_s::volume, 0.0f, 1.0f, 0.01f, 100.0f, "%.0f%%"),
+		functions::slider_row(structures::tab_audio, "effects_volume", "Effects", "Gunshots, footsteps, tools, the train and everything else that happens in the world.", 0u, &structures::user_settings_s::effects_volume, 0.0f, 1.0f, 0.01f, 100.0f, "%.0f%%"),
+		functions::slider_row(structures::tab_audio, "ambience_volume", "Ambience", "Wind, sea, birds, insects and rain.", 0u, &structures::user_settings_s::ambience_volume, 0.0f, 1.0f, 0.01f, 100.0f, "%.0f%%"),
+		functions::slider_row(structures::tab_audio, "interface_volume", "Interface", "Menu clicks and inventory sounds.", 0u, &structures::user_settings_s::interface_volume, 0.0f, 1.0f, 0.01f, 100.0f, "%.0f%%"),
+		functions::header_row(structures::tab_audio, "Behaviour"),
+		functions::toggle_row(structures::tab_audio, "mute_unfocused", "Mute in the background", "Silences the game while another window is in front of it.", 0u, &structures::user_settings_s::mute_unfocused, false),
+		functions::toggle_row(structures::tab_audio, "ear_ringing", "Ear ringing", "Gunfire right next to you leaves your ears ringing for a few seconds and dulls everything else, as it would without ear protection. Worst indoors.", 0u, &structures::user_settings_s::ear_ringing, false),
+		functions::header_row(structures::tab_controls, "Mouse"),
+		functions::slider_row(structures::tab_controls, "sensitivity", "Mouse sensitivity", "How far the view turns for each movement of your mouse.", 0u, &structures::user_settings_s::sensitivity, 0.3f, 3.0f, 0.05f, 1.0f, "%.2fx"),
+		functions::slider_row(structures::tab_controls, "aim_sensitivity", "Aiming sensitivity", "Scales your sensitivity while aiming down the sights or through a scope.", 0u, &structures::user_settings_s::aim_sensitivity, 0.3f, 1.5f, 0.05f, 1.0f, "%.2fx"),
+		functions::toggle_row(structures::tab_controls, "invert", "Invert vertical look", "Moving the mouse forward looks down instead of up.", 0u, &structures::user_settings_s::invert, false),
+		functions::toggle_row(structures::tab_controls, "reverse_wheel", "Reverse belt scrolling", "Scrolling the wheel down picks the previous belt slot instead of the next one.", 0u, &structures::user_settings_s::reverse_wheel, false),
+		functions::header_row(structures::tab_controls, "Actions"),
+		functions::choice_row(structures::tab_controls, "crouch_mode", "Crouch", "Hold the key to stay crouched, or press it once to crouch and again to stand.", 0u, &structures::user_settings_s::crouch_mode, option_hold, 2u, false),
+		functions::choice_row(structures::tab_controls, "aim_mode", "Aim down sights", "Hold the right mouse button to aim, or click once to raise the sights and again to lower them.", 0u, &structures::user_settings_s::aim_mode, option_hold, 2u, false),
+		functions::choice_row(structures::tab_controls, "sprint_mode", "Sprint", "Hold the key to sprint, or press it once and keep running until you stop.", 0u, &structures::user_settings_s::sprint_mode, option_hold, 2u, false),
+		functions::header_row(structures::tab_gameplay, "Camera"),
+		functions::choice_row(structures::tab_gameplay, "head_bob", "Head bob", "How much the view moves with your footsteps. Turn it down if movement makes you feel unwell.", 0u, &structures::user_settings_s::head_bob, option_bob, static_cast<std::uint32_t>(std::size(option_bob)), false),
+		functions::toggle_row(structures::tab_gameplay, "strafe_tilt", "Lean when strafing", "Tilts the view a little as you step sideways.", 0u, &structures::user_settings_s::strafe_tilt, false),
+		functions::header_row(structures::tab_gameplay, "Help"),
+		functions::toggle_row(structures::tab_gameplay, "hints", "Survival goals", "Shows your next survival goal in the corner of the screen when you play on your own.", 0u, &structures::user_settings_s::hints, false),
+		functions::toggle_row(structures::tab_gameplay, "prompts", "Interaction prompts", "Shows what you can do with the thing in front of you, like opening a door or picking up a stone. Turn it off for an emptier screen.", 0u, &structures::user_settings_s::prompts, false),
+		functions::header_row(structures::tab_gameplay, "Content"),
+		functions::toggle_row(structures::tab_gameplay, "censor", "Censor nudity", "Survivors start with nothing, not even clothes. Turn this on and everyone you see, you included, wears underwear instead.", 0u, &structures::user_settings_s::censor, false),
+		functions::header_row(structures::tab_interface, "Heads-up display"),
+		functions::choice_row(structures::tab_interface, "crosshair", "Crosshair", "A small dot in the middle of the screen. It hides while you hold a gun or a bow, so you aim down the sights, unless you set it to always on.", 0u, &structures::user_settings_s::crosshair, option_crosshair, static_cast<std::uint32_t>(std::size(option_crosshair)), false),
+		functions::toggle_row(structures::tab_interface, "hit_markers", "Hit markers", "A brief mark at the centre of the screen when your shot or swing lands.", 0u, &structures::user_settings_s::hit_markers, false),
+		functions::toggle_row(structures::tab_interface, "damage_direction", "Damage direction", "A red arc around the middle of the screen points to where a hit came from.", 0u, &structures::user_settings_s::damage_direction, false),
+		functions::toggle_row(structures::tab_interface, "compass", "Compass", "The bearing strip at the top of the screen, with your map pins on it.", 0u, &structures::user_settings_s::compass, false),
+		functions::choice_row(structures::tab_interface, "vitals", "Health, water and food", "Always show your condition, or only while something is low or changing.", 0u, &structures::user_settings_s::vitals, option_vitals, static_cast<std::uint32_t>(std::size(option_vitals)), false),
+		functions::choice_row(structures::tab_interface, "hotbar", "Belt", "Shows your belt for a moment after you change what you are holding, always, or never. Nothing ever tells you how many rounds are loaded.", 0u, &structures::user_settings_s::hotbar, option_hotbar, static_cast<std::uint32_t>(std::size(option_hotbar)), false),
+		functions::toggle_row(structures::tab_interface, "name_tags", "Player names", "The names of other players you look at up close.", 0u, &structures::user_settings_s::name_tags, false),
+		functions::toggle_row(structures::tab_interface, "chat", "Chat", "Shows the text chat in the lower left corner.", 0u, &structures::user_settings_s::chat, false),
+		functions::toggle_row(structures::tab_interface, "pickup_messages", "Pickup messages", "Lists what you pick up and gather in the lower right corner.", 0u, &structures::user_settings_s::pickup_messages, false),
+		functions::header_row(structures::tab_interface, "Layout"),
+		functions::slider_row(structures::tab_interface, "interface_scale", "Interface size", "Makes every menu and the heads-up display bigger or smaller.", 0u, &structures::user_settings_s::interface_scale, 0.8f, 1.25f, 0.05f, 100.0f, "%.0f%%"),
+		functions::header_row(structures::tab_accessibility, "Vision"),
+		functions::choice_row(structures::tab_accessibility, "colour_filter", "Colour blind filter", "Shifts the colours of the whole image so they are easier to tell apart with the most common kinds of colour blindness.", 0u, &structures::user_settings_s::colour_filter, option_colour, static_cast<std::uint32_t>(std::size(option_colour)), false),
+		functions::toggle_row(structures::tab_accessibility, "reduce_flashing", "Reduce flashing", "Softens lightning flashes and other sudden bright light.", 0u, &structures::user_settings_s::reduce_flashing, false),
+		functions::header_row(structures::tab_accessibility, "Comfort"),
+		functions::toggle_row(structures::tab_accessibility, "calm_camera", "Reduce camera motion", "Softens the dip when you land and the rise and fall of the waves while you swim.", 0u, &structures::user_settings_s::calm_camera, false)
+	};
 
 	constexpr const char* loading_stage_names[] = { "Gathering driftwood", "Weaving the rags", "Raising the sky", "Listening to the wind", "Shaping the island", "Inking the map", "Waiting for dawn" };
 	constexpr const char* loading_tips[] =
@@ -4477,25 +5350,41 @@ namespace zp
 		"Stone first. Then fire. Then everything else."
 	};
 
-	constexpr structures::menu_entry_s title_entries[] = { { "Play", structures::menu_play }, { "Field notes", structures::menu_notes }, { "Settings", structures::menu_settings }, { "Leave the island", structures::menu_quit } };
-	constexpr structures::menu_entry_s pause_entries[] = { { "Resume", structures::menu_resume }, { "Field notes", structures::menu_notes }, { "Settings", structures::menu_settings }, { "Leave the server", structures::menu_title }, { "Leave the island", structures::menu_quit } };
+	constexpr structures::menu_entry_s title_entries[] = { { "Play", structures::menu_play }, { "Settings", structures::menu_settings }, { "Field guide", structures::menu_notes }, { "Credits", structures::menu_credits }, { "Quit", structures::menu_quit } };
+	constexpr structures::menu_entry_s pause_entries[] = { { "Resume", structures::menu_resume }, { "Settings", structures::menu_settings }, { "Field guide", structures::menu_notes }, { "Leave server", structures::menu_title }, { "Quit to desktop", structures::menu_quit } };
+	constexpr const char* title_details[] = { "Find an island and join it", "Display, graphics, sound and controls", "How to move and how to stay alive", "Who made what", "Back to the desktop" };
+	constexpr const char* pause_details[] = { "Back to the island", "Display, graphics, sound and controls", "How to move and how to stay alive", "Return to the server list", "Close the game" };
+	constexpr const char* credit_lines[][2] =
+	{
+		{ "Made by", "tokenizestring" },
+		{ "Engine", "Written from scratch in C++20 on Direct3D 11" },
+		{ "Ground and surface textures", "Poly Haven and ambientCG (CC0), plus our own generated sets" },
+		{ "Characters", "Microsoft Rocketbox avatar library (MIT)" },
+		{ "Sounds", "Kenney and OpenGameArt contributors (CC0), plus our own synthesised sounds" },
+		{ "Buildings, trees, train, animals", "Modelled in Blender for this game" },
+		{ "Fonts", "Kalam and IM Fell (SIL Open Font License), Bahnschrift" },
+		{ "Status", "Early development. Expect bugs." }
+	};
 	constexpr const char* quality_names[] = { "Low", "Medium", "High", "Ultra" };
 
-	constexpr const char* notes_controls[][2] =
+	constexpr std::int32_t guide_movement = -2;
+	constexpr structures::guide_key_s guide_keys[] =
 	{
-		{ "W A S D", "walk" },
-		{ "Shift", "run" },
-		{ "Space", "jump" },
-		{ "Ctrl or C", "crouch" },
-		{ "Left mouse", "swing, fire, plant, eat" },
-		{ "Right mouse", "aim down the sights" },
-		{ "Hold left mouse", "draw the bow" },
-		{ "R", "reload, turn a piece" },
-		{ "E", "pick up, open, drink, harvest" },
-		{ "1 to 6, wheel", "choose from the belt" },
-		{ "Tab", "open the journal" },
-		{ "M", "unfold the map" },
-		{ "Esc", "pause" }
+		{ guide_movement, "", "Walk" },
+		{ structures::bind_sprint, "", "Sprint" },
+		{ structures::bind_jump, "", "Jump" },
+		{ structures::bind_crouch, "", "Crouch" },
+		{ -1, "Left mouse", "Swing, fire, plant, eat" },
+		{ -1, "Right mouse", "Aim down the sights" },
+		{ -1, "Hold left mouse", "Draw the bow" },
+		{ structures::bind_reload, "", "Reload" },
+		{ structures::bind_rotate, "", "Turn a building piece" },
+		{ structures::bind_use, "", "Pick up, open, drink, harvest" },
+		{ -1, "1 to 6, wheel", "Choose from the belt" },
+		{ structures::bind_inventory, "", "Inventory and crafting" },
+		{ structures::bind_map, "", "Unfold the map" },
+		{ structures::bind_chat, "", "Chat" },
+		{ -1, "Esc", "Pause" }
 	};
 
 	constexpr const char* notes_survival[] =
@@ -4517,7 +5406,7 @@ namespace zp
 		"Lay down a sleeping bag before you die, not after."
 	};
 
-	constexpr structures::user_settings_s default_user_settings{ structures::quality_high, 1.0f, 95.0f, 1.0f, 0.85f, 1.0f, 1.0f, 1.0f, true, true, false, false, { 'W', 'S', 'A', 'D', VK_SPACE, VK_CONTROL, VK_SHIFT, VK_MENU, 'E', 'R', 'R', VK_TAB, 'M', 'T', 'F', 'G', 'V' } };
+	constexpr structures::user_settings_s default_user_settings{ structures::quality_high, 1.0f, 95.0f, 1.0f, 0.85f, 1.0f, 1.0f, 1.0f, true, true, false, false, { 'W', 'S', 'A', 'D', VK_SPACE, VK_CONTROL, VK_SHIFT, VK_MENU, 'E', 'R', 'R', VK_TAB, 'M', 'T', 'F', 'G', 'V' }, 1u, 1u, 0u, 1u, 3u, 2u, 1u, 1u, 3u, 2u, 2u, 1u, true, false, true, 0.35f, false, 0.7f, false, 0.8f, 0u, 0u, 0u, 2u, 1u, true, true, true, 1u, 0u, true, true, 1.0f, 0u, false, false, true, true, true, true, false, true, false };
 	constexpr const char* bind_names[structures::bind_count] = { "Move forward", "Move back", "Move left", "Move right", "Jump", "Crouch", "Sprint", "Walk", "Use", "Reload", "Rotate or next piece", "Inventory", "Map", "Chat", "Melee", "Throw", "Visor" };
 	constexpr const char* compass_points[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 	constexpr const char* marker_prefixes[4] = { "col_", "ramp_", "loot_", "light_" };
@@ -4531,19 +5420,62 @@ namespace zp
 	constexpr structures::vec3_s biome_moods[structures::biome_count] = { { 0.0f, 0.0f, 0.1f }, { 0.25f, 0.3f, 0.12f }, { 0.15f, 0.2f, 0.18f }, { 0.35f, 0.5f, 0.16f }, { 0.8f, 1.3f, 0.0f }, { 0.85f, 1.0f, 0.04f }, { 0.8f, 0.9f, 0.04f }, { 1.35f, 0.9f, -0.06f }, { 1.1f, 0.7f, -0.04f }, { 0.45f, 0.6f, 0.2f }, { 0.25f, 0.4f, 0.3f }, { 0.08f, 0.15f, 0.45f } };
 	constexpr structures::biome_flora_s biome_flora[structures::biome_count] =
 	{
-		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.002f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f },
-		{ 0.0f, 0.0f, 0.05f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.001f, 0.002f, 0.0f, 0.002f, 0.0f, 0.0f, 0.03f, 0.002f },
-		{ 0.02f, 0.012f, 0.002f, 0.0f, 0.004f, 0.004f, 0.0f, 0.12f, 0.01f },
-		{ 0.006f, 0.003f, 0.006f, 0.0012f, 0.012f, 0.004f, 0.0035f, 0.03f, 0.004f },
-		{ 0.002f, 0.001f, 0.002f, 0.0f, 0.006f, 0.006f, 0.012f, 0.02f, 0.002f },
-		{ 0.5f, 0.012f, 0.01f, 0.001f, 0.003f, 0.02f, 0.001f, 0.3f, 0.03f },
-		{ 0.58f, 0.02f, 0.012f, 0.002f, 0.0f, 0.012f, 0.0f, 0.18f, 0.035f },
-		{ 0.004f, 0.006f, 0.03f, 0.004f, 0.004f, 0.004f, 0.0f, 0.08f, 0.004f },
-		{ 0.002f, 0.004f, 0.045f, 0.008f, 0.002f, 0.002f, 0.0f, 0.05f, 0.002f },
-		{ 0.0f, 0.002f, 0.08f, 0.02f, 0.0f, 0.0f, 0.0f, 0.01f, 0.0f }
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.002f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f, 0.0f },
+		{ 0.0f, 0.0f, 0.05f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f },
+		{ 0.0f, 0.001f, 0.002f, 0.0f, 0.002f, 0.0f, 0.0f, 0.03f, 0.002f, 0.02f },
+		{ 0.02f, 0.012f, 0.002f, 0.0f, 0.004f, 0.004f, 0.0f, 0.12f, 0.01f, 0.0f },
+		{ 0.006f, 0.003f, 0.006f, 0.0012f, 0.012f, 0.004f, 0.0035f, 0.03f, 0.004f, 0.006f },
+		{ 0.002f, 0.001f, 0.002f, 0.0f, 0.006f, 0.006f, 0.012f, 0.02f, 0.002f, 0.002f },
+		{ 0.5f, 0.012f, 0.01f, 0.001f, 0.003f, 0.02f, 0.001f, 0.3f, 0.03f, 0.002f },
+		{ 0.58f, 0.02f, 0.012f, 0.002f, 0.0f, 0.012f, 0.0f, 0.18f, 0.035f, 0.004f },
+		{ 0.004f, 0.006f, 0.03f, 0.004f, 0.004f, 0.004f, 0.0f, 0.08f, 0.004f, 0.16f },
+		{ 0.002f, 0.004f, 0.045f, 0.008f, 0.002f, 0.002f, 0.0f, 0.05f, 0.002f, 0.05f },
+		{ 0.0f, 0.002f, 0.08f, 0.02f, 0.0f, 0.0f, 0.0f, 0.01f, 0.0f, 0.0f }
 	};
+	constexpr structures::tree_species_s tree_species[structures::tree_kind_count] =
+	{
+		{ "conifer_fir", 6u, 0.0004f, 0.45f, 6.0f, 0.3f, 2.0f, 0.7f, 1.3f },
+		{ "flora_pine", 3u, 0.0004f, 0.5f, 7.0f, 0.32f, 3.0f, 0.8f, 1.15f },
+		{ "flora_birch", 3u, 0.0007f, 0.32f, 6.0f, 0.2f, 2.2f, 0.75f, 1.15f },
+		{ "flora_oak", 3u, 0.0003f, 0.9f, 4.0f, 0.5f, 5.0f, 0.8f, 1.1f },
+		{ "flora_hawthorn", 3u, 0.0005f, 0.3f, 2.5f, 0.2f, 2.4f, 0.8f, 1.2f },
+		{ "flora_willow", 3u, 0.0008f, 0.7f, 3.5f, 0.4f, 4.0f, 0.8f, 1.15f }
+	};
+	constexpr std::float_t biome_trees[structures::biome_count][structures::tree_kind_count] =
+	{
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.3f, 0.0f, 0.1f, 0.6f },
+		{ 0.05f, 0.0f, 0.25f, 0.35f, 0.35f, 0.0f },
+		{ 0.0f, 0.0f, 0.1f, 0.45f, 0.45f, 0.0f },
+		{ 0.12f, 0.03f, 0.3f, 0.4f, 0.12f, 0.03f },
+		{ 0.55f, 0.38f, 0.07f, 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.4f, 0.3f, 0.0f, 0.3f, 0.0f },
+		{ 0.0f, 0.2f, 0.4f, 0.0f, 0.4f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }
+	};
+	constexpr auto gorse_variants = 3u;
+	constexpr auto gorse_near_distance = 35.0f;
+	constexpr auto gorse_far_distance = 260.0f;
+	constexpr auto gorse_shadow_distance = 60.0f;
+	constexpr auto gorse_sway = 0.05f;
+	constexpr auto tree_far_distance = 1100.0f;
+	constexpr auto tree_crowding = 0.8f;
+	constexpr auto tree_stand_cell = 16.0f;
+	constexpr auto hedge_step = 2.0f;
+	constexpr auto hedge_band = 0.7f;
+	constexpr auto hedge_keep = 0.9f;
+	constexpr auto hedge_standard = 0.015f;
+	constexpr auto hedge_smallest = 0.45f;
+	constexpr auto hedge_largest = 0.65f;
+	constexpr auto hedge_near_distance = 16.0f;
+	constexpr auto hedge_shadow_distance = 90.0f;
+	constexpr auto hedge_gorse_mask = 7u;
+	constexpr auto hedge_gorse_scale = 1.6f;
+	constexpr std::uint32_t hedge_salt = 0x2C1B3C6Du;
 	constexpr std::uint32_t layer_sounds[terrain_layer_count] = { structures::sound_step_grass, structures::sound_step_grass, structures::sound_step_grass, structures::sound_step_gravel, structures::sound_step_concrete, structures::sound_step_concrete, structures::sound_step_soft, structures::sound_step_gravel, structures::sound_step_soft, structures::sound_step_grass, structures::sound_step_grass, structures::sound_step_soft, structures::sound_step_soft, structures::sound_step_gravel, structures::sound_step_grass, structures::sound_step_gravel };
 	constexpr bool layer_barren[terrain_layer_count] = { false, false, false, false, true, true, true, true, false, false, false, false, true, true, false, false };
 	constexpr std::uint32_t field_kinds[8] = { structures::field_pasture, structures::field_hay, structures::field_pasture, structures::field_ploughed, structures::field_stubble, structures::field_pasture, structures::field_hay, structures::field_pasture };
