@@ -27,6 +27,8 @@ namespace zp
 		std::float_t screen_width = 0.0f;
 		std::float_t screen_height = 0.0f;
 		std::float_t scale = 1.0f;
+		std::float_t zoom = 1.0f;
+		std::float_t tracking = 0.0f;
 
 		bool create();
 		void destroy();
@@ -47,6 +49,8 @@ namespace zp
 		std::float_t text(structures::font_e font_index, structures::vec2_s position, std::float_t size, std::uint32_t color, const char* string, std::uint32_t align);
 		std::float_t text_shadowed(structures::font_e font_index, structures::vec2_s position, std::float_t size, std::uint32_t color, const char* string, std::uint32_t align);
 		std::float_t text_styled(structures::font_e font_index, structures::vec2_s position, std::float_t size, std::uint32_t color, const char* string, std::uint32_t align, std::float_t softness, std::float_t bias);
+		std::float_t text_spaced(structures::font_e font_index, structures::vec2_s position, std::float_t size, std::uint32_t color, const char* string, std::uint32_t align, std::float_t spacing);
+		std::float_t measure(structures::font_e font_index, std::float_t size, const char* string);
 		void push_scissor(structures::rect_s area);
 		void pop_scissor();
 	};

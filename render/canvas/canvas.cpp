@@ -67,7 +67,7 @@ namespace zp
 		screen_width = width;
 		screen_height = height;
 
-		scale = height / 1080.0f;
+		scale = height / 1080.0f * zoom;
 
 		vertices.clear();
 		batches.clear();
@@ -304,7 +304,8 @@ namespace zp
 	{
 		const auto& metrics{ font.fonts[font_index] };
 		const auto glyph_scale{ size / static_cast<std::float_t>(font_source_size) };
-		const auto width{ font.measure(font_index, size, string) };
+		const auto width{ measure(font_index, size, string) };
+		const auto gap{ tracking * size };
 		const structures::vec4_s params{ static_cast<std::float_t>(structures::canvas_mode_text), softness, bias, 0.0f };
 
 		auto pen{ position };
@@ -354,10 +355,32 @@ namespace zp
 				push(font.atlas, quad);
 			}
 
-			pen.x += entry.advance * glyph_scale;
+			pen.x += entry.advance * glyph_scale + gap;
 		}
 
 		return width;
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t canvas_c::text_spaced(structures::font_e font_index, structures::vec2_s position, std::float_t size, std::uint32_t color, const char* string, std::uint32_t align, std::float_t spacing)
+	{
+		tracking = spacing;
+
+		const auto width{ text_styled(font_index, position, size, color, string, align, 0.0f, 0.0f) };
+
+		tracking = 0.0f;
+
+		return width;
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t canvas_c::measure(structures::font_e font_index, std::float_t size, const char* string)
+	{
+		const auto length{ std::strlen(string) };
+
+		return font.measure(font_index, size, string) + tracking * size * static_cast<std::float_t>(length > 1u ? length - 1u : 0u);
 	}
 	/*
 	//=====================================================================================
