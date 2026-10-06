@@ -123,8 +123,10 @@ class actor:
         c["rotation"]["ear_r"] = turn(right[0], -right[1], 0.0)
 
     def tail_pose(self, c, lift=0.0, sway=0.0, curl=0.0):
+        hang = self.style.get("tail_hang", len(self.rig.tail))
         for index, name in enumerate(self.rig.tail):
-            c["rotation"][name] = rz(math.radians(sway) * (0.6 + 0.4 * index)) @ rx(math.radians(lift if index == 0 else curl))
+            swing = rz(math.radians(sway) * (0.6 + 0.4 * index)) if index < hang else ry(-math.radians(sway) * (0.6 + 0.4 * index))
+            c["rotation"][name] = swing @ rx(math.radians(lift if index == 0 else curl))
 
     def breathe(self, c, amount):
         depth = amount * self.style.get("breath", 0.008) * self.k
@@ -418,6 +420,45 @@ class actor:
             frames.append(self.finish(c)[:2])
         return self.pack("hit", frames, False)
 
+    def rear(self, spec):
+        seconds = spec["seconds"]
+        count = int(round(seconds * 30))
+        tuck = spec["tuck"]
+        frames = []
+        for f in range(count + 1):
+            t = f / 30.0
+            rise = float(keyed(t, spec["rise"]))
+            air = float(keyed(t, spec["air"]))
+            up = max(rise, 0.0)
+            c = self.rig.blank()
+            for key in ("hind_l", "hind_r"):
+                c["feet"][key] = {"position": self.home[key].copy(), "flex": spec["hock"] * up}
+            pitch = spec["pitch"] * rise
+            self.trunk_pose(c, (0.0, spec["back"] * up, spec["sink"] * up), (pitch * 0.9, 0.0, 0.0), (pitch, 0.0, 0.0), -spec["arch"] * up)
+            paw = math.sin(2.0 * math.pi * (t - spec["peak"]) / spec["paw"]) * air
+            for key in ("fore_l", "fore_r"):
+                beat = paw * (1.0 if key.endswith("_l") else -1.0)
+                c["free"][key] = {0: rx(math.radians(tuck[0] * air)), 1: rx(math.radians(tuck[1] * air)), 2: rx(math.radians(tuck[2] * air + 20.0 * beat)), 3: rx(math.radians(tuck[3] * air - 30.0 * beat)), 4: rx(math.radians(tuck[4] * air)), 5: rx(math.radians(tuck[5] * air))}
+            toss = math.sin(math.pi * min(max((t - 0.15) / 0.55, 0.0), 1.0))
+            self.neck_pose(c, spec["neck"] * up + spec["toss"] * toss, 5.0 * math.sin(2.0 * math.pi * t / seconds) * up, 0.0, (spec["head"] * up - 0.5 * spec["toss"] * toss, 0.0, 0.0), spec["jaw"] * up)
+            self.ears(c, (spec["ears"] * up, 16.0 * up), (spec["ears"] * up, 16.0 * up))
+            self.tail_pose(c, spec["tail"] * up, 7.0 * math.sin(2.0 * math.pi * t / 0.9) * up, -4.0 * up)
+            self.breathe(c, 0.7 * up)
+            local, shift, world, place = self.finish(c)
+            planted = self.rig.blank()
+            planted["rotation"] = dict(c["rotation"])
+            planted["location"] = dict(c["location"])
+            planted["feet"] = dict(c["feet"])
+            for key in ("fore_l", "fore_r"):
+                planted["feet"][key] = {"position": self.home[key].copy(), "flex": spec["land_flex"] * max(-rise, 0.0) / 0.05}
+            grounded = self.rig.solve(planted)[0]
+            for key in ("fore_l", "fore_r"):
+                for name in self.rig.limbs[key].names:
+                    slot = self.rig.slot[name]
+                    local[slot] = motion.matrix_of(motion.slerp(motion.quaternion(grounded[slot]), motion.quaternion(local[slot]), air))
+            frames.append((local, shift))
+        return self.pack("rear", frames, False, 0.0, [{"name": "rear", "time": spec["peak"]}, {"name": "land", "time": spec["land"]}])
+
     def folded(self, c, side=0.0):
         style = self.style["rest"]
         for key in legs:
@@ -429,17 +470,46 @@ class actor:
                 angles = style["hind"]
                 c["free"][key] = {0: ry(-sign * math.radians(style.get("hind_spread", 12.0))) @ rx(math.radians(angles[0])), 1: rx(math.radians(angles[1])), 2: rx(math.radians(angles[2])), 3: rx(math.radians(angles[3])), 4: rx(math.radians(angles[4]))}
 
+    def tuck(self, c, key, index, lowest=0.0):
+        base = c["free"][key][index]
+        angle = 0.0
+        for attempt in range(8):
+            values = []
+            for offset in (0.0, 0.02):
+                c["free"][key][index] = base @ rx(angle + offset)
+                local, shift, world, place, info = self.rig.solve(c)
+                values.append(self.legs_low(world, place, (key,)))
+            if abs(values[0] - lowest) < 0.002:
+                break
+            slope = (values[1] - values[0]) / 0.02
+            if abs(slope) < 1e-4:
+                break
+            angle = angle - max(min((values[0] - lowest) / slope, 0.2), -0.2)
+        c["free"][key][index] = base @ rx(angle)
+        return angle
+
+    def repose(self):
+        style = self.style["rest"]
+        c = self.rig.blank()
+        self.folded(c)
+        self.trunk_pose(c, (0.0, 0.0, style["hips"]), (style["pitch"], 0.0, style.get("roll", 0.0)), (style["pitch"] + style.get("chest", 0.0), 0.0, style.get("roll", 0.0) * 0.4))
+        self.settle(c, (), True)
+        turned = {key: round(math.degrees(self.tuck(c, key, 3 if key.startswith("fore") else 0)), 1) for key in legs}
+        print("CLIPS rest hips", round(float(c["location"]["hips"][2]) / self.k, 3), "tuck", turned)
+        return c["free"], float(c["location"]["hips"][2]) / self.k
+
     def rest(self, seconds=4.0):
         style = self.style["rest"]
         count = int(round(seconds * 30))
         frames = []
+        free, height = self.repose()
         for f in range(count):
             t = f / 30.0
             c = self.rig.blank()
-            self.folded(c)
+            c["free"] = {key: dict(value) for key, value in free.items()}
             breath = cycle(t, 2.0)
             drift = math.sin(2.0 * math.pi * t / seconds)
-            self.trunk_pose(c, (0.0, 0.0, style["hips"] + 0.003 * breath), (style["pitch"], 0.0, style.get("roll", 0.0)), (style["pitch"] + style.get("chest", 0.0) + 0.3 * breath, 0.0, style.get("roll", 0.0) * 0.4))
+            self.trunk_pose(c, (0.0, 0.0, height + 0.003 * breath), (style["pitch"], 0.0, style.get("roll", 0.0)), (style["pitch"] + style.get("chest", 0.0) + 0.3 * breath, 0.0, style.get("roll", 0.0) * 0.4))
             chew = self.style.get("rest_chew", 0.0) * cycle(t, seconds / 5.0)
             self.neck_pose(c, style["neck"] + 0.8 * breath, 7.0 * drift, 0.0, (style["head"] - 0.5 * breath, 5.0 * drift, 2.0 * math.sin(2.0 * math.pi * t / seconds * 5.0) * (1.0 if chew else 0.0)), chew)
             left = motion.pulse(t, 0.9, 0.32)
@@ -448,7 +518,10 @@ class actor:
             flick = motion.pulse(t, 1.8, 0.5)
             self.tail_pose(c, 6.0 * flick, 20.0 * flick * math.sin(2.0 * math.pi * (t - 1.8) / 0.3), 4.0 * flick)
             self.breathe(c, breath)
-            frames.append(self.rig.solve(c)[:2])
+            solved = self.rig.solve(c)
+            if f == 0:
+                print("CLIPS rest body", round(self.body_low(solved[2], solved[3]), 3), "legs", {key: round(self.legs_low(solved[2], solved[3], (key,)), 3) for key in legs})
+            frames.append(solved[:2])
         frames.append(frames[0])
         return self.pack("rest", frames, True)
 
@@ -467,7 +540,7 @@ class actor:
         style = self.style["death"]
         self.settle(c, (), True, lift)
         for key in legs:
-            self.lay(c, key, style.get("droop", 14.0) if key.endswith("_r") else 55.0)
+            self.lay(c, key, abs(style.get("droop", 18.0)) if key.endswith("_r") else 55.0)
         return self.rig.solve(c)[:2]
 
     def kneel(self, pitch):
@@ -492,7 +565,7 @@ class actor:
         c = self.stand()
         for key in ("fore_l", "fore_r"):
             c["feet"][key]["flex"] = 0.45
-        self.trunk_pose(c, (0.012, 0.02, -0.055 / self.k * self.k), (2.5, 1.0, 3.0), (-5.0, -2.0, 5.0), 5.0)
+        self.trunk_pose(c, (0.012, 0.02, -0.055), (2.5, 1.0, 3.0), (-5.0, -2.0, 5.0), 5.0)
         self.neck_pose(c, -5.0, -6.0, 0.0, (-10.0, -5.0, 5.0), 5.0)
         self.ears(c, (20.0, 12.0), (20.0, 12.0))
         self.tail_pose(c, -6.0, 8.0, 0.0)
@@ -516,7 +589,7 @@ class actor:
         for key in ("fore_l", "fore_r"):
             sign = 1.0 if key.endswith("_l") else -1.0
             c["free"][key] = {0: rx(math.radians(fold[0])), 1: ry(-sign * math.radians(4.0)) @ rx(math.radians(fold[1])), 2: rx(math.radians(fold[2])), 3: rx(math.radians(fold[3])), 4: rx(math.radians(fold[4])), 5: rx(math.radians(fold[5]))}
-        self.trunk_pose(c, (style["side"] * 0.42, 0.0, 0.0), (-5.0, 3.0, 50.0), (-3.0, -1.0, 30.0), 4.0)
+        self.trunk_pose(c, (style["side"] * 0.42, 0.0, 0.0), (-14.0, 3.0, 50.0), (-8.0, -1.0, 30.0), 4.0)
         self.neck_pose(c, style["neck"] * 0.3 + 6.0, -10.0, 0.0, (style["head"] * 0.3, -8.0, 10.0), 8.0)
         self.ears(c, (25.0, 10.0), (25.0, 10.0))
         self.tail_pose(c, 10.0, -10.0, 5.0)
@@ -573,12 +646,15 @@ def build(blueprint):
     a = actor(blueprint)
     style = blueprint["motion"]
     clips = [a.idle(), a.idle_look(), a.feed(style.get("feed", "graze"), 4.0, style.get("feed", "graze") == "root"), a.alert()]
-    for name in ("walk", "trot", "run"):
+    for name in style.get("gaits", ("walk", "trot", "run")):
         clips.append(a.stride(name, style[name]))
     if "attack" in style:
         clips.append(a.attack(style["attack"].get("seconds", 1.0)))
+    if "rear" in style:
+        clips.append(a.rear(style["rear"]))
     clips.append(a.hit())
     clips.append(a.death())
-    clips.append(a.rest())
+    if style.get("lies", True):
+        clips.append(a.rest())
     print("CLIPS", blueprint["name"], len(clips), "worst reach correction", round(a.worst, 4))
     return a, clips
