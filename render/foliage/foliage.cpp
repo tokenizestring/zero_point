@@ -243,7 +243,7 @@ namespace zp
 				{
 					const auto& instance{ instances[index] };
 					const auto& kind{ species[instance.species] };
-					const auto distance{ mathematics.distance(camera, instance.position) };
+					const auto distance{ mathematics.distance(camera, instance.position) / std::max(renderer.settings.vegetation, 0.1f) };
 
 					if (instance.scale > 0.0f && distance < (shadow_pass ? kind.shadow_distance : kind.far_distance))
 					{
