@@ -76,10 +76,11 @@ namespace zp
 		void set_world();
 		void set_lights(const std::vector<structures::light_s>& lights);
 		void add_light(structures::vec3_s position, std::float_t radius, structures::vec3_s color);
+		void add_spot(structures::vec3_s position, std::float_t radius, structures::vec3_s color, structures::vec3_s direction, std::float_t cosine);
 		structures::light_gpu_s convert_light(const structures::light_s& light);
 		void begin_frame(structures::vec3_s position, std::float_t yaw, std::float_t pitch, std::float_t roll, std::float_t delta);
-		void submit(const structures::mesh_s* mesh, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags);
-		void submit_skinned(const structures::character_s* character, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, const structures::mat4_s* palette, const structures::mat4_s* previous_palette, std::uint32_t flags, std::float_t pallor);
+		void submit(const structures::mesh_s* mesh, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s motion = {});
+		void submit_skinned(const structures::character_s* character, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, const structures::mat4_s* palette, const structures::mat4_s* previous_palette, std::uint32_t flags, std::float_t pallor, std::float_t clearance = 0.0f);
 		void append_palette(const structures::mat4_s* palette, std::uint32_t count);
 		void draw_skinned(const structures::vec4_s* planes, std::uint32_t plane_count, bool shadow_pass, bool viewmodel_pass);
 		void render(ID3D11RenderTargetView* output);
@@ -88,7 +89,7 @@ namespace zp
 		void render_gbuffer();
 		void render_lighting();
 		void render_post(ID3D11RenderTargetView* output, ID3D11ShaderResourceView* scene, ID3D11ShaderResourceView* bloom);
-		void set_object(const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s skin = {});
+		void set_object(const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s skin = {}, structures::vec4_s motion = {});
 		void draw_world(const structures::vec4_s* planes, std::uint32_t plane_count, bool alpha);
 		void draw_mesh(const structures::mesh_s* mesh);
 		void draw_item(const structures::draw_item_s& item, bool shadow_pass);

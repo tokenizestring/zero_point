@@ -136,6 +136,11 @@ namespace zp
 		settings.lens_flares = level >= structures::quality_high;
 		settings.sharpening = 0.35f;
 		settings.brightness = 1.0f;
+		settings.colour_filter = 0u;
+		settings.vegetation = 1.0f;
+		settings.grass = 1.0f;
+		settings.marks = true;
+		settings.flashes = 1.0f;
 		settings.field_of_view = settings.field_of_view > 0.0f ? settings.field_of_view : 95.0f;
 		settings.viewmodel_field_of_view = settings.viewmodel_field_of_view > 0.0f ? settings.viewmodel_field_of_view : 68.0f;
 	}
@@ -244,6 +249,16 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void renderer_c::add_spot(structures::vec3_s position, std::float_t radius, structures::vec3_s color, structures::vec3_s direction, std::float_t cosine)
+	{
+		if (frame_lights.size() < maximum_lights)
+		{
+			frame_lights.push_back(convert_light({ position, radius, color, cosine, direction, 0u }));
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	structures::light_gpu_s renderer_c::convert_light(const structures::light_s& light)
 	{
 		return { light.position, light.radius, light.color, light.spot_cosine > -0.5f ? light.spot_cosine : -1.0f, mathematics.normalize(light.direction), std::min(light.spot_cosine + 0.1f, 0.999f) };
@@ -334,17 +349,17 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void renderer_c::submit(const structures::mesh_s* mesh, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags)
+	void renderer_c::submit(const structures::mesh_s* mesh, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s motion)
 	{
 		if (mesh && mesh->index_count)
 		{
-			draws.push_back({ mesh, world_matrix, previous_matrix, material_override, flags });
+			draws.push_back({ mesh, world_matrix, previous_matrix, material_override, flags, motion });
 		}
 	}
 	/*
 	//=====================================================================================
 	*/
-	void renderer_c::submit_skinned(const structures::character_s* character, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, const structures::mat4_s* palette, const structures::mat4_s* previous_palette, std::uint32_t flags, std::float_t pallor)
+	void renderer_c::submit_skinned(const structures::character_s* character, const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, const structures::mat4_s* palette, const structures::mat4_s* previous_palette, std::uint32_t flags, std::float_t pallor, std::float_t clearance)
 	{
 		const auto bone_count{ static_cast<std::uint32_t>(character ? character->bones.size() : 0u) };
 
@@ -355,7 +370,7 @@ namespace zp
 			append_palette(palette, bone_count);
 			append_palette(previous_palette, bone_count);
 
-			skinned_draws.push_back({ character, world_matrix, previous_matrix, offset, offset + bone_count, flags, pallor });
+			skinned_draws.push_back({ character, world_matrix, previous_matrix, offset, offset + bone_count, flags, pallor, clearance });
 		}
 	}
 	/*
@@ -390,9 +405,9 @@ namespace zp
 			const auto extent{ mathematics.length(item.character->bounds_max - item.character->bounds_min) * 0.5f + 0.5f };
 			const auto visible{ overlay || mathematics.box_visible(planes, plane_count, center - structures::vec3_s{ extent, extent, extent }, center + structures::vec3_s{ extent, extent, extent }) };
 
-			if (visible && overlay == viewmodel_pass &&(shadow_pass == false || (item.flags & (structures::draw_flag_viewmodel | structures::draw_flag_no_shadow)) == 0u))
+			if (visible && overlay == viewmodel_pass && (shadow_pass ? (item.flags & (structures::draw_flag_viewmodel | structures::draw_flag_no_shadow)) == 0u : (item.flags & structures::draw_flag_shadow_only) == 0u))
 			{
-				set_object(item.world, item.previous_world, -1.0f, item.flags, { static_cast<std::float_t>(item.palette_offset), static_cast<std::float_t>(item.previous_offset), item.pallor, 0.0f });
+				set_object(item.world, item.previous_world, -1.0f, item.flags, { static_cast<std::float_t>(item.palette_offset), static_cast<std::float_t>(item.previous_offset), item.pallor, item.clearance });
 
 				gpu.context->IASetVertexBuffers(0u, 1u, &item.character->mesh.vertex_buffer, &stride, &offset);
 				gpu.context->IASetIndexBuffer(item.character->mesh.index_buffer, DXGI_FORMAT_R32_UINT, 0u);
@@ -459,7 +474,10 @@ namespace zp
 
 		weather.render();
 
-		render_shafts();
+		if (settings.volumetrics > 0u)
+		{
+			render_shafts();
+		}
 
 		water.render_underwater();
 
@@ -678,7 +696,7 @@ namespace zp
 
 		for (const auto& item : draws)
 		{
-			if ((item.flags & structures::draw_flag_viewmodel) == 0u)
+			if ((item.flags & (structures::draw_flag_viewmodel | structures::draw_flag_shadow_only)) == 0u)
 			{
 				draw_item(item, false);
 			}
@@ -724,7 +742,10 @@ namespace zp
 
 		profiler.mark(structures::profile_models);
 
-		decals.render();
+		if (settings.marks)
+		{
+			decals.render();
+		}
 
 		profiler.mark(structures::profile_decals);
 	}
@@ -755,17 +776,17 @@ namespace zp
 	*/
 	void renderer_c::render_post(ID3D11RenderTargetView* output, ID3D11ShaderResourceView* scene, ID3D11ShaderResourceView* bloom)
 	{
-		post.params = { exposure, settings.bloom ? bloom_mix : 0.0f, 0.0f, static_cast<std::float_t>(frame_index % 64u) };
+		post.params = { exposure, settings.bloom ? bloom_mix : 0.0f, settings.motion_blur ? motion_blur_shutter : 0.0f, static_cast<std::float_t>(frame_index % 64u) };
 		post.grade = { 1.1f, 1.06f, 1.0f / std::max(settings.brightness, 0.1f), settings.sharpening };
-		post.effects = { settings.chromatic_aberration ? 0.0012f : 0.0f, settings.vignette ? 0.22f : 0.0f, settings.film_grain ? 0.25f : 0.0f, 0.0f };
+		post.effects = { settings.chromatic_aberration ? 0.0012f : 0.0f, settings.vignette ? 0.22f : 0.0f, settings.film_grain ? 0.25f : 0.0f, static_cast<std::float_t>(settings.colour_filter) };
 		post.screen = { static_cast<std::float_t>(width), static_cast<std::float_t>(height), 1.0f / static_cast<std::float_t>(width), 1.0f / static_cast<std::float_t>(height) };
 
 		gpu.update_buffer(post_buffer, &post, sizeof(post));
 
 		const D3D11_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<std::float_t>(output_width), static_cast<std::float_t>(output_height), 0.0f, 1.0f };
 
-		ID3D11ShaderResourceView* resources[3] = { scene, bloom, post_process.exposure_srv };
-		ID3D11ShaderResourceView* unbound[3]{};
+		ID3D11ShaderResourceView* resources[5] = { scene, bloom, post_process.exposure_srv, gbuffer[4].srv, depth.srv };
+		ID3D11ShaderResourceView* unbound[5]{};
 
 		gpu.context->OMSetRenderTargets(1u, &output, nullptr);
 		gpu.context->OMSetBlendState(gpu.blend_opaque, nullptr, 0xFFFFFFFFu);
@@ -776,23 +797,24 @@ namespace zp
 		gpu.context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		gpu.context->VSSetShader(fullscreen_vs, nullptr, 0u);
 		gpu.context->PSSetShader(tonemap_ps, nullptr, 0u);
-		gpu.context->PSSetShaderResources(0u, 3u, resources);
+		gpu.context->PSSetShaderResources(0u, 5u, resources);
 		gpu.context->PSSetSamplers(0u, 1u, &gpu.sampler_linear_clamp);
 		gpu.context->PSSetConstantBuffers(4u, 1u, &post_buffer);
 
 		gpu.context->Draw(3u, 0u);
 
-		gpu.context->PSSetShaderResources(0u, 3u, unbound);
+		gpu.context->PSSetShaderResources(0u, 5u, unbound);
 	}
 	/*
 	//=====================================================================================
 	*/
-	void renderer_c::set_object(const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s skin)
+	void renderer_c::set_object(const structures::mat4_s& world_matrix, const structures::mat4_s& previous_matrix, std::float_t material_override, std::uint32_t flags, structures::vec4_s skin, structures::vec4_s motion)
 	{
 		object.world = world_matrix;
 		object.previous_world = previous_matrix;
 		object.params = { material_override, (flags & structures::draw_flag_viewmodel) ? 1.0f : 0.0f, (flags & structures::draw_flag_character) ? 1.0f : 0.0f, 0.0f };
 		object.skin = skin;
+		object.motion = motion;
 
 		gpu.update_buffer(object_buffer, &object, sizeof(object));
 
@@ -828,7 +850,7 @@ namespace zp
 	{
 		const auto alpha{ (item.flags & structures::draw_flag_alpha) != 0u };
 
-		set_object(item.world, item.previous_world, item.material_override, item.flags);
+		set_object(item.world, item.previous_world, item.material_override, item.flags, {}, item.motion);
 
 		if (alpha && shadow_pass)
 		{
