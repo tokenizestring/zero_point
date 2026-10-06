@@ -2,7 +2,7 @@ import importlib
 import numpy
 import fauna_hoofed_field as fields
 
-names = {"deer_stag": ("fauna_hoofed_deer", "stag"), "deer_hind": ("fauna_hoofed_deer", "hind"), "boar": ("fauna_hoofed_boar", "boar"), "cow": ("fauna_hoofed_cow", "cow"), "sheep": ("fauna_hoofed_sheep", "sheep")}
+names = {"deer_stag": ("fauna_hoofed_deer", "stag"), "deer_hind": ("fauna_hoofed_deer", "hind"), "boar": ("fauna_hoofed_boar", "boar"), "horse": ("fauna_hoofed_horse", "horse"), "cow": ("fauna_hoofed_cow", "cow"), "sheep": ("fauna_hoofed_sheep", "sheep")}
 
 
 def point(x, y, z):

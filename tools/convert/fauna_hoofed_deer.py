@@ -257,7 +257,7 @@ def build(kind):
         "run": {"kind": "gallop", "frames": 13, "speed": 11.0 * pace, "duty": {"fore": 0.21, "hind": 0.21}, "phase": {"hind_l": 0.0, "hind_r": 0.08, "fore_r": 0.45, "fore_l": 0.55}, "center": {"fore": (0.0, -0.04, 0.0), "hind": (0.0, -0.14, 0.0)}, "narrow": 0.5, "lift": {"fore": 0.22, "hind": 0.2}, "toe": {"fore": 1.0, "hind": 0.8}, "curl": {"fore": 0.9, "hind": 0.7}, "swing_flex": {"fore": 1.9, "hind": 1.05}, "stance_flex": {"fore": 0.0, "hind": 0.15}, "sink": 0.3, "follow": 0.62, "bob": 0.055, "roll": 1.5, "flex": 15.0, "nod": 3.0, "hover": -0.03},
         "attack": {"hit": 0.42, "reach": 0.16, "crouch": -0.035, "dip": 5.0, "neck_down": -58.0, "neck_up": 26.0, "head_down": -32.0, "head_up": 24.0},
         "rest": {"hips": -0.66, "pitch": 4.5, "fore": (0.0, 0.0, -70.0, 155.0, 20.0, 0.0), "hind": (-46.0, 53.0, -91.0, 16.0, 0.0), "neck": -8.0, "head": 4.0},
-        "death": {"side": 0.36, "drop": -0.925, "neck": -48.0, "head": 18.0, "neck_yaw": -18.0 if stag else -4.0, "head_yaw": 0.0, "head_roll": -40.0 if stag else 0.0, "droop": -12.0, "fore_upper": (0.0, 5.0, -12.0, 38.0, 20.0, 10.0), "fore_lower": (0.0, 0.0, -6.0, 24.0, 15.0, 8.0), "hind_upper": (-14.0, 24.0, -18.0, 15.0, 8.0), "hind_lower": (-8.0, 14.0, -10.0, 12.0, 6.0)},
+        "death": {"side": 0.36, "drop": -0.925, "neck": -48.0, "head": 18.0, "neck_yaw": -18.0 if stag else -4.0, "head_yaw": 0.0, "head_roll": -40.0 if stag else 0.0, "droop": 18.0, "fore_upper": (0.0, 5.0, -12.0, 38.0, 20.0, 10.0), "fore_lower": (0.0, 0.0, -6.0, 24.0, 15.0, 8.0), "hind_upper": (-14.0, 24.0, -18.0, 15.0, 8.0), "hind_lower": (-8.0, 14.0, -10.0, 12.0, 6.0)},
     }
     if stag:
         k["pedicle"] = f.project(numpy.array([head_point(k, 0.335, 0.062, 0.045)]), ("core",))[0]
