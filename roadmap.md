@@ -7,6 +7,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 ## Phase 1: Hands and first person
 
 1. [x] Spawn with nothing (bare hands only)
+    - [x] New survivor body: you wake up naked (a "Censor nudity" setting swaps everyone into underwear); other players, corpses and your own first-person body use it
+    - [ ] First-person arms to match the new body (still the old sleeved arms)
 2. [x] Two-handed boxer guard with IK arms, both fists on screen
 3. [x] Virtual forearm twist bones (no candy-wrapper wrists)
 4. [ ] Tight fist: fingers rest on the palm with no clipping, thumb wraps over the index and middle fingers, fingers held together
@@ -80,15 +82,19 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [x] Biome map baked from height, slope, coast distance, wind exposure and wetness: beach, rocky shore, dunes, marsh, meadow, farmland with field plots, broadleaf woodland, pinewood, coastal heath, moorland, summit
     - [x] 16 ground layers (compressed), grass density and height, planting and ambience all driven by the biome
     - [x] Raised sea cliffs on stretches of the coast that are clear of roads and rails
-    - [ ] Own ground texture for every biome layer (needles, heath, moor, marsh, dune, shingle, turf, soil)
-    - [ ] Plants per biome: oak, birch, Scots pine, hawthorn, willow, gorse, bramble, heather, bracken, reeds, marram, wildflowers
-    - [ ] Hedgerows along field borders, rivers, lakes, caves
+    - [ ] Own ground texture for every biome layer: needles, heath, moor, marsh, dune, shingle, turf and soil (all eight made and wired in, not yet checked in game)
+    - [ ] Trees per biome: oak, birch, Scots pine, hawthorn and willow beside the firs, gorse on the heath and dunes, big crowns kept apart (placed, not yet checked in game)
+    - [ ] Smaller plants: bramble, heather, bracken, reeds, marram, wildflowers
+    - [ ] Hedgerows of hawthorn and gorse along the field borders with the odd big oak (placed, not yet checked in game)
+    - [ ] Rivers, lakes, caves
 33. [ ] Roads and paths, bridges, fences, power poles, an old rail line
     - [x] Five roads and a 10 km railway loop graded into the terrain, drawn on the map
     - [x] Freight train on a fixed timetable with five stops: you can climb on, walk around and ride it, it kills you on the track, and everyone sees riders locked to the wagons
     - [x] Train sounds: engine, wheel roar, rail joints, two-tone horn, brake squeal, all with distance delay, occlusion and Doppler
     - [x] Detailed track panels bent along the line; locomotive and flat wagon models
-    - [ ] Remaining wagons and the coach, spinning wheels, stations and platforms at the stops
+    - [ ] Open wagon, box wagon and passenger coach, spinning wheelsets, headlamps and a red tail lamp (in, not yet checked in game)
+    - [ ] Platforms at every stop, two stations, a signal box, a water tower and signals; the baker flattens a yard around each stop and the train now stops short of the level crossings (in, not yet checked in game)
+    - [ ] Level crossing gates that swing shut with flashing lamps before the train passes, and a horn blast before every crossing (code in, waiting for the gate models)
 34. [ ] Detailed, fully furnished structures (Blender-built or CC0 downloads):
     - [x] Cottage, two-storey house, ruin, shed and barn built in Blender with interiors, collision and loot spots; town, villages, farms and hamlets placed across the island
     - [ ] Fisherman's cottages (kitchen, table, beds, shelves, stove, clutter)
@@ -102,6 +108,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 36. [ ] Monuments with loot tiers and hazards
 37. [ ] Scattered points of interest: campsites, wrecks, cabins, caves
 38. [ ] Ambient life: birds, gulls, fish, insects
+    - [x] Gull and crow flocks (flap and glide in the vertex shader, bank into turns, scatter at gunshots), mackerel and sea bass schools (tail wave, scatter when you swim close)
+    - [ ] Insects, birdsong from the birds you can see, fish you can catch
 
 ## Phase 5: Survival mechanics
 
@@ -110,8 +118,10 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 41. [ ] Crafting UI: recipe book, queue, blueprints found in the world
 42. [ ] Cooking: campfire, drying rack, boiling water
 43. [ ] Animals: deer, boar, wolf, bear, chicken, rabbit, with AI, hunting and skinning (meat, hide, bone, fat)
-    - [ ] Rigged and animated models: red deer, wild boar, Jersey cow, wolf, fox, rabbit (in progress), then birds, fish and crabs
-    - [ ] Server-simulated herds and packs by biome, replication, hit detection, carcass harvesting
+    - [ ] Rigged and animated models: red deer stag and hind, wild boar and horse done; Jersey cow, wolf, fox and rabbit next, then birds, fish and crabs
+    - [ ] Riding horses
+    - [x] Server-simulated herds by biome (deer, boar, wild horses), replicated to nearby players and interpolated; graze, rest, wander, turn to stare, bolt as a herd, boars charge when cornered; noise-based senses (crouching lets you stalk closer)
+    - [x] Hit zones (head and heart drop an animal, gut and haunch shots wound), wounded animals bleed out and leave a blood trail; bullets, arrows and melee all hit; carve carcasses for meat, hide, fat and bone; hoofbeats per ground surface
 44. [ ] Clothing crafted from hide and cloth, with warmth and protection
 45. [ ] Building: foundations, walls, doors, windows, roofs and stairs; twig, wood, stone and metal tiers; decay; locks
     - [x] Wood, stone and metal tiers (hammer upgrade with RMB, LMB repair, stone and metal shrug off bullets)
@@ -123,6 +133,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 46. [x] Storage, furnace smelting, fuel
 47. [ ] Farming polish
 48. [ ] Combat: fists, clubs, spears (throwable), bows, crossbow, junk guns, hit reactions, ragdolls, hostile scavenger AI
+    - [ ] Bullet holes for every surface, blood spatter, drips and pools, footprints in mud, sand and on wet floors: kept on the server, sent to nearby players by map cell, drawn in one decal pass (texture sheet done, not yet checked in game)
 49. [x] Death and respawn: dropped bag, sleeping bags, beach respawn
 50. [x] Save and load for the world and the player
 51. [x] Weather that matters: rain soaks you, nights get cold, storms
@@ -140,10 +151,13 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 54. [ ] UI: inventory drag and drop, crafting menu, map markers, notes, tooltips, death screen
     - [x] Item icon atlas pipeline (baker stage `item_icons` from `assets/raw/icons/<item>.png`, text fallback); server browser password field and lock marker
     - [x] Death screen: how you died (or who killed you), where your things are, the real respawn key
+    - [x] Full interface rebuild in one dark style (`ui/kit` widgets): main and pause menus, server browser, field guide with the live key bindings, credits, confirmation dialogs, inventory, crafting with a scrolling recipe list and a details panel, containers, keypad, tooltips, death and rescue screens
+    - [x] Realistic HUD: no ammo counter, weapon name or held-item readout; the belt shows only while switching; health, water and food only when low or changing; compass, survival goal, prompts with key caps, pickup list, crafting queue
     - [ ] Render the item icons, map markers
 55. [x] Settings: key rebinding, graphics presets, audio sliders
     - [x] Key rebinding page (17 actions, click and press, defaults, saved in settings.ini); picture presets
     - [x] Separate effects and ambience volume sliders under the master volume
+    - [x] Eight settings pages, every option live: display mode and window size (15 s revert), vsync, frame cap, render scale, field of view, brightness, frame counter; quality preset plus shadows, ambient occlusion, reflections, light shafts, texture filtering, vegetation distance, grass density, marks, anti-aliasing, sharpening, bloom, motion blur, film grain, vignette, chromatic aberration; interface volume and mute in the background; aiming sensitivity, hold or toggle crouch, aim and sprint, reverse belt scrolling; head bob, strafe lean, goals, prompts; crosshair, hit markers, damage direction, compass, vitals, belt, names, chat, pickup messages, interface size; colour blind filters, reduced flashing, reduced camera motion
 
 ## Phase 7: Multiplayer (online only)
 
@@ -154,7 +168,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [x] Inventory, crafting, vitals, harvesting, building, containers, farming, arrows on the server
     - [x] World saves, returning players restored, sleepers that can be killed and looted, death bags
     - [x] Chat, name tags, hit direction, kill feed
-    - [ ] Third-person held items and animations for other players (after the new player models)
+    - [x] Third-person held items for other players: rifles carried at low ready with a bladed stance and both hands on the gun, pistols in two hands, tools at the hip, the bow in the left hand; your own body casts the held item's shadow
     - [ ] Voice proximity chat
     - [x] Server admin tools: bans, whitelist, admins with chat commands, password, `zero_point_admin.cfg`
     - [x] Names belong to the first identity key that uses them (no more logging in as someone else); `forget <name>` frees one
