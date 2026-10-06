@@ -177,6 +177,32 @@ namespace zp
 			arrow.damage = -1.0f;
 		}
 
+		else if (const auto animal{ client.connected() || arrow.damage <= 0.0f ? -1 : fauna.ray(start, direction, hit.hit ? hit.fraction * length : length, distance) }; animal >= 0)
+		{
+			const auto point{ start + direction * distance };
+			const auto damage{ arrow.damage * mathematics.saturate(mathematics.length(arrow.velocity) / (arrow_speed_maximum * 0.8f)) };
+			const auto killed{ fauna.damage(static_cast<std::uint32_t>(animal), damage, start) };
+
+			if (server.running && arrow.owner >= 0)
+			{
+				server.send_hit(arrow.owner, fauna_victim, damage, false, killed, point);
+			}
+
+			else if (server.running == false)
+			{
+				combat.hit_marker = 1.0f;
+				combat.kill_marker = killed ? 1.0f : combat.kill_marker;
+
+				particles.impact(structures::surface_flesh, point, direction * -1.0f);
+
+				mixer.play(structures::sound_hit_flesh, point, 1.0f, 1.0f + random() * 0.2f);
+			}
+
+			marks.bleed(point, direction);
+
+			arrow.damage = -1.0f;
+		}
+
 		else if (hit.hit)
 		{
 			arrow.position = hit.end + direction * 0.05f;
