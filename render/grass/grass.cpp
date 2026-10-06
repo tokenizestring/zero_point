@@ -120,6 +120,14 @@ namespace zp
 			ID3D11ShaderResourceView* views[3] = { terrain.height_view, terrain.grass_view, terrain.mask_view };
 			ID3D11ShaderResourceView* unbound[3]{};
 
+			const auto reach{ std::max(renderer.settings.grass, 0.2f) };
+			const auto near_count{ static_cast<std::uint32_t>(std::ceil(2.0f * grass_near_radius * reach / grass_near_spacing)) + 1u };
+			const auto far_count{ static_cast<std::uint32_t>(std::ceil(2.0f * grass_far_radius * reach / grass_far_spacing)) + 1u };
+
+			instance_count = near_count * near_count + far_count * far_count;
+
+			constants.rings[0] = { grass_near_spacing, grass_near_radius * reach, 0.0f, static_cast<std::float_t>(near_count) };
+			constants.rings[1] = { grass_far_spacing, grass_far_radius * reach, grass_far_inner * reach, static_cast<std::float_t>(far_count) };
 			constants.terrain = { terrain.header.origin, terrain.header.world_size, static_cast<std::float_t>(terrain.header.resolution), grass_size };
 
 			gpu.update_buffer(constant_buffer, &constants, sizeof(constants));
