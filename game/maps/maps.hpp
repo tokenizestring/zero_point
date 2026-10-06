@@ -25,6 +25,8 @@ namespace zp
 		std::vector<structures::footprint_s> footprints;
 		std::unordered_map<std::string, std::uint32_t> building_species;
 		std::vector<structures::route_path_s> paths;
+		std::vector<structures::station_s> stations;
+		std::vector<structures::crossing_s> crossings;
 		std::vector<std::uint8_t> corridor;
 		std::uint32_t track_materials[structures::track_material_count]{};
 		std::uint32_t crates[structures::node_kind_count]{};
@@ -57,6 +59,18 @@ namespace zp
 		void build_rail(const structures::route_path_s& path);
 		bool on_crossing(structures::vec3_s point);
 		bool lay_panels(const structures::route_path_s& path);
+		void build_stations(const structures::route_path_s& path);
+		void find_crossings(const structures::route_path_s& rail);
+		void build_crossings();
+		structures::vec3_s gate_hinge(const structures::crossing_s& crossing, std::float_t side, std::float_t edge);
+		structures::vec3_s gate_toward(const structures::crossing_s& crossing, std::float_t side, std::float_t edge);
+		structures::vec3_s post_spot(const structures::crossing_s& crossing, std::float_t side, std::float_t edge);
+		std::float_t post_yaw(const structures::crossing_s& crossing, std::float_t side, std::float_t edge);
+		structures::vec3_s verge_away(const structures::crossing_s& crossing, std::float_t side);
+		std::float_t verge_yaw(const structures::crossing_s& crossing, std::float_t side);
+		void railside(const char* model_name, const structures::route_path_s& path, const std::vector<std::float_t>& reach, std::float_t along, std::float_t offset, std::float_t lift, structures::vec2_s facing);
+		void measure(const structures::route_path_s& path, std::vector<std::float_t>& reach);
+		structures::vec3_s line_at(const structures::route_path_s& path, const std::vector<std::float_t>& reach, std::float_t along);
 		bool on_route(std::float_t x, std::float_t z);
 		std::float_t route_gap(std::float_t x, std::float_t z);
 		void build_hamlet(const structures::world_site_s& site);

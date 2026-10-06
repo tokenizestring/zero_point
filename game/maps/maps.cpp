@@ -38,6 +38,8 @@ namespace zp
 		landmarks.clear();
 		roads.clear();
 		footprints.clear();
+		stations.clear();
+		crossings.clear();
 		building_species.clear();
 
 		std::fill(std::begin(crates), std::end(crates), UINT32_MAX);
@@ -1110,26 +1112,62 @@ namespace zp
 	*/
 	void maps_c::plant_island()
 	{
-		std::uint32_t firs[fir_variant_count]{};
+		std::uint32_t trees[structures::tree_kind_count][fir_variant_count]{};
+		std::uint32_t gorse[gorse_variants]{};
+		std::uint32_t hedges[fir_variant_count]{};
 		std::uint32_t deads[dead_tree_variant_count]{};
+		std::uint32_t planted[structures::tree_kind_count]{};
 
 		char name[64]{};
 		char far_name[64]{};
 		char impostor_name[64]{};
 		char shadow_name[64]{};
 
-		for (auto variant{ 0u }; variant < fir_variant_count; variant++)
+		for (auto kind{ 0u }; kind < structures::tree_kind_count; kind++)
 		{
-			std::snprintf(name, sizeof(name), "conifer_fir_%u", variant);
-			std::snprintf(far_name, sizeof(far_name), "conifer_fir_%u_far", variant);
-			std::snprintf(impostor_name, sizeof(impostor_name), "conifer_fir_%u_impostor", variant);
-			std::snprintf(shadow_name, sizeof(shadow_name), "conifer_fir_%u_shadow", variant);
+			const auto& species{ tree_species[kind] };
 
-			firs[variant] = foliage.add_species(name, far_name, fir_near_distance, 1100.0f, fir_shadow_distance, 0.0004f);
+			for (auto variant{ 0u }; variant < fir_variant_count; variant++)
+			{
+				std::snprintf(name, sizeof(name), "%s_%u", species.prefix, variant);
+				std::snprintf(far_name, sizeof(far_name), "%s_%u_far", species.prefix, variant);
+				std::snprintf(impostor_name, sizeof(impostor_name), "%s_%u_impostor", species.prefix, variant);
+				std::snprintf(shadow_name, sizeof(shadow_name), "%s_%u_shadow", species.prefix, variant);
 
-			foliage.add_impostor(firs[variant], impostor_name, fir_impostor_distance);
+				trees[kind][variant] = variant < species.variants ? foliage.add_species(name, models.find(far_name) ? far_name : nullptr, fir_near_distance, tree_far_distance, fir_shadow_distance, species.sway) : UINT32_MAX;
 
-			foliage.add_shadow(firs[variant], shadow_name);
+				if (trees[kind][variant] != UINT32_MAX)
+				{
+					foliage.add_impostor(trees[kind][variant], impostor_name, fir_impostor_distance);
+
+					foliage.add_shadow(trees[kind][variant], shadow_name);
+				}
+			}
+		}
+
+		for (auto variant{ 0u }; variant < gorse_variants; variant++)
+		{
+			std::snprintf(name, sizeof(name), "flora_gorse_%u", variant);
+			std::snprintf(far_name, sizeof(far_name), "flora_gorse_%u_far", variant);
+
+			gorse[variant] = foliage.add_species(name, models.find(far_name) ? far_name : nullptr, gorse_near_distance, gorse_far_distance, gorse_shadow_distance, gorse_sway);
+		}
+
+		for (auto variant{ 0u }; variant < tree_species[structures::tree_hawthorn].variants && variant < fir_variant_count; variant++)
+		{
+			std::snprintf(name, sizeof(name), "%s_%u", tree_species[structures::tree_hawthorn].prefix, variant);
+			std::snprintf(far_name, sizeof(far_name), "%s_%u_far", tree_species[structures::tree_hawthorn].prefix, variant);
+			std::snprintf(impostor_name, sizeof(impostor_name), "%s_%u_impostor", tree_species[structures::tree_hawthorn].prefix, variant);
+			std::snprintf(shadow_name, sizeof(shadow_name), "%s_%u_shadow", tree_species[structures::tree_hawthorn].prefix, variant);
+
+			hedges[variant] = foliage.add_species(name, models.find(far_name) ? far_name : nullptr, hedge_near_distance, tree_far_distance, hedge_shadow_distance, tree_species[structures::tree_hawthorn].sway);
+
+			if (hedges[variant] != UINT32_MAX)
+			{
+				foliage.add_impostor(hedges[variant], impostor_name, fir_impostor_distance);
+
+				foliage.add_shadow(hedges[variant], shadow_name);
+			}
 		}
 
 		for (auto variant{ 0u }; variant < dead_tree_variant_count; variant++)
@@ -1227,6 +1265,77 @@ namespace zp
 				}
 			};
 
+		const auto stand_cells{ static_cast<std::int32_t>(std::ceil(terrain_size / tree_stand_cell)) };
+
+		std::vector<std::vector<structures::vec3_s>> stands(static_cast<std::size_t>(stand_cells) * static_cast<std::size_t>(stand_cells));
+
+		const auto stand_of = [&](std::float_t value)
+			{
+				return std::clamp(static_cast<std::int32_t>((value - terrain_origin) / tree_stand_cell), 0, stand_cells - 1);
+			};
+
+		const auto crowded = [&](std::float_t x, std::float_t z, std::float_t radius)
+			{
+				for (auto row{ std::max(stand_of(z) - 1, 0) }; row <= std::min(stand_of(z) + 1, stand_cells - 1); row++)
+				{
+					for (auto column{ std::max(stand_of(x) - 1, 0) }; column <= std::min(stand_of(x) + 1, stand_cells - 1); column++)
+					{
+						for (const auto& other : stands[static_cast<std::size_t>(row) * static_cast<std::size_t>(stand_cells) + static_cast<std::size_t>(column)])
+						{
+							if ((other.x - x) * (other.x - x) + (other.y - z) * (other.y - z) < (radius + other.z) * (radius + other.z) * tree_crowding * tree_crowding)
+							{
+								return true;
+							}
+						}
+					}
+				}
+
+				return false;
+			};
+
+		const auto pick = [&](std::uint32_t biome)
+			{
+				auto total{ 0.0f };
+
+				for (const auto weight : biome_trees[biome])
+				{
+					total += weight;
+				}
+
+				auto left{ random() * total };
+
+				for (auto kind{ 0u }; kind < structures::tree_kind_count; kind++)
+				{
+					if (left < biome_trees[biome][kind])
+					{
+						return kind;
+					}
+
+					left -= biome_trees[biome][kind];
+				}
+
+				return static_cast<std::uint32_t>(structures::tree_fir);
+			};
+
+		const auto plant = [&](std::uint32_t kind, structures::vec3_s spot, std::float_t size, std::float_t yaw, std::float_t variety)
+			{
+				const auto& species{ tree_species[kind] };
+				const auto chosen{ trees[kind][std::min(static_cast<std::uint32_t>(variety * static_cast<std::float_t>(species.variants)), species.variants - 1u)] };
+
+				if (chosen != UINT32_MAX && crowded(spot.x, spot.z, species.spread * size) == false)
+				{
+					foliage.add(chosen, { spot.x, spot.y - 0.15f, spot.z }, yaw, size);
+
+					world.add_box({ spot.x, spot.y + species.height * size * 0.5f, spot.z }, { species.trunk * size, species.height * size, species.trunk * size }, mathematics.quat_identity(), structures::surface_wood, structures::contents_solid);
+
+					harvest.add(structures::node_tree, spot, species.girth * size, static_cast<std::uint32_t>(foliage.instances.size() - 1u), static_cast<std::int32_t>(world.brushes.size() - 1u));
+
+					stands[static_cast<std::size_t>(stand_of(spot.z)) * static_cast<std::size_t>(stand_cells) + static_cast<std::size_t>(stand_of(spot.x))].push_back({ spot.x, spot.z, species.spread * size });
+
+					planted[kind]++;
+				}
+			};
+
 		for (auto z{ terrain_origin + 3.0f }; z < terrain_origin + terrain_size - 3.0f; z += 5.0f)
 		{
 			for (auto x{ terrain_origin + 3.0f }; x < terrain_origin + terrain_size - 3.0f; x += 5.0f)
@@ -1235,7 +1344,8 @@ namespace zp
 				const auto pz{ z + (random() - 0.5f) * 4.5f };
 				const auto height{ terrain.height(px, pz) };
 				const auto slope{ 1.0f - terrain.normal(px, pz).y };
-				const auto& flora{ biome_flora[terrain.biome(px + (random() - 0.5f) * biome_scatter, pz + (random() - 0.5f) * biome_scatter)] };
+				const auto biome{ terrain.biome(px + (random() - 0.5f) * biome_scatter, pz + (random() - 0.5f) * biome_scatter) };
+				const auto& flora{ biome_flora[biome] };
 				const auto rocky{ mathematics.smoothstep(0.14f, 0.3f, slope) };
 				const auto roll{ random() };
 				const auto node_roll{ random() };
@@ -1250,11 +1360,9 @@ namespace zp
 
 				if (open && height > 2.5f && slope < 0.32f && roll < tree_chance)
 				{
-					foliage.add(firs[static_cast<std::uint32_t>(random() * 5.99f)], { px, height - 0.15f, pz }, yaw, scale);
+					const auto kind{ pick(biome) };
 
-					world.add_box({ px, height + 3.0f, pz }, { 0.45f * scale, 6.0f, 0.45f * scale }, mathematics.quat_identity(), structures::surface_wood, structures::contents_solid);
-
-					harvest.add(structures::node_tree, { px, height, pz }, 0.3f * scale, static_cast<std::uint32_t>(foliage.instances.size() - 1u), static_cast<std::int32_t>(world.brushes.size() - 1u));
+					plant(kind, { px, height, pz }, mathematics.lerp(tree_species[kind].smallest, tree_species[kind].largest, (scale - 0.7f) / 0.6f), yaw, random());
 				}
 
 				else if (open && height > 2.5f && slope < 0.3f && roll < snag_chance)
@@ -1336,6 +1444,11 @@ namespace zp
 					}
 				}
 
+				else if (open && height > 2.0f && slope < 0.45f && node_roll > 0.8f && node_roll < 0.8f + flora.gorse)
+				{
+					foliage.add(gorse[std::min(static_cast<std::uint32_t>(random() * static_cast<std::float_t>(gorse_variants)), gorse_variants - 1u)], { px, height - 0.1f, pz }, yaw, 0.75f + random() * 0.5f);
+				}
+
 				else if (open && height > 2.5f && roll < plant_chance)
 				{
 					foliage.add(plants[static_cast<std::uint32_t>(random() * 2.99f)], { px, height - 0.05f, pz }, yaw, 0.8f + random() * 0.5f);
@@ -1362,6 +1475,50 @@ namespace zp
 				}
 			}
 		}
+
+		auto hedged{ 0u };
+
+		for (auto z{ terrain_origin + hedge_step * 0.5f }; z < terrain_origin + terrain_size; z += hedge_step)
+		{
+			for (auto x{ terrain_origin + hedge_step * 0.5f }; x < terrain_origin + terrain_size; x += hedge_step)
+			{
+				if (terrain.biome(x, z) == structures::biome_farmland)
+				{
+					auto border{ FLT_MAX };
+
+					const auto plot{ mathematics.field(x, z, field_spacing, border) };
+					const auto hashed{ mathematics.hash_u32(static_cast<std::uint32_t>(static_cast<std::int32_t>(x * 2.0f)) * 73856093u ^ static_cast<std::uint32_t>(static_cast<std::int32_t>(z * 2.0f)) * 19349663u ^ hedge_salt) };
+					const auto keep{ mathematics.hash_float(hashed) };
+					const auto px{ x + (mathematics.hash_float(hashed ^ 0x9E3779B9u) - 0.5f) * hedge_step * 0.5f };
+					const auto pz{ z + (mathematics.hash_float(hashed ^ 0x85EBCA6Bu) - 0.5f) * hedge_step * 0.5f };
+					const auto ground{ terrain.height(px, pz) };
+					const auto yaw{ mathematics.hash_float(hashed ^ 0xC2B2AE35u) * two_pi };
+					const auto size{ mathematics.lerp(hedge_smallest, hedge_largest, mathematics.hash_float(hashed ^ 0x27D4EB2Fu)) };
+
+					if (border < hedge_band && keep < hedge_keep && ground > 2.5f && cleared(px, pz) == false)
+					{
+						if (keep < hedge_keep * hedge_standard)
+						{
+							plant(structures::tree_oak, { px, ground, pz }, tree_species[structures::tree_oak].largest, yaw, keep / (hedge_keep * hedge_standard));
+						}
+
+						else if ((plot & hedge_gorse_mask) == 0u)
+						{
+							foliage.add(gorse[(hashed >> 8u) % gorse_variants], { px, ground - 0.1f, pz }, yaw, size * hedge_gorse_scale);
+						}
+
+						else
+						{
+							foliage.add(hedges[(hashed >> 8u) % tree_species[structures::tree_hawthorn].variants], { px, ground - 0.1f, pz }, yaw, size);
+						}
+
+						hedged++;
+					}
+				}
+			}
+		}
+
+		logger.write("maps: planted %u firs, %u pines, %u birches, %u oaks, %u hawthorns, %u willows, %u hedge bushes", planted[structures::tree_fir], planted[structures::tree_pine], planted[structures::tree_birch], planted[structures::tree_oak], planted[structures::tree_hawthorn], planted[structures::tree_willow], hedged);
 
 		foliage.build({ terrain_origin, -60.0f, terrain_origin }, { terrain_origin + terrain_size, 300.0f, terrain_origin + terrain_size });
 	}
@@ -2070,7 +2227,24 @@ namespace zp
 	void maps_c::load_routes()
 	{
 		paths.clear();
+		stations.clear();
 		corridor.assign(static_cast<std::size_t>(route_cells) * route_cells, 0u);
+
+		if (const auto entry{ pak.find("world_stations") }; entry && entry->size >= sizeof(std::uint32_t))
+		{
+			stream_reader_c reader{};
+
+			reader.reset(pak.data(entry), static_cast<std::uint32_t>(entry->size));
+
+			stations.resize(std::min(reader.u32(), station_limit));
+
+			reader.bytes(stations.data(), static_cast<std::uint32_t>(stations.size() * sizeof(structures::station_s)));
+
+			if (reader.overflow)
+			{
+				stations.clear();
+			}
+		}
 
 		if (const auto entry{ pak.find("world_routes") }; entry && entry->size >= sizeof(std::uint32_t))
 		{
@@ -2126,7 +2300,7 @@ namespace zp
 			}
 		}
 
-		logger.write("maps: %zu routes loaded", paths.size());
+		logger.write("maps: %zu routes and %zu stations loaded", paths.size(), stations.size());
 	}
 	/*
 	//=====================================================================================
@@ -2171,6 +2345,12 @@ namespace zp
 			if (path.kind == structures::route_rail)
 			{
 				build_rail(path);
+
+				find_crossings(path);
+
+				build_stations(path);
+
+				build_crossings();
 			}
 
 			else
@@ -2330,6 +2510,235 @@ namespace zp
 		}
 
 		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::build_stations(const structures::route_path_s& path)
+	{
+		std::vector<std::float_t> reach;
+
+		measure(path, reach);
+
+		for (const auto& station : stations)
+		{
+			const auto head{ reach[std::min(static_cast<std::size_t>(station.index), reach.size() - 1u)] };
+			const auto side{ station.side };
+			const auto front{ head + platform_lead };
+			const auto back{ front - platform_module * static_cast<std::float_t>(platform_modules) };
+
+			for (auto piece{ 0u }; piece < platform_modules; piece++)
+			{
+				railside("rail_platform", path, reach, front - platform_module * (static_cast<std::float_t>(piece) + 0.5f), side * platform_offset, 0.0f, { side, 0.0f });
+			}
+
+			railside("rail_platform_end", path, reach, front + platform_ramp, side * platform_offset, 0.0f, { -1.0f, 0.0f });
+			railside("rail_platform_end", path, reach, back - platform_ramp, side * platform_offset, 0.0f, { 1.0f, 0.0f });
+			railside("rail_signal", path, reach, back - signal_back, -signal_offset, 0.0f, { 0.0f, 1.0f });
+
+			for (const auto& fittings : station_kits)
+			{
+				if (fittings.landmark == station.landmark && fittings.building)
+				{
+					railside("bld_station", path, reach, (front + back) * 0.5f, side * station_offset, station_floor, { side, 0.0f });
+				}
+
+				if (fittings.landmark == station.landmark && fittings.signal_box)
+				{
+					railside("rail_signal_box", path, reach, head - signal_box_back, -side * signal_box_offset, 0.0f, { -side, 0.0f });
+				}
+
+				if (fittings.landmark == station.landmark && fittings.water_tower)
+				{
+					railside("rail_water_tower", path, reach, head - water_tower_back, -side * water_tower_offset, 0.0f, { -side, 0.0f });
+				}
+			}
+
+			for (auto along{ back - platform_ramp }; along < front + platform_ramp + station_clearing_step; along += station_clearing_step)
+			{
+				const auto spot{ line_at(path, reach, along) };
+
+				clearings.push_back({ spot.x, 0.0f, spot.z, station_clearing });
+			}
+
+			const auto stop{ line_at(path, reach, head) };
+
+			logger.write("maps: station %u at %.0f %.1f %.0f, %.0f m along, platforms on the %s", station.landmark, stop.x, stop.y, stop.z, head, side > 0.0f ? "right" : "left");
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::find_crossings(const structures::route_path_s& rail)
+	{
+		std::vector<std::float_t> reach;
+
+		measure(rail, reach);
+
+		const auto count{ static_cast<std::uint32_t>(rail.points.size()) };
+		const auto segments{ static_cast<std::uint32_t>(reach.size()) - 1u };
+
+		crossings.clear();
+
+		for (const auto& path : paths)
+		{
+			for (auto step{ 0u }; path.kind == structures::route_road && step + 1u < path.points.size(); step++)
+			{
+				const auto& start{ path.points[step] };
+				const structures::vec2_s run{ path.points[step + 1u].x - start.x, path.points[step + 1u].z - start.z };
+
+				for (auto index{ 0u }; index < segments; index++)
+				{
+					const auto& from{ rail.points[index] };
+					const auto& to{ rail.points[(index + 1u) % count] };
+					const structures::vec2_s span{ to.x - from.x, to.z - from.z };
+					const structures::vec2_s gap{ from.x - start.x, from.z - start.z };
+					const auto denominator{ run.x * span.y - run.y * span.x };
+
+					if (std::fabs(gap.x) < crossing_search && std::fabs(gap.y) < crossing_search && std::fabs(denominator) > 0.0001f)
+					{
+						const auto road_part{ (gap.x * span.y - gap.y * span.x) / denominator };
+						const auto rail_part{ (gap.x * run.y - gap.y * run.x) / denominator };
+
+						if (road_part >= 0.0f && road_part < 1.0f && rail_part >= 0.0f && rail_part < 1.0f)
+						{
+							crossings.push_back({ mathematics.lerp(from, to, rail_part), mathematics.normalize(structures::vec3_s{ span.x, 0.0f, span.y }), mathematics.normalize(structures::vec3_s{ run.x, 0.0f, run.y }), mathematics.lerp(reach[index], reach[index + 1u], rail_part), path.width });
+						}
+					}
+				}
+			}
+		}
+
+		for (const auto& crossing : crossings)
+		{
+			logger.write("maps: level crossing at %.0f %.1f %.0f, %.0f m along the line, %.0f degrees", crossing.position.x, crossing.position.y, crossing.position.z, crossing.along, radians_to_degrees(std::acos(std::fabs(mathematics.dot(crossing.rail, crossing.road)))));
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::build_crossings()
+	{
+		for (const auto& crossing : crossings)
+		{
+			const structures::vec3_s verge{ crossing.road.z, 0.0f, -crossing.road.x };
+
+			for (auto side{ -1.0f }; side <= 1.0f; side += 2.0f)
+			{
+				const auto away{ verge_away(crossing, side) };
+				const auto left{ mathematics.dot(away, crossing.road) >= 0.0f ? 1.0f : -1.0f };
+				const auto board{ gate_hinge(crossing, side, left) + away * crossing_sign_back + verge * (left * crossing_sign_margin) };
+
+				for (auto edge{ -1.0f }; edge <= 1.0f; edge += 2.0f)
+				{
+					place_building(crossing_post_model, post_spot(crossing, side, edge), post_yaw(crossing, side, edge));
+				}
+
+				place_building(crossing_sign_model, { board.x, terrain.height(board.x, board.z), board.z }, verge_yaw(crossing, side) + crossing_sign_turn);
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::vec3_s maps_c::gate_hinge(const structures::crossing_s& crossing, std::float_t side, std::float_t edge)
+	{
+		const structures::vec3_s across{ crossing.rail.z, 0.0f, -crossing.rail.x };
+		const structures::vec3_s verge{ crossing.road.z, 0.0f, -crossing.road.x };
+		const auto reach{ crossing.width * 0.5f + crossing_gate_margin };
+		const auto slant{ mathematics.dot(crossing.road, across) };
+		const auto steady{ std::fabs(slant) > crossing_slant_floor ? slant : (slant >= 0.0f ? crossing_slant_floor : -crossing_slant_floor) };
+		const auto spot{ crossing.position + verge * (edge * reach) + crossing.road * ((side * crossing_gate_clear - edge * reach * mathematics.dot(verge, across)) / steady) };
+
+		return { spot.x, terrain.height(spot.x, spot.z), spot.z };
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::vec3_s maps_c::gate_toward(const structures::crossing_s& crossing, std::float_t side, std::float_t edge)
+	{
+		const auto other{ gate_hinge(crossing, side, -edge) - gate_hinge(crossing, side, edge) };
+
+		return mathematics.normalize(structures::vec3_s{ other.x, 0.0f, other.z });
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::vec3_s maps_c::post_spot(const structures::crossing_s& crossing, std::float_t side, std::float_t edge)
+	{
+		const auto spot{ gate_hinge(crossing, side, edge) - gate_toward(crossing, side, edge) * crossing_pivot_offset };
+
+		return { spot.x, terrain.height(spot.x, spot.z), spot.z };
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t maps_c::post_yaw(const structures::crossing_s& crossing, std::float_t side, std::float_t edge)
+	{
+		const auto toward{ gate_toward(crossing, side, edge) };
+
+		return std::atan2(-toward.z, toward.x) + crossing_post_turn;
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::vec3_s maps_c::verge_away(const structures::crossing_s& crossing, std::float_t side)
+	{
+		const structures::vec3_s across{ crossing.rail.z, 0.0f, -crossing.rail.x };
+
+		return crossing.road * (mathematics.dot(crossing.road, across) * side >= 0.0f ? 1.0f : -1.0f);
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t maps_c::verge_yaw(const structures::crossing_s& crossing, std::float_t side)
+	{
+		const auto away{ verge_away(crossing, side) };
+
+		return std::atan2(-away.x, -away.z);
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::railside(const char* model_name, const structures::route_path_s& path, const std::vector<std::float_t>& reach, std::float_t along, std::float_t offset, std::float_t lift, structures::vec2_s facing)
+	{
+		const auto point{ line_at(path, reach, along) };
+		const auto chord{ line_at(path, reach, along + 1.0f) - line_at(path, reach, along - 1.0f) };
+		const auto forward{ mathematics.normalize(structures::vec3_s{ chord.x, 0.0f, chord.z }) };
+		const structures::vec3_s right{ forward.z, 0.0f, -forward.x };
+		const auto toward{ right * facing.x + forward * facing.y };
+
+		place_building(model_name, point + right * offset + structures::vec3_s{ 0.0f, lift, 0.0f }, std::atan2(toward.x, toward.z));
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::measure(const structures::route_path_s& path, std::vector<std::float_t>& reach)
+	{
+		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+		const auto segments{ path.closed ? count : count - 1u };
+
+		reach.assign(static_cast<std::size_t>(segments) + 1u, 0.0f);
+
+		for (auto index{ 0u }; index < segments; index++)
+		{
+			reach[index + 1u] = reach[index] + mathematics.distance(path.points[index], path.points[(index + 1u) % count]);
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	structures::vec3_s maps_c::line_at(const structures::route_path_s& path, const std::vector<std::float_t>& reach, std::float_t along)
+	{
+		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+		const auto segments{ static_cast<std::ptrdiff_t>(reach.size()) - 1 };
+		const auto total{ reach.back() };
+		const auto wrapped{ path.closed ? std::fmod(std::fmod(along, total) + total, total) : std::clamp(along, 0.0f, total) };
+		const auto upper{ std::upper_bound(reach.begin(), reach.end(), wrapped) };
+		const auto index{ static_cast<std::size_t>(std::clamp<std::ptrdiff_t>(upper - reach.begin() - 1, 0, segments - 1)) };
+		const auto gap{ reach[index + 1u] - reach[index] };
+
+		return mathematics.lerp(path.points[index], path.points[(index + 1u) % count], gap > 0.0001f ? (wrapped - reach[index]) / gap : 0.0f);
 	}
 	/*
 	//=====================================================================================
