@@ -496,6 +496,7 @@ namespace zp
 
 		std::vector<std::float_t> nearest(heights.size(), FLT_MAX);
 		std::vector<std::float_t> target(heights.size(), 0.0f);
+		std::vector<std::float_t> broad(heights.size(), 0.0f);
 		std::vector<std::uint8_t> bedded(heights.size(), 0u);
 		std::vector<std::size_t> touched;
 
@@ -508,7 +509,6 @@ namespace zp
 			const auto count{ static_cast<std::int32_t>(path.size()) };
 			const auto window{ std::max(1, static_cast<std::int32_t>(route.smoothing / baker::route_spacing * 0.5f)) };
 			const auto half{ route.width * 0.5f };
-			const auto reach{ half + baker::route_shoulder };
 			const auto segments{ route.closed ? count : count - 1 };
 
 			std::vector<std::float_t> level(path.size());
@@ -516,7 +516,13 @@ namespace zp
 			std::vector<std::float_t> spans(path.size());
 			std::vector<std::float_t> lowest(path.size(), -FLT_MAX);
 			std::vector<std::float_t> highest(path.size(), FLT_MAX);
+			std::vector<std::float_t> flat(path.size(), half);
 			std::vector<std::uint8_t> pinned(path.size(), 0u);
+
+			if (route.kind == structures::route_rail)
+			{
+				stations(path, half, flat);
+			}
 
 			for (auto index{ 0 }; index < count; index++)
 			{
@@ -605,6 +611,7 @@ namespace zp
 				const auto span{ to - from };
 				const auto squared{ std::max(span.x * span.x + span.y * span.y, 0.0001f) };
 				const auto joined{ pinned[index] != 0u && pinned[next] != 0u };
+				const auto reach{ std::max(flat[index], flat[next]) + baker::route_shoulder };
 				const auto first_column{ std::max(static_cast<std::int32_t>(std::min(from.x, to.x) - reach - terrain_origin), 0) };
 				const auto last_column{ std::min(static_cast<std::int32_t>(std::max(from.x, to.x) + reach - terrain_origin) + 1, size - 1) };
 				const auto first_row{ std::max(static_cast<std::int32_t>(std::min(from.y, to.y) - reach - terrain_origin), 0) };
@@ -627,6 +634,7 @@ namespace zp
 
 							nearest[cell] = distance;
 							target[cell] = mathematics.lerp(level[index], level[next], along);
+							broad[cell] = mathematics.lerp(flat[index], flat[next], along);
 							bedded[cell] = static_cast<std::uint8_t>((bedded[cell] & 1u) | (joined ? 2u : 0u));
 						}
 					}
@@ -636,7 +644,7 @@ namespace zp
 			for (const auto cell : touched)
 			{
 				const auto distance{ nearest[cell] };
-				const auto margin{ std::max(distance - half, 0.0f) * route.slope };
+				const auto margin{ std::max(distance - broad[cell], 0.0f) * route.slope };
 				const auto closeness{ 1.0f - mathematics.smoothstep(half, half + baker::route_paint_band, distance) };
 
 				if ((bedded[cell] & 1u) == 0u || (bedded[cell] & 2u) != 0u)
@@ -662,6 +670,99 @@ namespace zp
 			}
 
 			routes.push_back(std::move(entry));
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void baker_terrain_c::stations(const std::vector<structures::vec2_s>& rail, std::float_t half, std::vector<std::float_t>& flat)
+	{
+		const auto count{ static_cast<std::int32_t>(rail.size()) };
+
+		std::vector<std::float_t> along(rail.size() + 1u, 0.0f);
+		std::vector<std::int32_t> crossings;
+		std::vector<structures::vec2_s> road;
+
+		stops.clear();
+
+		for (auto index{ 0 }; index < count; index++)
+		{
+			along[index + 1] = along[index] + mathematics.length(rail[(index + 1) % count] - rail[index]);
+		}
+
+		for (const auto& route : world_routes)
+		{
+			if (route.kind == structures::route_road)
+			{
+				route_path(route, road);
+
+				for (const auto& point : road)
+				{
+					for (auto index{ 0 }; index < count; index++)
+					{
+						if (mathematics.length(point - rail[index]) < station_crossing_reach)
+						{
+							crossings.push_back(index);
+						}
+					}
+				}
+			}
+		}
+
+		const auto total{ along.back() };
+
+		for (const auto kind : train_stops)
+		{
+			for (const auto& site : world_sites)
+			{
+				if (site.landmark == kind && stops.size() < station_limit)
+				{
+					auto nearest{ 0 };
+					auto best{ FLT_MAX };
+
+					for (auto index{ 0 }; index < count; index++)
+					{
+						if (const auto gap{ mathematics.length(rail[index] - site.position) }; gap < best)
+						{
+							best = gap;
+							nearest = index;
+						}
+					}
+
+					auto head{ along[nearest] };
+					auto closest{ station_crossing_search };
+
+					for (const auto crossing : crossings)
+					{
+						if (const auto gap{ std::remainder(along[crossing] - along[nearest], total) }; std::fabs(gap) < closest)
+						{
+							closest = std::fabs(gap);
+							head = along[nearest] + gap - station_crossing_clear;
+						}
+					}
+
+					const auto wrapped{ std::fmod(std::fmod(head, total) + total, total) };
+					const auto stop{ static_cast<std::int32_t>(std::clamp<std::ptrdiff_t>(std::upper_bound(along.begin(), along.end(), wrapped) - along.begin() - 1, 0, count - 1)) };
+					const auto tangent{ rail[(stop + 1) % count] - rail[(stop + count - 1) % count] };
+					const auto offset{ site.position - rail[stop] };
+					const auto side{ offset.x * tangent.y - offset.y * tangent.x >= 0.0f ? 1.0f : -1.0f };
+
+					stops.push_back({ kind, static_cast<std::uint32_t>(stop), side });
+
+					logger.write("baker: station %u at rail point %d (%.0f %.0f) %.0f m along, %.0f m from its site, crossing %s, %s side", kind, stop, rail[stop].x, rail[stop].y, wrapped, mathematics.length(offset), closest < station_crossing_search ? "moved clear" : "none", side > 0.0f ? "right" : "left");
+				}
+			}
+		}
+
+		for (const auto& stop : stops)
+		{
+			for (auto index{ 0 }; index < count; index++)
+			{
+				const auto ahead{ std::remainder(along[index] - along[stop.index], total) };
+				const auto weight{ mathematics.smoothstep(-station_yard_behind - station_yard_blend, -station_yard_behind, ahead) * (1.0f - mathematics.smoothstep(station_yard_ahead, station_yard_ahead + station_yard_blend, ahead)) };
+
+				flat[index] = std::max(flat[index], mathematics.lerp(half, station_yard_half, weight));
+			}
 		}
 	}
 	/*
@@ -693,7 +794,20 @@ namespace zp
 
 		items.push_back(std::move(item));
 
-		logger.write("baker: %u routes written", route_count);
+		baker::pak_item_s yard{};
+
+		std::snprintf(yard.entry.name, sizeof(yard.entry.name), "%s", "world_stations");
+
+		yard.entry.type = structures::pak_type_blob;
+
+		const auto station_count{ static_cast<std::uint32_t>(stops.size()) };
+
+		baker_models.append(yard, &station_count, sizeof(station_count));
+		baker_models.append(yard, stops.data(), stops.size() * sizeof(structures::station_s));
+
+		items.push_back(std::move(yard));
+
+		logger.write("baker: %u routes and %u stations written", route_count, station_count);
 	}
 	/*
 	//=====================================================================================
