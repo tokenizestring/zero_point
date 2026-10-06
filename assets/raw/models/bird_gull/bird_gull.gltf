@@ -1,0 +1,164 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "bird_gull"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bird_gull",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "bird_gull",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "bird_gull_normal.png",
+   "uri": "bird_gull_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "bird_gull_orm.png",
+   "uri": "bird_gull_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "bird_gull_albedo.png",
+   "uri": "bird_gull_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1305,
+   "max": [
+    0.7080000042915344,
+    0.047992389649152756,
+    0.29499998688697815
+   ],
+   "min": [
+    -0.7080000042915344,
+    -0.049998100847005844,
+    -0.27900001406669617
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1305,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1305,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 6582,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 15660,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 15660,
+   "byteOffset": 15660,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 10440,
+   "byteOffset": 31320,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 13164,
+   "byteOffset": 41760,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 54924,
+   "uri": "bird_gull.bin"
+  }
+ ]
+}

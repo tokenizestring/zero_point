@@ -1,0 +1,164 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "bird_crow"
+  }
+ ],
+ "materials": [
+  {
+   "name": "bird_crow",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    },
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0
+   },
+   "doubleSided": false
+  }
+ ],
+ "meshes": [
+  {
+   "name": "bird_crow",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "bird_crow_normal.png",
+   "uri": "bird_crow_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "bird_crow_orm.png",
+   "uri": "bird_crow_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "bird_crow_albedo.png",
+   "uri": "bird_crow_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 1645,
+   "max": [
+    0.4808022081851959,
+    0.04402754083275795,
+    0.23999999463558197
+   ],
+   "min": [
+    -0.4808022081851959,
+    -0.0459970198571682,
+    -0.23899999260902405
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 1645,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 1645,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 7698,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 19740,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 19740,
+   "byteOffset": 19740,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 13160,
+   "byteOffset": 39480,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 15396,
+   "byteOffset": 52640,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 68036,
+   "uri": "bird_crow.bin"
+  }
+ ]
+}
