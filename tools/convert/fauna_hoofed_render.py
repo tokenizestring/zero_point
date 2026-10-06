@@ -185,28 +185,29 @@ def shots(prefix, path, rows):
     compose(tiles, path)
 
 
-def sheet_rows(extent, head, scale=1.0):
+def sheet_rows(extent, head, scale=1.0, zoom=1.0):
     length = extent["length"]
     height = extent["height"]
     center = extent["center"]
     body = extent.get("body", height)
     side = {"target": (0.0, center, height * 0.5), "direction": (1.0, 0.0, 0.0), "ortho": fit(length, height, (1500, 1100)), "resolution": (1500, 1100)}
-    close = {"target": head, "direction": (0.8, -0.62, 0.12), "distance": 1.75 * scale, "lens": 70.0, "resolution": (900, 1100)}
-    front = {"target": (0.0, center, height * 0.5), "direction": (0.0, -1.0, 0.0), "ortho": fit(1.2 * scale, height, (640, 900)), "resolution": (640, 900)}
-    rear = {"target": (0.0, center * 0.4, body * 0.5), "direction": (0.72, 0.62, 0.3), "distance": 4.6 * scale, "resolution": (900, 900)}
-    top = {"target": (0.0, center, 0.0), "top": True, "ortho": fit(length, 1.2 * scale, (860, 900)), "resolution": (860, 900)}
+    close = {"target": head, "direction": (0.8, -0.62, 0.12), "distance": 1.75 * scale * zoom, "lens": 70.0, "resolution": (900, 1100)}
+    front = {"target": (0.0, center, height * 0.5), "direction": (0.0, -1.0, 0.0), "ortho": fit(1.2 * scale * zoom, height, (640, 900)), "resolution": (640, 900)}
+    rear = {"target": (0.0, center * 0.4, body * 0.5), "direction": (0.72, 0.62, 0.3), "distance": 4.6 * scale * zoom, "resolution": (900, 900)}
+    top = {"target": (0.0, center, 0.0), "top": True, "ortho": fit(length, 1.2 * scale * zoom, (860, 900)), "resolution": (860, 900)}
     return [[side, close], [front, rear, top]]
 
 
-def detail_rows(marks, scale=1.0):
-    head = marks["eye"] * numpy.array([0.0, 1.0, 1.0]) * scale + numpy.array([0.0, -0.06, -0.04]) * scale
-    profile = {"target": tuple(head), "direction": (1.0, 0.0, 0.0), "ortho": 0.62 * scale, "resolution": (1100, 900)}
-    face = {"target": tuple(head), "direction": (0.35, -1.0, 0.1), "ortho": 0.5 * scale, "resolution": (800, 900)}
-    above = {"target": tuple(head), "direction": (0.0, -1.0, 0.0), "ortho": 0.5 * scale, "resolution": (500, 900)}
-    fore = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * scale), "direction": (1.0, 0.0, 0.0), "ortho": 0.98 * scale, "resolution": (560, 900)}
-    fore_front = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * scale), "direction": (0.0, -1.0, 0.0), "ortho": 0.98 * scale, "resolution": (560, 900)}
-    hind = {"target": (0.0, float(marks["hock"][1]) * scale - 0.08 * scale, 0.52 * scale), "direction": (1.0, 0.0, 0.0), "ortho": 1.15 * scale, "resolution": (640, 900)}
-    hind_rear = {"target": (0.0, float(marks["hock"][1]) * scale, 0.52 * scale), "direction": (0.0, 1.0, 0.0), "ortho": 1.15 * scale, "resolution": (540, 900)}
+def detail_rows(marks, scale=1.0, zoom=1.0):
+    head = marks["eye"] * numpy.array([0.0, 1.0, 1.0]) * scale + numpy.array([0.0, -0.06, -0.04]) * scale * zoom
+    wide = scale * zoom
+    profile = {"target": tuple(head), "direction": (1.0, 0.0, 0.0), "ortho": 0.62 * wide, "resolution": (1100, 900)}
+    face = {"target": tuple(head), "direction": (0.35, -1.0, 0.1), "ortho": 0.5 * wide, "resolution": (800, 900)}
+    above = {"target": tuple(head), "direction": (0.0, -1.0, 0.0), "ortho": 0.5 * wide, "resolution": (500, 900)}
+    fore = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * wide), "direction": (1.0, 0.0, 0.0), "ortho": 0.98 * wide, "resolution": (560, 900)}
+    fore_front = {"target": (0.0, float(marks["carpus"][1]) * scale, 0.42 * wide), "direction": (0.0, -1.0, 0.0), "ortho": 0.98 * wide, "resolution": (560, 900)}
+    hind = {"target": (0.0, float(marks["hock"][1]) * scale - 0.08 * wide, 0.52 * wide), "direction": (1.0, 0.0, 0.0), "ortho": 1.15 * wide, "resolution": (640, 900)}
+    hind_rear = {"target": (0.0, float(marks["hock"][1]) * scale, 0.52 * wide), "direction": (0.0, 1.0, 0.0), "ortho": 1.15 * wide, "resolution": (540, 900)}
     return [[profile, face, above], [fore, fore_front, hind, hind_rear]]
 
 
