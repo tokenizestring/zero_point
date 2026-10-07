@@ -14,6 +14,7 @@ namespace zp
 	public:
 
 		SOCKET handle = INVALID_SOCKET;
+		WSAEVENT signal = WSA_INVALID_EVENT;
 		std::uint16_t port = 0u;
 		bool started = false;
 
@@ -64,6 +65,20 @@ namespace zp
 			return handle != INVALID_SOCKET;
 		}
 
+		bool watch()
+		{
+			signal = handle != INVALID_SOCKET ? WSACreateEvent() : WSA_INVALID_EVENT;
+
+			if (signal != WSA_INVALID_EVENT && WSAEventSelect(handle, signal, FD_READ) != 0)
+			{
+				WSACloseEvent(signal);
+
+				signal = WSA_INVALID_EVENT;
+			}
+
+			return signal != WSA_INVALID_EVENT;
+		}
+
 		void close()
 		{
 			if (handle != INVALID_SOCKET)
@@ -71,6 +86,13 @@ namespace zp
 				closesocket(handle);
 
 				handle = INVALID_SOCKET;
+			}
+
+			if (signal != WSA_INVALID_EVENT)
+			{
+				WSACloseEvent(signal);
+
+				signal = WSA_INVALID_EVENT;
 			}
 
 			if (started)
