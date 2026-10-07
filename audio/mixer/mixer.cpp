@@ -404,7 +404,7 @@ namespace zp
 
 			if (close_weight > 0.0f)
 			{
-				pending.push_back({ clock + delay, layers.close, position, std::min(1.0f, level * close_weight), pitch, cutoff, audio_reverb_send * (local ? 0.5f : 1.0f), local == false });
+				pending.push_back({ clock + delay, local && groups[layers.own].count ? layers.own : layers.close, position, std::min(1.0f, level * close_weight), pitch, cutoff, audio_reverb_send * (local ? 0.5f : 1.0f), local == false });
 			}
 
 			if (far_weight > 0.0f)
@@ -426,7 +426,7 @@ namespace zp
 
 			for (const auto& echo : echo_cache)
 			{
-				pending.push_back({ clock + echo.path / audio_speed_of_sound, layers.distant, echo.position, std::min(1.0f, loudness * echo.strength * std::pow(audio_gun_reference / (audio_gun_reference + echo.path), 0.6f) * 2.2f), pitch * 0.97f, air_cutoff(echo.path) * 0.6f, audio_reverb_send * 2.0f, true });
+				pending.push_back({ clock + echo.path / audio_speed_of_sound + random() * 0.02f, layers.distant, echo.position, std::min(1.0f, loudness * echo.strength * std::pow(audio_gun_reference / (audio_gun_reference + echo.path), 0.6f) * audio_echo_strength), pitch * 0.95f, std::min(air_cutoff(echo.path) * 0.35f, audio_echo_cutoff), audio_reverb_send * 2.0f, true });
 			}
 
 			if (layers.ejects)
@@ -499,11 +499,11 @@ namespace zp
 						const auto ceiling{ probe.y + step * 0.04f };
 						const auto ground{ terrain.height(probe.x, probe.z) };
 
-						if (ground > ceiling)
+						if (ground > ceiling + audio_echo_rise)
 						{
 							const structures::vec3_s point{ probe.x, std::min(ground, ceiling + 6.0f), probe.z };
 
-							echo_candidates.push_back({ point, step + mathematics.distance(point, listener_position), std::clamp((ground - ceiling) / 12.0f, 0.25f, 1.0f) });
+							echo_candidates.push_back({ point, step + mathematics.distance(point, listener_position), std::clamp((ground - ceiling) / 24.0f, 0.3f, 1.0f) });
 
 							found = true;
 						}
