@@ -72,11 +72,13 @@ namespace zp
 	*/
 	void player_c::turn_with_ride()
 	{
-		const auto riding{ train.ready && state.platform && state.platform <= std::size(train_consist) ? state.platform : 0u };
+		const auto car{ (state.flags & structures::movement_seated) ? vehicles.find(state.vehicle) : nullptr };
+		const auto driving{ car && vehicle_kinds[car->kind].wheel_count ? vehicle_ride_base + car->id : 0u };
+		const auto riding{ driving ? driving : (train.ready && state.platform && state.platform <= std::size(train_consist) ? state.platform : 0u) };
 
 		if (riding)
 		{
-			const auto forward{ train.pose(train.clock, riding - 1u).row3(2u) };
+			const auto forward{ driving ? mathematics.quat_rotate(car->shown_orientation, { 0.0f, 0.0f, 1.0f }) : train.pose(train.clock, riding - 1u).row3(2u) };
 			const auto facing{ std::atan2(forward.x, forward.z) };
 
 			yaw = ridden == riding ? mathematics.wrap_angle(yaw + mathematics.angle_difference(heading, facing)) : yaw;
@@ -131,9 +133,28 @@ namespace zp
 
 		command.sequence = ++sequence;
 
+		vehicles.pilot(state, command);
+
 		movement.simulate(state, command);
 
-		const auto usable{ survival.vitals.dead == false && (state.flags & structures::movement_swimming) == 0u };
+		if ((command.buttons & structures::button_use) && (harvest.tool.flags & structures::tool_flag_use_held) == 0u && client.connected() == false && survival.vitals.dead == false)
+		{
+			const auto seated{ (state.flags & structures::movement_seated) != 0u };
+
+			if (seated || vehicles.board(state, 0, eye, mathematics.forward_from_angles(yaw, pitch)))
+			{
+				if (seated)
+				{
+					vehicles.alight(state, 0);
+				}
+
+				previous = state;
+
+				harvest.tool.flags |= structures::tool_flag_use_held;
+			}
+		}
+
+		const auto usable{ survival.vitals.dead == false && (state.flags & (structures::movement_swimming | structures::movement_seated)) == 0u };
 		const auto moving{ mathematics.length(structures::vec3_s{ state.velocity.x, 0.0f, state.velocity.z }) > 1.0f };
 
 		weapons.tick(command, usable, moving);
