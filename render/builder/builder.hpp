@@ -20,6 +20,7 @@ namespace zp
 		structures::vec2_s uv_offset{};
 
 		void clear();
+		std::uint64_t strip();
 		void set_material(std::uint32_t id);
 		std::uint32_t add_vertex(structures::vec3_s position, structures::vec3_s normal, structures::vec2_s uv);
 		void add_triangle(std::uint32_t a, std::uint32_t b, std::uint32_t c);

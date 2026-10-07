@@ -21,6 +21,20 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	std::uint64_t builder_c::strip()
+	{
+		const auto freed{ vertices.capacity() * sizeof(structures::vertex_s) + indices.capacity() * sizeof(std::uint32_t) };
+
+		clear();
+
+		vertices.shrink_to_fit();
+		indices.shrink_to_fit();
+
+		return freed;
+	}
+	/*
+	//=====================================================================================
+	*/
 	void builder_c::set_material(std::uint32_t id)
 	{
 		material = id;
