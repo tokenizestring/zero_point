@@ -167,6 +167,10 @@ namespace zp
 
 				train.create();
 
+				vehicles.create();
+
+				vehicles.populate();
+
 				fauna.populate();
 
 				if (testing == false)
