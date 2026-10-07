@@ -287,7 +287,7 @@ namespace zp
 
 		for (auto index{ 0u }; index < movers.size() && carrying == false && (mask & structures::contents_solid); index++)
 		{
-			if (const auto& mover{ movers[index] }; mover.bounds_min.x <= swept_max.x && mover.bounds_max.x >= swept_min.x && mover.bounds_min.y <= swept_max.y && mover.bounds_max.y >= swept_min.y && mover.bounds_min.z <= swept_max.z && mover.bounds_max.z >= swept_min.z)
+			if (const auto& mover{ movers[index] }; mover.owner != ignored && mover.bounds_min.x <= swept_max.x && mover.bounds_max.x >= swept_min.x && mover.bounds_min.y <= swept_max.y && mover.bounds_max.y >= swept_min.y && mover.bounds_min.z <= swept_max.z && mover.bounds_max.z >= swept_min.z)
 			{
 				clip_planes(mover.planes, 12u, mover_brush_base + static_cast<std::int32_t>(index), mover.surface, start, end, extents, result);
 			}

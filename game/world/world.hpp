@@ -22,6 +22,7 @@ namespace zp
 		std::int32_t grid_y = 0;
 		std::int32_t grid_z = 0;
 		std::float_t kill_height = -30.0f;
+		std::uint32_t ignored = UINT32_MAX;
 		bool carrying = false;
 
 		void clear();
