@@ -16,6 +16,9 @@ namespace zp
 		std::mutex console_mutex;
 		std::vector<std::string> console_lines;
 		std::atomic<bool> running{ false };
+		HANDLE timer = nullptr;
+		HANDLE nudge = nullptr;
+		bool precise = false;
 		char name[net_server_name_length]{ "Zero Point" };
 		char map[32]{ "island" };
 		std::uint16_t port = static_cast<std::uint16_t>(net_default_port);
@@ -29,6 +32,7 @@ namespace zp
 		void parse(std::int32_t count, char** arguments);
 		bool load();
 		void loop();
+		void pause(std::float_t seconds);
 		void read_console();
 		void execute(const std::string& line);
 		void status();

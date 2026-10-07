@@ -19,7 +19,15 @@ namespace zp
 
 		SetConsoleCtrlHandler(control, TRUE);
 
-		timeBeginPeriod(1u);
+		timer = CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+		precise = timer != nullptr;
+		timer = precise ? timer : CreateWaitableTimerExW(nullptr, nullptr, 0u, TIMER_ALL_ACCESS);
+		nudge = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+
+		if (precise == false)
+		{
+			timeBeginPeriod(1u);
+		}
 
 		jobs.start();
 
@@ -38,6 +46,8 @@ namespace zp
 
 			else if (server.start(port, name, map, maximum))
 			{
+				logger.write("server: %s", server.socket.watch() ? "sleeping until a packet arrives or a tick is due" : "polling the network every millisecond");
+
 				admin.load();
 
 				if (forced_weather >= 0)
@@ -63,7 +73,18 @@ namespace zp
 
 		jobs.stop();
 
-		timeEndPeriod(1u);
+		if (precise == false)
+		{
+			timeEndPeriod(1u);
+		}
+
+		for (const auto handle : { timer, nudge })
+		{
+			if (handle)
+			{
+				CloseHandle(handle);
+			}
+		}
 
 		return result;
 	}
@@ -153,7 +174,9 @@ namespace zp
 					persist.read();
 				}
 
-				logger.write("server: world \"%s\" ready in %.1f s (%zu spawns, %zu brushes)", map, std::chrono::duration<std::double_t>(std::chrono::steady_clock::now() - started).count(), maps.spawns.size(), world.brushes.size());
+				const auto freed{ models.strip() + builder.strip() + terrain.strip() };
+
+				logger.write("server: world \"%s\" ready in %.1f s (%zu spawns, %zu brushes), %.0f MB of render data released", map, std::chrono::duration<std::double_t>(std::chrono::steady_clock::now() - started).count(), maps.spawns.size(), world.brushes.size(), static_cast<std::double_t>(freed) / 1048576.0);
 			}
 		}
 
@@ -174,7 +197,7 @@ namespace zp
 		while (running)
 		{
 			const auto now{ std::chrono::steady_clock::now() };
-			const auto delta{ std::min(std::chrono::duration<std::float_t>(now - previous).count(), 0.25f) };
+			const auto delta{ std::min(std::chrono::duration<std::float_t>(now - previous).count(), net_delta_limit) };
 
 			previous = now;
 
@@ -193,7 +216,28 @@ namespace zp
 				execute(line);
 			}
 
-			Sleep(1u);
+			pause(server.due());
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void dedicated_c::pause(std::float_t seconds)
+	{
+		const HANDLE handles[3]{ timer, nudge, server.socket.signal };
+
+		LARGE_INTEGER due{};
+
+		due.QuadPart = -static_cast<LONGLONG>(static_cast<std::double_t>(seconds) * 10000000.0);
+
+		if (due.QuadPart < 0)
+		{
+			if (SetWaitableTimer(timer, &due, 0, nullptr, nullptr, FALSE) == FALSE || WaitForMultipleObjects(server.dormant ? 3u : 2u, handles, FALSE, INFINITE) == WAIT_FAILED)
+			{
+				Sleep(1u);
+			}
+
+			WSAResetEvent(server.socket.signal);
 		}
 	}
 	/*
@@ -207,9 +251,13 @@ namespace zp
 		{
 			line[std::strcspn(line, "\r\n")] = 0;
 
-			std::lock_guard<std::mutex> guard{ console_mutex };
+			{
+				std::lock_guard<std::mutex> guard{ console_mutex };
 
-			console_lines.emplace_back(line);
+				console_lines.emplace_back(line);
+			}
+
+			SetEvent(nudge);
 		}
 	}
 	/*
@@ -926,6 +974,8 @@ namespace zp
 	BOOL WINAPI dedicated_c::control(DWORD type)
 	{
 		dedicated.running = false;
+
+		SetEvent(dedicated.nudge);
 
 		return type == CTRL_C_EVENT || type == CTRL_BREAK_EVENT || type == CTRL_CLOSE_EVENT ? TRUE : FALSE;
 	}
