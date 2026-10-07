@@ -17,6 +17,8 @@ namespace zp
 		structures::connection_s connection{};
 		structures::address_s server{};
 		structures::movement_state_s authority{};
+		structures::vehicle_s driven{};
+		bool driving = false;
 		std::vector<structures::server_entry_s> servers;
 		std::vector<structures::remote_player_s> remotes;
 		std::vector<std::int32_t> free_actors;

@@ -858,6 +858,17 @@ namespace zp
 		const auto cloud_value{ static_cast<std::float_t>(reader.u8()) / 255.0f };
 		const auto rain_value{ static_cast<std::float_t>(reader.u8()) / 255.0f };
 		const auto storm_value{ static_cast<std::float_t>(reader.u8()) / 255.0f };
+		const auto steering{ reader.u8() != 0u };
+
+		structures::vehicle_s steered{};
+
+		if (steering)
+		{
+			vehicles.read_state(reader, steered);
+		}
+
+		vehicles.read(reader, time);
+
 		const auto count{ reader.u8() };
 
 		if (reader.overflow == false)
@@ -892,6 +903,8 @@ namespace zp
 			survival.climate.wetness = wetness_value;
 			survival.climate.temperature = temperature_value;
 			authority = state_read;
+			driven = steered;
+			driving = steering && reader.overflow == false;
 
 			reconcile(last);
 
@@ -1093,6 +1106,22 @@ namespace zp
 		if (synchronized == false || last >= acknowledged)
 		{
 			auto replay{ authority };
+			auto vehicle{ driving && replay.vehicle == driven.id ? vehicles.find(driven.id) : nullptr };
+
+			if (driving && replay.vehicle == driven.id && vehicle == nullptr)
+			{
+				vehicles.spawn(driven.kind, driven.position, 0.0f);
+
+				vehicle = &vehicles.list.back();
+				vehicle->id = driven.id;
+			}
+
+			const auto shown{ vehicle ? vehicle->position : structures::vec3_s{} };
+
+			if (vehicle)
+			{
+				vehicles.adopt(*vehicle, driven);
+			}
 
 			for (auto sequence{ last + 1u }; sequence <= player.sequence; sequence++)
 			{
@@ -1100,8 +1129,17 @@ namespace zp
 
 				if (entry.used && entry.command.sequence == sequence)
 				{
+					vehicles.pilot(replay, entry.command);
+
 					movement.simulate(replay, entry.command);
 				}
+			}
+
+			if (vehicle)
+			{
+				const auto miss{ shown - vehicle->position };
+
+				vehicle->error = synchronized && mathematics.length(miss) < net_snap_distance ? vehicle->error + miss : structures::vec3_s{};
 			}
 
 			const auto offset{ player.state.position - replay.position };
@@ -1321,7 +1359,7 @@ namespace zp
 						actor.grounded = (newer.flags & structures::movement_on_ground) != 0u || (newer.flags & structures::movement_swimming) != 0u;
 						actor.dead = (newer.flags & 0x8000u) != 0u;
 						actor.death = actor.dead ? actor.death + delta : 0.0f;
-						actor.hidden = actor.dead && loot.nearest(actor.position) >= 0;
+						actor.hidden = (actor.dead && loot.nearest(actor.position) >= 0) || (newer.flags & structures::movement_seated) != 0u;
 						actor.held = remote.item < structures::item_count ? remote.item : 0u;
 
 						const auto speed{ mathematics.length(structures::vec3_s{ actor.velocity.x, 0.0f, actor.velocity.z }) };
