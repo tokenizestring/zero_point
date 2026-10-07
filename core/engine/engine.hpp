@@ -163,8 +163,10 @@ namespace zp
 	constexpr auto audio_echo_reach = 720.0f;
 	constexpr auto audio_echo_step = 6.0f;
 	constexpr auto audio_echo_wall_reach = 140.0f;
-	constexpr auto audio_echo_count = 5u;
-	constexpr auto audio_echo_strength = 0.6f;
+	constexpr auto audio_echo_count = 2u;
+	constexpr auto audio_echo_strength = 0.55f;
+	constexpr auto audio_echo_cutoff = 1400.0f;
+	constexpr auto audio_echo_rise = 8.0f;
 	constexpr auto audio_echo_cache = 0.6f;
 	constexpr auto audio_reverb_send = 0.3f;
 	constexpr auto audio_reverb_volume = 0.9f;
@@ -509,7 +511,7 @@ namespace zp
 	constexpr auto nude_character = "survivor_male_nude";
 	constexpr auto server_executable_name = "zero_point_server.exe";
 	constexpr auto net_protocol_id = 0x314E505Au;
-	constexpr auto net_protocol_version = 8u;
+	constexpr auto net_protocol_version = 9u;
 	constexpr auto net_time_scale = 4096.0;
 	constexpr auto net_time_window = 1.0;
 	constexpr auto net_time_lead = 0.1;
@@ -521,6 +523,8 @@ namespace zp
 	constexpr auto net_receive_bytes = 2048u;
 	constexpr auto net_server_tick_rate = 30.0f;
 	constexpr auto net_snapshot_rate = 20.0f;
+	constexpr auto net_hibernate_step = 0.5f;
+	constexpr auto net_delta_limit = 1.0f;
 	constexpr auto net_input_redundancy = 6u;
 	constexpr auto net_timeout = 12.0f;
 	constexpr auto net_connect_interval = 0.5f;
@@ -624,7 +628,7 @@ namespace zp
 	constexpr auto net_browse_interval = 3.0f;
 	constexpr auto net_report_interval = 2.0f;
 	constexpr auto net_priority_near = 12.0f;
-	constexpr auto net_early_status_ticks = 1000u;
+	constexpr auto net_early_status_time = 35.0;
 	constexpr auto net_player_bytes = 18u;
 	constexpr auto socket_buffer_bytes = 4 * 1024 * 1024;
 	constexpr DWORD socket_ignore_reset = 0x9800000Cu;
@@ -2011,6 +2015,7 @@ namespace zp
 		struct gun_sound_s
 		{
 			std::uint32_t close;
+			std::uint32_t own;
 			std::uint32_t mechanism;
 			std::uint32_t distant;
 			std::uint32_t tail;
@@ -2238,6 +2243,9 @@ namespace zp
 			sound_casing_wood,
 			sound_casing_soft,
 			sound_tinnitus,
+			sound_gun_pistol_self,
+			sound_gun_bolt_self,
+			sound_gun_auto_self,
 			sound_count
 		};
 		/*
@@ -2905,6 +2913,7 @@ namespace zp
 			std::uint32_t kind;
 			std::uint32_t first;
 			std::uint32_t count;
+			std::float_t rest = 0.0f;
 		};
 		/*
 		//=====================================================================================
@@ -4641,11 +4650,11 @@ namespace zp
 	constexpr auto hammer_repair_wood = 10u;
 	constexpr const char* tier_marks[4] = { "", "I", "II", "III" };
 
-	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss", "gun_pistol_close", "gun_pistol_mech", "gun_pistol_far", "gun_pistol_tail_plain", "gun_pistol_tail_forest", "gun_pistol_tail_mountains", "gun_pistol_tail_city", "gun_pistol_tail_room", "gun_bolt_close", "gun_bolt_mech", "gun_bolt_far", "gun_bolt_tail_plain", "gun_bolt_tail_forest", "gun_bolt_tail_mountains", "gun_bolt_tail_city", "gun_bolt_tail_room", "gun_auto_close", "gun_auto_mech", "gun_auto_far", "gun_auto_tail_plain", "gun_auto_tail_forest", "gun_auto_tail_mountains", "gun_auto_tail_city", "gun_auto_tail_room", "casing_hard", "casing_wood", "casing_soft", "tinnitus" };
+	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss", "gun_pistol_close", "gun_pistol_mech", "gun_pistol_far", "gun_pistol_tail_plain", "gun_pistol_tail_forest", "gun_pistol_tail_mountains", "gun_pistol_tail_city", "gun_pistol_tail_room", "gun_bolt_close", "gun_bolt_mech", "gun_bolt_far", "gun_bolt_tail_plain", "gun_bolt_tail_forest", "gun_bolt_tail_mountains", "gun_bolt_tail_city", "gun_bolt_tail_room", "gun_auto_close", "gun_auto_mech", "gun_auto_far", "gun_auto_tail_plain", "gun_auto_tail_forest", "gun_auto_tail_mountains", "gun_auto_tail_city", "gun_auto_tail_room", "casing_hard", "casing_wood", "casing_soft", "tinnitus", "gun_pistol_self", "gun_bolt_self", "gun_auto_self" };
 
 	constexpr std::uint32_t drone_sounds[structures::drone_count] = { structures::sound_train_engine, structures::sound_train_roll, structures::sound_count, structures::sound_count };
 
-	constexpr XAUDIO2FX_REVERB_I3DL2_PARAMETERS acoustic_presets[structures::acoustic_count] = { XAUDIO2FX_I3DL2_PRESET_PLAIN, XAUDIO2FX_I3DL2_PRESET_FOREST, XAUDIO2FX_I3DL2_PRESET_MOUNTAINS, XAUDIO2FX_I3DL2_PRESET_CITY, XAUDIO2FX_I3DL2_PRESET_ROOM, XAUDIO2FX_I3DL2_PRESET_UNDERWATER };
+	constexpr XAUDIO2FX_REVERB_I3DL2_PARAMETERS acoustic_presets[structures::acoustic_count] = { { 100.0f, -1000, -2600, 0.0f, 1.8f, 0.35f, -3000, 0.12f, -2400, 0.1f, 100.0f, 100.0f, 5000.0f }, XAUDIO2FX_I3DL2_PRESET_FOREST, XAUDIO2FX_I3DL2_PRESET_MOUNTAINS, XAUDIO2FX_I3DL2_PRESET_CITY, XAUDIO2FX_I3DL2_PRESET_ROOM, XAUDIO2FX_I3DL2_PRESET_UNDERWATER };
 
 	constexpr structures::weapon_definition_s weapon_definitions[structures::weapon_count] =
 	{
@@ -4657,16 +4666,18 @@ namespace zp
 	};
 	constexpr structures::gun_sound_s gun_sounds[structures::weapon_count] =
 	{
-		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
-		{ structures::sound_gun_pistol_close, structures::sound_gun_pistol_mech, structures::sound_gun_pistol_far, structures::sound_gun_pistol_tail_plain, 0.07f, false },
-		{ structures::sound_gun_bolt_close, structures::sound_gun_bolt_mech, structures::sound_gun_bolt_far, structures::sound_gun_bolt_tail_plain, 0.12f, false },
-		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
-		{ structures::sound_gun_auto_close, structures::sound_gun_auto_mech, structures::sound_gun_auto_far, structures::sound_gun_auto_tail_plain, 0.08f, true }
+		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
+		{ structures::sound_gun_pistol_close, structures::sound_gun_pistol_self, structures::sound_gun_pistol_mech, structures::sound_gun_pistol_far, structures::sound_gun_pistol_tail_plain, 0.07f, false },
+		{ structures::sound_gun_bolt_close, structures::sound_gun_bolt_self, structures::sound_gun_bolt_mech, structures::sound_gun_bolt_far, structures::sound_gun_bolt_tail_plain, 0.12f, false },
+		{ structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, structures::sound_count, 0.0f, false },
+		{ structures::sound_gun_auto_close, structures::sound_gun_auto_self, structures::sound_gun_auto_mech, structures::sound_gun_auto_far, structures::sound_gun_auto_tail_plain, 0.08f, true }
 	};
-	constexpr std::float_t audio_tail_gains[structures::acoustic_count] = { 0.5f, 0.8f, 0.75f, 0.8f, 0.95f, 0.0f };
+	constexpr std::float_t audio_tail_gains[structures::acoustic_count] = { 0.42f, 0.8f, 0.75f, 0.8f, 0.95f, 0.0f };
 
 	constexpr auto fauna_maximum = 220u;
 	constexpr auto fauna_think_interval = 0.1f;
+	constexpr auto fauna_wake_range = 420.0f;
+	constexpr auto fauna_dormant_step = 0.5f;
 	constexpr auto fauna_sync_range = 280.0f;
 	constexpr auto fauna_snapshot_animals = 40u;
 	constexpr auto fauna_snapshot_reserve = 12u;
