@@ -511,7 +511,7 @@ namespace zp
 	constexpr auto nude_character = "survivor_male_nude";
 	constexpr auto server_executable_name = "zero_point_server.exe";
 	constexpr auto net_protocol_id = 0x314E505Au;
-	constexpr auto net_protocol_version = 9u;
+	constexpr auto net_protocol_version = 10u;
 	constexpr auto net_time_scale = 4096.0;
 	constexpr auto net_time_window = 1.0;
 	constexpr auto net_time_lead = 0.1;
@@ -1631,6 +1631,107 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		enum town_building_e : std::uint32_t
+		{
+			town_terrace,
+			town_shop,
+			town_pub,
+			town_church,
+			town_police,
+			town_clinic,
+			town_garage,
+			town_fuel,
+			town_flats,
+			town_school,
+			town_hall,
+			town_house,
+			town_cottage,
+			town_ruin,
+			town_building_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum town_surface_e : std::uint32_t
+		{
+			town_road,
+			town_lane,
+			town_walk,
+			town_square,
+			town_yard,
+			town_surface_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_building_s
+		{
+			const char* model;
+			vec2_s size;
+			std::uint32_t floors;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_paving_s
+		{
+			std::uint32_t material;
+			vec3_s tint;
+			std::float_t top;
+			std::float_t tile;
+			bool raised;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_patch_s
+		{
+			vec2_s minimum;
+			vec2_s maximum;
+			std::uint32_t paving;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_row_s
+		{
+			vec2_s from;
+			vec2_s to;
+			std::float_t gap;
+			std::uint32_t count;
+			std::uint32_t buildings[10];
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_site_s
+		{
+			std::uint32_t building;
+			vec2_s position;
+			std::float_t yaw;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_yard_s
+		{
+			vec2_s minimum;
+			vec2_s maximum;
+			std::uint32_t clutter;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_prop_s
+		{
+			const char* model;
+			vec2_s position;
+			std::float_t yaw;
+			std::uint32_t surface;
+		};
+		/*
+		//=====================================================================================
+		*/
 		struct route_path_s
 		{
 			std::uint32_t kind;
@@ -1686,6 +1787,116 @@ namespace zp
 			vec3_s center;
 			vec3_s half;
 			std::uint32_t surface;
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum vehicle_kind_e : std::uint32_t
+		{
+			vehicle_rover,
+			vehicle_heli,
+			vehicle_kind_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct vehicle_kind_s
+		{
+			const char* model;
+			const char* name;
+			std::float_t mass;
+			vec3_s hull_center;
+			vec3_s hull_half;
+			vec3_s mass_center;
+			std::uint32_t wheel_count;
+			vec3_s wheels[4];
+			std::float_t wheel_radius;
+			std::float_t travel;
+			std::float_t spring;
+			std::float_t damper;
+			std::float_t drive;
+			std::float_t brake;
+			std::float_t steer;
+			std::float_t grip;
+			std::float_t top_speed;
+			std::float_t reverse_speed;
+			std::float_t lift;
+			std::float_t tilt;
+			std::float_t turn;
+			vec3_s rotor_hub;
+			vec3_s tail_hub;
+			std::float_t rotor_radius;
+			std::uint32_t seat_count;
+			vec3_s seats[2];
+			vec3_s exits[2];
+			vec3_s lights[2];
+			vec3_s exhaust;
+			std::float_t health;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct vehicle_controls_s
+		{
+			std::float_t throttle;
+			std::float_t steer;
+			std::float_t lift;
+			std::float_t pitch;
+			std::float_t roll;
+			std::float_t heading;
+			bool brake;
+			bool engine;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct vehicle_s
+		{
+			vec3_s position;
+			quat_s orientation;
+			vec3_s velocity;
+			vec3_s spin;
+			std::float_t compression[4];
+			std::float_t spun[4];
+			std::float_t steer;
+			std::float_t engine;
+			std::float_t rotor;
+			std::float_t rotor_speed;
+			std::float_t health;
+			std::float_t still;
+			std::float_t scrape;
+			std::float_t puff;
+			std::float_t wreck_time;
+			std::uint32_t home;
+			std::uint32_t kind;
+			std::uint32_t id;
+			std::int32_t riders[2];
+			bool asleep;
+			bool predicted;
+			vec3_s tick_position;
+			quat_s tick_orientation;
+			vec3_s from_position;
+			vec3_s to_position;
+			quat_s from_orientation;
+			quat_s to_orientation;
+			vec3_s shown_velocity;
+			std::double_t from_time;
+			std::double_t to_time;
+			std::double_t seen;
+			vec3_s shown_position;
+			quat_s shown_orientation;
+			vec3_s error;
+			mat4_s world;
+			mat4_s previous_world;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct vehicle_spawn_s
+		{
+			std::uint32_t kind;
+			vec2_s position;
+			std::float_t yaw;
 		};
 		/*
 		//=====================================================================================
@@ -2246,6 +2457,8 @@ namespace zp
 			sound_gun_pistol_self,
 			sound_gun_bolt_self,
 			sound_gun_auto_self,
+			sound_vehicle_engine,
+			sound_vehicle_rotor,
 			sound_count
 		};
 		/*
@@ -2257,6 +2470,8 @@ namespace zp
 			drone_roll,
 			drone_horn,
 			drone_brake,
+			drone_vehicle_engine,
+			drone_vehicle_rotor,
 			drone_count
 		};
 		/*
@@ -3648,7 +3863,8 @@ namespace zp
 			movement_swimming = 64u,
 			movement_underwater = 128u,
 			movement_wedged = 256u,
-			movement_riding = 512u
+			movement_riding = 512u,
+			movement_seated = 1024u
 		};
 		/*
 		//=====================================================================================
@@ -3678,6 +3894,8 @@ namespace zp
 			std::int32_t ground;
 			std::uint32_t platform;
 			vec3_s local;
+			std::uint32_t vehicle;
+			std::uint32_t seat;
 		};
 		/*
 		//=====================================================================================
@@ -3791,7 +4009,8 @@ namespace zp
 			death_beaten,
 			death_suicide,
 			death_frozen,
-			death_train
+			death_train,
+			death_vehicle
 		};
 		/*
 		//=====================================================================================
@@ -4144,6 +4363,7 @@ namespace zp
 			std::float_t orbit;
 			std::float_t orbit_distance;
 			std::int32_t flock_view;
+			std::int32_t drive_test;
 		};
 	}
 
@@ -4650,9 +4870,9 @@ namespace zp
 	constexpr auto hammer_repair_wood = 10u;
 	constexpr const char* tier_marks[4] = { "", "I", "II", "III" };
 
-	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss", "gun_pistol_close", "gun_pistol_mech", "gun_pistol_far", "gun_pistol_tail_plain", "gun_pistol_tail_forest", "gun_pistol_tail_mountains", "gun_pistol_tail_city", "gun_pistol_tail_room", "gun_bolt_close", "gun_bolt_mech", "gun_bolt_far", "gun_bolt_tail_plain", "gun_bolt_tail_forest", "gun_bolt_tail_mountains", "gun_bolt_tail_city", "gun_bolt_tail_room", "gun_auto_close", "gun_auto_mech", "gun_auto_far", "gun_auto_tail_plain", "gun_auto_tail_forest", "gun_auto_tail_mountains", "gun_auto_tail_city", "gun_auto_tail_room", "casing_hard", "casing_wood", "casing_soft", "tinnitus", "gun_pistol_self", "gun_bolt_self", "gun_auto_self" };
+	constexpr const char* sound_names[structures::sound_count] = { "step_grass", "step_concrete", "step_wood", "step_soft", "step_gravel", "hit_wood", "hit_rock", "hit_metal", "hit_flesh", "hit_soft", "chop", "swing", "pickup", "container", "craft", "equip", "ui_click", "ui_open", "ui_close", "ui_error", "zombie_groan", "zombie_snarl", "ghost_moan", "player_hurt", "heartbeat", "fire", "amb_forest", "amb_crickets", "amb_drone", "amb_wind", "amb_ocean", "shot_pistol", "shot_rifle", "reload_pistol", "reload_rifle", "bolt", "shot_assault", "dry_fire", "jam", "splash", "wade", "swim", "underwater", "shot_pistol_far", "shot_rifle_far", "shot_assault_far", "amb_rain", "thunder", "tree_creak", "tree_fall", "bullet_crack", "bullet_whiz", "ricochet", "train_engine", "train_roll", "train_clack", "train_horn", "train_brake", "train_hiss", "gun_pistol_close", "gun_pistol_mech", "gun_pistol_far", "gun_pistol_tail_plain", "gun_pistol_tail_forest", "gun_pistol_tail_mountains", "gun_pistol_tail_city", "gun_pistol_tail_room", "gun_bolt_close", "gun_bolt_mech", "gun_bolt_far", "gun_bolt_tail_plain", "gun_bolt_tail_forest", "gun_bolt_tail_mountains", "gun_bolt_tail_city", "gun_bolt_tail_room", "gun_auto_close", "gun_auto_mech", "gun_auto_far", "gun_auto_tail_plain", "gun_auto_tail_forest", "gun_auto_tail_mountains", "gun_auto_tail_city", "gun_auto_tail_room", "casing_hard", "casing_wood", "casing_soft", "tinnitus", "gun_pistol_self", "gun_bolt_self", "gun_auto_self", "vehicle_engine", "vehicle_rotor" };
 
-	constexpr std::uint32_t drone_sounds[structures::drone_count] = { structures::sound_train_engine, structures::sound_train_roll, structures::sound_count, structures::sound_count };
+	constexpr std::uint32_t drone_sounds[structures::drone_count] = { structures::sound_train_engine, structures::sound_train_roll, structures::sound_count, structures::sound_count, structures::sound_vehicle_engine, structures::sound_vehicle_rotor };
 
 	constexpr XAUDIO2FX_REVERB_I3DL2_PARAMETERS acoustic_presets[structures::acoustic_count] = { { 100.0f, -1000, -2600, 0.0f, 1.8f, 0.35f, -3000, 0.12f, -2400, 0.1f, 100.0f, 100.0f, 5000.0f }, XAUDIO2FX_I3DL2_PRESET_FOREST, XAUDIO2FX_I3DL2_PRESET_MOUNTAINS, XAUDIO2FX_I3DL2_PRESET_CITY, XAUDIO2FX_I3DL2_PRESET_ROOM, XAUDIO2FX_I3DL2_PRESET_UNDERWATER };
 
@@ -4863,6 +5083,65 @@ namespace zp
 	constexpr std::uint32_t train_consist[] = { structures::train_vehicle_locomotive, structures::train_vehicle_flat, structures::train_vehicle_open, structures::train_vehicle_box, structures::train_vehicle_coach };
 	constexpr std::uint32_t train_stops[] = { structures::landmark_halt, structures::landmark_harbour, structures::landmark_ouen, structures::landmark_battery, structures::landmark_portelet };
 	constexpr structures::station_kit_s station_kits[] = { { structures::landmark_ouen, true, false, true }, { structures::landmark_harbour, true, true, false }, { structures::landmark_halt, false, false, false }, { structures::landmark_battery, false, false, false }, { structures::landmark_portelet, false, true, false } };
+	constexpr auto vehicle_substep = 1.0f / 120.0f;
+	constexpr auto vehicle_gravity = 9.81f;
+	constexpr auto vehicle_mover_base = 128u;
+	constexpr auto vehicle_owner_base = 64u;
+	constexpr auto vehicle_enter_reach = 3.4f;
+	constexpr auto vehicle_sleep_speed = 0.06f;
+	constexpr auto vehicle_sleep_time = 1.5f;
+	constexpr auto vehicle_linear_drag = 0.02f;
+	constexpr auto vehicle_air_drag = 0.004f;
+	constexpr auto vehicle_mover_stride = 24u;
+	constexpr auto vehicle_ride_base = 0x10000u;
+	constexpr auto vehicle_engine_reference = 14.0f;
+	constexpr auto vehicle_rotor_reference = 40.0f;
+	constexpr auto vehicle_angular_drag = 1.2f;
+	constexpr auto vehicle_rolling = 0.018f;
+	constexpr auto vehicle_restitution = 0.08f;
+	constexpr auto vehicle_contact_friction = 0.55f;
+	constexpr auto vehicle_grip_response = 0.5f;
+	constexpr auto vehicle_steer_rate = 2.4f;
+	constexpr auto vehicle_steer_fade = 0.55f;
+	constexpr auto vehicle_spool_time = 6.0f;
+	constexpr auto vehicle_rotor_turns = 7.0f;
+	constexpr auto vehicle_tail_ratio = 4.6f;
+	constexpr auto vehicle_climb_rate = 7.0f;
+	constexpr auto vehicle_sink_rate = 5.0f;
+	constexpr auto vehicle_hold = 2.6f;
+	constexpr auto vehicle_crash_speed = 7.0f;
+	constexpr auto vehicle_crash_damage = 7.0f;
+	constexpr auto vehicle_bullet_scale = 0.35f;
+	constexpr auto vehicle_wreck_damage = 45.0f;
+	constexpr auto vehicle_bruise_scale = 2.5f;
+	constexpr auto vehicle_bang_speed = 3.0f;
+	constexpr auto vehicle_effect_range = 170.0f;
+	constexpr auto vehicle_smoke_health = 0.35f;
+	constexpr auto vehicle_dust_speed = 7.0f;
+	constexpr auto vehicle_wash_height = 7.0f;
+	constexpr auto vehicle_headlight_radius = 32.0f;
+	constexpr auto vehicle_headlight_cosine = 0.8f;
+	constexpr auto vehicle_headlight_tilt = 0.09f;
+	constexpr structures::vec3_s vehicle_headlight_color = { 2.6f, 2.4f, 2.0f };
+	constexpr auto vehicle_sync_range = 420.0f;
+	constexpr auto vehicle_snapshot_count = 8u;
+	constexpr auto vehicle_bytes = 35u;
+	constexpr auto vehicle_detail_distance = 140.0f;
+	constexpr auto vehicle_shadow_distance = 160.0f;
+	constexpr auto vehicle_respawn_time = 600.0f;
+	constexpr auto vehicle_stale_time = 3.0;
+	constexpr structures::vehicle_kind_s vehicle_kinds[structures::vehicle_kind_count] =
+	{
+		{ "veh_rover", "Armoured rover", 1900.0f, { 0.0f, 1.15f, 0.0f }, { 0.98f, 0.72f, 2.25f }, { 0.0f, 0.75f, 0.1f }, 4u, { { -0.84f, 0.44f, 1.42f }, { 0.84f, 0.44f, 1.42f }, { -0.84f, 0.44f, -1.36f }, { 0.84f, 0.44f, -1.36f } }, 0.44f, 0.32f, 30000.0f, 3200.0f, 2900.0f, 5200.0f, 0.62f, 1.15f, 30.0f, 7.0f, 0.0f, 0.0f, 0.0f, {}, {}, 0.0f, 2u, { { -0.42f, 1.55f, 0.25f }, { 0.42f, 1.55f, 0.25f } }, { { -1.8f, 0.1f, 0.2f }, { 1.8f, 0.1f, 0.2f } }, { { -0.6f, 1.0f, 2.3f }, { 0.6f, 1.0f, 2.3f } }, { 0.8f, 2.3f, -0.6f }, 600.0f },
+		{ "veh_heli", "Scrap helicopter", 950.0f, { 0.0f, 1.25f, 0.6f }, { 0.85f, 0.85f, 1.9f }, { 0.0f, 1.1f, 0.3f }, 0u, {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.65f, 0.42f, 1.3f, { 0.0f, 2.75f, 0.4f }, { 0.25f, 1.9f, -5.1f }, 4.1f, 2u, { { -0.35f, 1.7f, 1.2f }, { 0.35f, 1.7f, 1.2f } }, { { -1.6f, 0.1f, 0.8f }, { 1.6f, 0.1f, 0.8f } }, { { 0.0f, 0.9f, 2.4f }, { 0.0f, 0.9f, 2.4f } }, { 0.0f, 2.2f, -0.6f }, 400.0f }
+	};
+	constexpr structures::vehicle_spawn_s vehicle_spawns[] =
+	{
+		{ structures::vehicle_rover, { 506.0f, -421.5f }, half_pi },
+		{ structures::vehicle_rover, { 461.8f, -332.0f }, pi },
+		{ structures::vehicle_rover, { 1180.0f, -318.0f }, 0.35f },
+		{ structures::vehicle_heli, { 413.0f, -450.0f }, 0.0f }
+	};
 	constexpr auto station_crossing_reach = 3.0f;
 	constexpr auto station_crossing_search = 60.0f;
 	constexpr auto station_crossing_clear = 16.0f;
@@ -5072,8 +5351,8 @@ namespace zp
 		{ -0.44f, 0.9f, 2.7f, 0.016f }
 	};
 
-	constexpr const char* death_texts[9] = { "a bad fall", "the void", "drowning", "a gunshot", "starvation", "a beating", "giving up", "the cold", "the train" };
-	constexpr const char* death_lines[9] = { "The fall broke you.", "The island swallowed you.", "The sea took your last breath.", "A bullet found you.", "Hunger finished what the island started.", "You were beaten into the dirt.", "You gave up.", "The cold got into your bones.", "The train did not stop for you." };
+	constexpr const char* death_texts[10] = { "a bad fall", "the void", "drowning", "a gunshot", "starvation", "a beating", "giving up", "the cold", "the train", "a wreck" };
+	constexpr const char* death_lines[10] = { "The fall broke you.", "The island swallowed you.", "The sea took your last breath.", "A bullet found you.", "Hunger finished what the island started.", "You were beaten into the dirt.", "You gave up.", "The cold got into your bones.", "The train did not stop for you.", "The wreck went up with you inside." };
 
 	constexpr structures::vec3_s movement_unstick[14] =
 	{
@@ -5420,11 +5699,149 @@ namespace zp
 	constexpr structures::user_settings_s default_user_settings{ structures::quality_high, 1.0f, 95.0f, 1.0f, 0.85f, 1.0f, 1.0f, 1.0f, true, true, false, false, { 'W', 'S', 'A', 'D', VK_SPACE, VK_CONTROL, VK_SHIFT, VK_MENU, 'E', 'R', 'R', VK_TAB, 'M', 'T', 'F', 'G', 'V' }, 1u, 1u, 0u, 1u, 3u, 2u, 1u, 1u, 3u, 2u, 2u, 1u, true, false, true, 0.35f, false, 0.7f, false, 0.8f, 0u, 0u, 0u, 2u, 1u, true, true, true, 1u, 0u, true, true, 1.0f, 0u, false, false, true, true, true, true, false, true, false };
 	constexpr const char* bind_names[structures::bind_count] = { "Move forward", "Move back", "Move left", "Move right", "Jump", "Crouch", "Sprint", "Walk", "Use", "Reload", "Rotate or next piece", "Inventory", "Map", "Chat", "Melee", "Throw", "Visor" };
 	constexpr const char* compass_points[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
-	constexpr const char* marker_prefixes[4] = { "col_", "ramp_", "loot_", "light_" };
+	constexpr const char* marker_prefixes[6] = { "col_", "ramp_", "loot_", "light_", "seat_", "exhaust" };
 	constexpr const char* village_models[8] = { "bld_cottage", "bld_house", "bld_cottage", "bld_ruin", "bld_house", "bld_barn", "bld_cottage", "bld_shed" };
 	constexpr const char* farm_models[3] = { "bld_house", "bld_barn", "bld_shed" };
 	constexpr const char* hamlet_models[4] = { "bld_cottage", "bld_shed", "bld_ruin", "bld_cottage" };
 	constexpr const char* outlier_models[2] = { "bld_shed", "bld_ruin" };
+	constexpr auto town_clear_radius = 165.0f;
+	constexpr auto town_grid = 2.0f;
+	constexpr auto town_tile = 4.0f;
+	constexpr auto town_footing = 0.3f;
+	constexpr auto town_kerb_drop = 0.08f;
+	constexpr auto town_route_margin = 2.0f;
+	constexpr auto town_dash_length = 1.8f;
+	constexpr auto town_dash_spacing = 5.0f;
+	constexpr auto town_dash_width = 0.12f;
+	constexpr auto town_dash_lift = 0.006f;
+	constexpr auto town_dash_worn = 0.18f;
+	constexpr auto town_dash_minimum = 30.0f;
+	constexpr auto town_lamp_spacing = 26.0f;
+	constexpr auto town_lamp_inset = 0.55f;
+	constexpr auto town_prop_near = 140.0f;
+	constexpr auto town_prop_far = 420.0f;
+	constexpr auto town_prop_shadow = 90.0f;
+	constexpr auto town_wrecks = 12u;
+	constexpr auto town_junction_clear = 9.0f;
+	constexpr const char* town_lamp_model = "street_lamp_01";
+	constexpr const char* town_wreck_models[1] = { "covered_car" };
+	constexpr const char* town_barrier_models[2] = { "concrete_road_barrier", "concrete_road_barrier_02" };
+	constexpr structures::town_building_s town_buildings[structures::town_building_count] =
+	{
+		{ "bld_terrace", { 5.5f, 9.0f }, 2u },
+		{ "bld_shop", { 7.0f, 10.0f }, 2u },
+		{ "bld_pub", { 12.0f, 11.0f }, 2u },
+		{ "bld_church", { 12.0f, 26.0f }, 1u },
+		{ "bld_police", { 12.0f, 14.0f }, 2u },
+		{ "bld_clinic", { 10.0f, 12.0f }, 1u },
+		{ "bld_garage", { 14.0f, 12.0f }, 1u },
+		{ "bld_fuel", { 20.0f, 14.0f }, 1u },
+		{ "bld_flats", { 16.0f, 11.0f }, 3u },
+		{ "bld_school", { 16.0f, 10.0f }, 1u },
+		{ "bld_hall", { 14.0f, 20.0f }, 1u },
+		{ "bld_house", { 9.0f, 8.0f }, 2u },
+		{ "bld_cottage", { 8.0f, 7.0f }, 1u },
+		{ "bld_ruin", { 8.0f, 7.0f }, 1u }
+	};
+	constexpr structures::town_paving_s town_pavings[structures::town_surface_count] =
+	{
+		{ structures::material_asphalt, { 0.52f, 0.5f, 0.48f }, 0.035f, 3.0f, false },
+		{ structures::material_asphalt, { 0.64f, 0.62f, 0.58f }, 0.03f, 3.0f, false },
+		{ structures::material_floor_worn, { 0.82f, 0.8f, 0.76f }, 0.15f, 2.0f, true },
+		{ structures::material_floor_worn, { 0.92f, 0.88f, 0.82f }, 0.15f, 3.4f, true },
+		{ structures::material_concrete_rough, { 0.78f, 0.77f, 0.75f }, 0.06f, 3.0f, false }
+	};
+	constexpr structures::town_patch_s town_patches[] =
+	{
+		{ { -3.5f, -145.0f }, { 3.5f, 125.0f }, structures::town_road },
+		{ { -135.0f, -3.5f }, { -3.5f, 3.5f }, structures::town_road },
+		{ { 3.5f, -3.5f }, { 140.0f, 3.5f }, structures::town_road },
+		{ { -66.5f, 73.5f }, { -3.5f, 78.5f }, structures::town_lane },
+		{ { 3.5f, 73.5f }, { 106.5f, 78.5f }, structures::town_lane },
+		{ { -66.5f, -74.5f }, { -3.5f, -69.5f }, structures::town_lane },
+		{ { 3.5f, -74.5f }, { 106.5f, -69.5f }, structures::town_lane },
+		{ { -66.5f, 3.5f }, { -61.5f, 73.5f }, structures::town_lane },
+		{ { -66.5f, -69.5f }, { -61.5f, -3.5f }, structures::town_lane },
+		{ { 101.5f, 3.5f }, { 106.5f, 73.5f }, structures::town_lane },
+		{ { 101.5f, -69.5f }, { 106.5f, -3.5f }, structures::town_lane },
+		{ { 3.5f, 3.5f }, { 60.0f, 50.0f }, structures::town_square },
+		{ { -6.0f, 3.5f }, { -3.5f, 73.5f }, structures::town_walk },
+		{ { -61.5f, 3.5f }, { -6.0f, 6.0f }, structures::town_walk },
+		{ { 3.5f, 50.0f }, { 6.0f, 73.5f }, structures::town_walk },
+		{ { 60.0f, 3.5f }, { 101.5f, 6.0f }, structures::town_walk },
+		{ { -6.0f, -69.5f }, { -3.5f, -3.5f }, structures::town_walk },
+		{ { -61.5f, -6.0f }, { -6.0f, -3.5f }, structures::town_walk },
+		{ { 3.5f, -69.5f }, { 6.0f, -3.5f }, structures::town_walk },
+		{ { 6.0f, -6.0f }, { 101.5f, -3.5f }, structures::town_walk },
+		{ { -6.0f, 78.5f }, { -3.5f, 120.0f }, structures::town_walk },
+		{ { 3.5f, 78.5f }, { 6.0f, 120.0f }, structures::town_walk },
+		{ { -6.0f, -140.0f }, { -3.5f, -74.5f }, structures::town_walk },
+		{ { 3.5f, -115.0f }, { 6.0f, -74.5f }, structures::town_walk },
+		{ { -130.0f, 3.5f }, { -66.5f, 6.0f }, structures::town_walk },
+		{ { -130.0f, -6.0f }, { -66.5f, -3.5f }, structures::town_walk },
+		{ { 106.5f, 3.5f }, { 128.0f, 6.0f }, structures::town_walk },
+		{ { 106.5f, -6.0f }, { 114.0f, -3.5f }, structures::town_walk },
+		{ { -58.0f, -42.0f }, { -36.0f, -18.0f }, structures::town_yard }
+	};
+	constexpr structures::town_row_s town_rows[] =
+	{
+		{ { -6.0f, 73.0f }, { -6.0f, 20.0f }, 1.0f, 8u, { structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
+		{ { -6.0f, 6.0f }, { -61.0f, 6.0f }, 1.0f, 8u, { structures::town_shop, structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_house } },
+		{ { -60.0f, 20.0f }, { -60.0f, 72.0f }, 3.0f, 2u, { structures::town_flats, structures::town_flats } },
+		{ { 58.0f, 51.0f }, { 21.0f, 51.0f }, 1.0f, 4u, { structures::town_pub, structures::town_shop, structures::town_shop, structures::town_terrace } },
+		{ { 6.0f, 51.0f }, { 6.0f, 73.0f }, 1.0f, 4u, { structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace } },
+		{ { 100.0f, 6.0f }, { 62.0f, 6.0f }, 1.0f, 3u, { structures::town_clinic, structures::town_shop, structures::town_shop } },
+		{ { -6.0f, -22.0f }, { -6.0f, -69.0f }, 1.0f, 5u, { structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_police } },
+		{ { -61.0f, -6.0f }, { -12.0f, -6.0f }, 1.0f, 6u, { structures::town_school, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
+		{ { 6.0f, -69.0f }, { 6.0f, -20.0f }, 1.0f, 7u, { structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
+		{ { 6.0f, -6.0f }, { 60.0f, -6.0f }, 1.0f, 6u, { structures::town_shop, structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_garage } },
+		{ { -6.0f, 120.0f }, { -6.0f, 82.0f }, 3.0f, 3u, { structures::town_house, structures::town_cottage, structures::town_house } },
+		{ { 6.0f, 82.0f }, { 6.0f, 120.0f }, 3.0f, 3u, { structures::town_cottage, structures::town_ruin, structures::town_cottage } },
+		{ { -6.0f, -78.0f }, { -6.0f, -140.0f }, 3.0f, 4u, { structures::town_cottage, structures::town_house, structures::town_ruin, structures::town_cottage } },
+		{ { 6.0f, -115.0f }, { 6.0f, -78.0f }, 3.0f, 2u, { structures::town_house, structures::town_cottage } },
+		{ { -68.0f, 6.0f }, { -130.0f, 6.0f }, 3.0f, 4u, { structures::town_cottage, structures::town_house, structures::town_cottage, structures::town_ruin } },
+		{ { -130.0f, -6.0f }, { -68.0f, -6.0f }, 3.0f, 4u, { structures::town_ruin, structures::town_cottage, structures::town_house, structures::town_cottage } }
+	};
+	constexpr structures::town_site_s town_sites[] =
+	{
+		{ structures::town_church, { 73.0f, 28.0f }, half_pi },
+		{ structures::town_hall, { 80.0f, 61.0f }, half_pi },
+		{ structures::town_fuel, { 80.0f, -38.0f }, -0.734f }
+	};
+	constexpr structures::town_yard_s town_yards[] =
+	{
+		{ { -47.0f, 18.0f }, { -18.0f, 71.0f }, 10u },
+		{ { 18.0f, 63.0f }, { 56.0f, 71.0f }, 5u },
+		{ { -44.0f, -66.0f }, { -18.0f, -20.0f }, 8u },
+		{ { 18.0f, -66.0f }, { 58.0f, -20.0f }, 9u },
+		{ { 62.0f, 38.0f }, { 98.0f, 48.0f }, 4u }
+	};
+	constexpr structures::vec2_s town_memorial = { 31.75f, 26.75f };
+	constexpr std::float_t town_memorial_steps[3] = { 5.4f, 4.2f, 3.0f };
+	constexpr auto town_memorial_rise = 0.2f;
+	constexpr auto town_memorial_plinth = 1.6f;
+	constexpr auto town_memorial_needle = 4.6f;
+	constexpr structures::vec2_s town_planters[4] = { { 14.0f, 14.0f }, { 50.0f, 14.0f }, { 14.0f, 40.0f }, { 50.0f, 40.0f } };
+	constexpr structures::vec2_s town_trees[] = { { 64.0f, 13.0f }, { 66.0f, 45.0f }, { 90.0f, 46.0f }, { 97.0f, 30.0f }, { -30.0f, 60.0f }, { 30.0f, -45.0f }, { -25.0f, -50.0f }, { 40.0f, 67.0f } };
+	constexpr auto town_planter_size = 2.8f;
+	constexpr auto town_planter_rim = 0.2f;
+	constexpr auto town_planter_height = 0.5f;
+	constexpr auto town_planter_soil = 0.36f;
+	constexpr auto town_bollard_spacing = 2.6f;
+	constexpr auto town_bollard_inset = 0.45f;
+	constexpr structures::town_prop_s town_props[] =
+	{
+		{ "prop_bench", { 31.75f, 32.75f }, 0.0f, structures::surface_wood },
+		{ "prop_bench", { 31.75f, 20.75f }, pi, structures::surface_wood },
+		{ "prop_bench", { 37.75f, 26.75f }, half_pi, structures::surface_wood },
+		{ "prop_bench", { 25.75f, 26.75f }, -half_pi, structures::surface_wood },
+		{ "prop_bench", { 20.0f, 47.0f }, 0.0f, structures::surface_wood },
+		{ "prop_bench", { 44.0f, 47.0f }, 0.0f, structures::surface_wood },
+		{ "prop_phone_box", { 8.0f, 8.5f }, half_pi, structures::surface_metal },
+		{ "prop_bus_shelter", { 5.0f, 96.0f }, half_pi, structures::surface_metal },
+		{ "prop_bus_shelter", { -95.0f, -5.0f }, pi, structures::surface_metal }
+	};
+	constexpr structures::vec3_s town_barriers[] = { { -2.4f, 98.0f, 0.25f }, { 2.6f, 101.5f, -0.3f }, { -1.0f, -96.0f, 0.15f }, { 2.8f, -99.0f, -0.4f }, { -112.0f, 1.6f, 1.75f }, { -115.0f, -2.2f, 1.3f } };
 	constexpr const char* surface_names[structures::surface_count] = { "concrete", "metal", "grate", "wood", "glass", "fabric", "dirt", "flesh", "water", "grass", "sand", "rock", "gravel" };
 	constexpr const char* biome_names[structures::biome_count] = { "sea", "beach", "rocky shore", "dunes", "marsh", "meadow", "farmland", "broadleaf woodland", "pinewood", "coastal heath", "moorland", "summit" };
 	constexpr auto biome_scatter = 7.0f;
