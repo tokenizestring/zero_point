@@ -58,6 +58,7 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Players with the same name can join the same server: later arrivals get a number, like "Sam (2)", and nobody can take over someone else's saved character
 - You can see what other players are holding: rifles carried at low ready with both hands on the gun, pistols in two hands, tools at the hip, a bow in the left hand
 - Animals are simulated on the server and shared with everyone nearby, so a herd you spook bolts for every player at once
+- Dedicated servers are built to sit idle cheaply: an empty server rests at two ticks a second and uses no measurable CPU, a busy one wakes only for its 30 ticks and 20 snapshots a second however many players are on, herds far from every player update twice a second, and render-only data is freed after the world loads (about 55 MB of private memory)
 - Admin tools: bans, whitelist, password, chat commands
 
 **Technology**
@@ -66,6 +67,7 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Full-body first person: look down and you see your own legs and feet, and your shadow is your whole body
 - Brush and heightfield collision with swept box traces, moving platforms
 - Positional audio on XAudio2 with occlusion, distance delay, echoes, reverb zones and Doppler
+- Gunshots built from real firearm recordings: a close layer for other players, a separate layer for your own gun, the action, a distant report and stereo tails shaped by real impulse responses
 - An offline asset baker (texture compression, mesh simplification, terrain generation, font atlases) that packs everything into one file
 - Blender Python pipelines that generate guns, trees, grass, buildings and characters
 
@@ -75,25 +77,25 @@ Counted on 7 October 2026. Build output, the portable Blender install and binary
 
 | Language | Files | Lines |
 |---|---:|---:|
-| C++ source (.cpp) | 77 | 45,745 |
-| C++ headers (.hpp) | 67 | 10,368 |
+| C++ source (.cpp) | 77 | 45,888 |
+| C++ headers (.hpp) | 67 | 10,413 |
 | HLSL shaders | 18 | 3,852 |
-| Python asset tools | 82 | 46,169 |
+| Python asset tools | 82 | 46,343 |
 | Batch | 1 | 135 |
-| **Total** | **245** | **106,269** |
+| **Total** | **245** | **106,631** |
 
 | Part of the game | Files | Lines of C++ |
 |---|---:|---:|
-| Gameplay (`game`) | 44 | 17,061 |
-| Engine core (`core`) | 8 | 9,564 |
-| Renderer (`render`) | 48 | 9,240 |
+| Gameplay (`game`) | 44 | 17,084 |
+| Engine core (`core`) | 8 | 9,575 |
+| Renderer (`render`) | 48 | 9,290 |
 | Asset baker (`tools/baker`) | 15 | 7,215 |
-| Networking (`net`) | 12 | 6,408 |
+| Networking (`net`) | 12 | 6,490 |
 | Interface (`ui`) | 8 | 4,647 |
 | Audio (`audio`) | 2 | 1,238 |
-| Utilities (`utils`) | 4 | 588 |
+| Utilities (`utils`) | 4 | 610 |
 
-Other numbers: about 290 texture sets, 259 sounds, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
+Other numbers: about 290 texture sets, 279 sounds, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
 
 ## Building
 
