@@ -41,34 +41,65 @@ namespace zp
 		state.jump_timer = std::max(state.jump_timer - dt, 0.0f);
 		state.flags &= ~structures::movement_landed;
 
-		board(state, command.time);
-
-		if (state.flags & structures::movement_noclip)
+		if (state.flags & structures::movement_seated)
 		{
-			noclip(state, command);
+			seat(state);
 		}
 
 		else
 		{
-			unstick(state);
+			board(state, command.time);
 
-			if (state.water_depth > ((state.flags & structures::movement_swimming) ? water_swim_exit : water_swim_depth))
+			if (state.flags & structures::movement_noclip)
 			{
-				swim(state, command, dt);
+				noclip(state, command);
 			}
 
 			else
 			{
-				walk(state, command, dt);
-			}
-		}
+				unstick(state);
 
-		ride(state, command.time);
+				if (state.water_depth > ((state.flags & structures::movement_swimming) ? water_swim_exit : water_swim_depth))
+				{
+					swim(state, command, dt);
+				}
+
+				else
+				{
+					walk(state, command, dt);
+				}
+			}
+
+			ride(state, command.time);
+		}
 
 		state.eye_height = mathematics.approach(state.eye_height, (state.flags & structures::movement_crouched) ? player_crouch_eye_height : player_eye_height, dt * move_crouch_rate);
 		state.water_surface = water.still();
 		state.water_depth = state.water_surface - state.position.y;
 		state.flags = state.position.y + state.eye_height < state.water_surface - 0.02f ? (state.flags | structures::movement_underwater) : (state.flags & ~structures::movement_underwater);
+	}
+	/*
+	//=====================================================================================
+	*/
+	void movement_c::seat(structures::movement_state_s& state)
+	{
+		if (const auto vehicle{ vehicles.find(state.vehicle) }; vehicle)
+		{
+			state.position = vehicles.seat_point(*vehicle, state.seat) - structures::vec3_s{ 0.0f, player_eye_height, 0.0f };
+			state.velocity = vehicle->velocity;
+			state.flags &= ~(structures::movement_on_ground | structures::movement_crouched | structures::movement_sprinting | structures::movement_swimming);
+			state.fall_peak = state.position.y;
+			state.air_time = 0.0f;
+			state.platform = 0u;
+			state.ground = -1;
+		}
+
+		else
+		{
+			state.flags &= ~structures::movement_seated;
+			state.vehicle = 0u;
+			state.seat = 0u;
+		}
 	}
 	/*
 	//=====================================================================================
@@ -119,7 +150,7 @@ namespace zp
 		const auto grounded{ (state.flags & structures::movement_on_ground) != 0u };
 		const auto settled{ grounded || (state.flags & (structures::movement_swimming | structures::movement_noclip)) != 0u };
 		const auto mover{ state.ground - mover_brush_base };
-		const auto standing{ beside && grounded && mover >= 0 && mover < static_cast<std::int32_t>(world.movers.size()) ? world.movers[mover].owner + 1u : 0u };
+		const auto standing{ beside && grounded && mover >= 0 && mover < static_cast<std::int32_t>(world.movers.size()) && world.movers[mover].owner < std::size(train_consist) ? world.movers[mover].owner + 1u : 0u };
 		const auto next{ settled ? standing : state.platform };
 
 		if (next != state.platform)

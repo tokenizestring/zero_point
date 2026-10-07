@@ -20,6 +20,7 @@ namespace zp
 
 		void reset(structures::movement_state_s& state, structures::vec3_s position, std::float_t yaw);
 		void simulate(structures::movement_state_s& state, const structures::usercmd_s& command);
+		void seat(structures::movement_state_s& state);
 		void board(structures::movement_state_s& state, std::double_t time);
 		void ride(structures::movement_state_s& state, std::double_t time);
 		void walk(structures::movement_state_s& state, const structures::usercmd_s& command, std::float_t dt);
