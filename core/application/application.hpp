@@ -50,6 +50,7 @@ namespace zp
 		bool alive = false;
 		bool testing = false;
 		bool fauna_mirrored = false;
+		bool vehicles_mirrored = false;
 		bool herd_framed = false;
 
 		std::int32_t run(HINSTANCE instance);
@@ -72,6 +73,7 @@ namespace zp
 		std::int32_t approach_node(std::uint32_t kind);
 		void populate();
 		void update_fauna();
+		void update_vehicles();
 		void update_player_actor();
 		structures::vec3_s third_person_camera();
 		void update_fly_camera();

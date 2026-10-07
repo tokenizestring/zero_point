@@ -22,6 +22,7 @@ namespace zp
 		options.herd_view = -1;
 		options.hunt_herd = -1;
 		options.flock_view = -1;
+		options.drive_test = -1;
 
 		parse_arguments();
 
@@ -452,6 +453,13 @@ namespace zp
 					index++;
 				}
 
+				else if (std::strcmp(current, "--drive") == 0 && next[0])
+				{
+					options.drive_test = std::atoi(next);
+
+					index++;
+				}
+
 				else if (std::strcmp(current, "--hunt") == 0 && next[0])
 				{
 					options.hunt_herd = std::atoi(next);
@@ -637,6 +645,12 @@ namespace zp
 			maps.load(options.map[0] ? options.map : "island");
 
 			train.create();
+
+			vehicles.create();
+
+			vehicles.populate();
+
+			vehicles_mirrored = false;
 
 			gates.create();
 
@@ -826,6 +840,21 @@ namespace zp
 			{
 				fauna.damage(first, 100000.0f, spot);
 			}
+		}
+
+		if (options.drive_test >= 0 && vehicles.list.size())
+		{
+			auto& vehicle{ vehicles.list[static_cast<std::uint32_t>(options.drive_test) % vehicles.list.size()] };
+			const auto ahead{ mathematics.quat_rotate(vehicle.orientation, { 0.0f, 0.0f, 1.0f }) };
+
+			player.spawn(vehicles.exit_point(vehicle, 0u), std::atan2(ahead.x, ahead.z));
+
+			vehicle.riders[0] = 0;
+
+			player.state.vehicle = vehicle.id;
+			player.state.seat = 0u;
+			player.state.flags |= structures::movement_seated;
+			player.previous = player.state;
 		}
 
 		if (options.flock_view >= 0 && wildlife.flocks.size())
@@ -1179,6 +1208,8 @@ namespace zp
 
 			update_fauna();
 
+			update_vehicles();
+
 			wildlife.update(delta, renderer.camera.position);
 
 			if (live)
@@ -1275,6 +1306,8 @@ namespace zp
 			projectiles.submit();
 
 			train.submit();
+
+			vehicles.submit();
 
 			gates.submit();
 
@@ -1488,6 +1521,24 @@ namespace zp
 			if (frame_index % 60u == 0u)
 			{
 				logger.write("ride: frame %llu clock %.2f pos %.2f %.2f %.2f local %.3f %.3f %.3f platform %u flags %u train speed %.2f eye %.2f %.2f %.2f", frame_index, train.clock, player.state.position.x, player.state.position.y, player.state.position.z, player.state.local.x, player.state.local.y, player.state.local.z, player.state.platform, player.state.flags, train.speed, player.eye.x, player.eye.y, player.eye.z);
+			}
+		}
+
+		else if (options.drive_test >= 0 && (player.state.flags & structures::movement_seated))
+		{
+			const auto vehicle{ vehicles.find(player.state.vehicle) };
+			const auto flying{ vehicle && vehicle_kinds[vehicle->kind].wheel_count == 0u };
+
+			platform.input.mouse_delta = {};
+			platform.simulate(structures::bind_forward, flying ? frame_index > 560u && frame_index < 760u : frame_index > 40u && frame_index < 330u);
+			platform.simulate(structures::bind_right, flying ? frame_index > 640u && frame_index < 700u : frame_index > 190u && frame_index < 250u);
+			platform.simulate(structures::bind_jump, flying ? frame_index > 380u && frame_index < 560u : frame_index > 340u);
+
+			player.update(delta, true);
+
+			if (frame_index % 30u == 0u && vehicle)
+			{
+				logger.write("drive: frame %llu vehicle %u at %.2f %.2f %.2f speed %.2f up %.2f rotor %.2f engine %.2f health %.0f compression %.2f %.2f %.2f %.2f", frame_index, vehicle->id, vehicle->position.x, vehicle->position.y, vehicle->position.z, mathematics.length(vehicle->velocity), mathematics.quat_rotate(vehicle->orientation, { 0.0f, 1.0f, 0.0f }).y, vehicle->rotor_speed, vehicle->engine, vehicle->health, vehicle->compression[0], vehicle->compression[1], vehicle->compression[2], vehicle->compression[3]);
 			}
 		}
 
@@ -2076,6 +2127,61 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void application_c::update_vehicles()
+	{
+		const auto connected{ client.connected() };
+
+		if (connected != vehicles_mirrored)
+		{
+			vehicles.clear();
+
+			if (connected == false)
+			{
+				vehicles.populate();
+			}
+
+			vehicles_mirrored = connected;
+		}
+
+		if (connected == false)
+		{
+			vehicles.simulate(delta);
+
+			for (auto& vehicle : vehicles.list)
+			{
+				const auto mine{ (player.state.flags & structures::movement_seated) != 0u && player.state.vehicle == vehicle.id && survival.vitals.dead == false };
+
+				if (vehicle.scrape > vehicle_bang_speed)
+				{
+					mixer.play(structures::sound_hit_metal, vehicle.position + structures::vec3_s{ 0.0f, 1.0f, 0.0f }, std::min(1.0f, vehicle.scrape / 12.0f), 0.7f + mixer.random() * 0.2f);
+				}
+
+				if (mine && vehicle.health <= 0.0f)
+				{
+					vehicles.alight(player.state, 0);
+
+					player.previous = player.state;
+					survival.harm = structures::death_vehicle;
+
+					survival.damage(vehicle_wreck_damage);
+				}
+
+				else if (mine && vehicle.scrape > vehicle_crash_speed)
+				{
+					survival.harm = structures::death_vehicle;
+
+					survival.damage((vehicle.scrape - vehicle_crash_speed) * vehicle_bruise_scale);
+				}
+
+				vehicle.scrape = 0.0f;
+			}
+		}
+
+		vehicles.update(delta, client.server_clock - net_interpolation_delay, connected);
+	}
+	/*
+	//=====================================================================================
+	*/
 	void application_c::update_player_actor()
 	{
 		if (player_actor < actors.list.size())
@@ -2088,7 +2194,7 @@ namespace zp
 			body.look_pitch = player.pitch;
 			body.crouched = (player.state.flags & structures::movement_crouched) != 0u;
 			body.grounded = (player.state.flags & structures::movement_on_ground) != 0u;
-			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead;
+			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead || (player.state.flags & structures::movement_seated) != 0u;
 			body.first_person = options.third_person == false;
 			body.held = survival.slots[inventory_slots + survival.active_slot].item;
 		}
