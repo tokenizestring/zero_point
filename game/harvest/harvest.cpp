@@ -158,7 +158,26 @@ namespace zp
 
 			char text[96]{};
 
-			if (const auto target{ pickup_target(player.eye, forward) }; target >= 0)
+			auto seat{ 0u };
+
+			if (player.state.flags & structures::movement_seated)
+			{
+				if (const auto vehicle{ vehicles.find(player.state.vehicle) }; vehicle)
+				{
+					std::snprintf(text, sizeof(text), "%s   [E] get out", vehicle_kinds[vehicle->kind].name);
+
+					hud.set_prompt(text);
+				}
+			}
+
+			else if (const auto vehicle{ vehicles.reach(player.eye, forward, seat) }; vehicle >= 0)
+			{
+				std::snprintf(text, sizeof(text), "%s   [E] %s", vehicle_kinds[vehicles.list[vehicle].kind].name, seat == 0u ? (vehicle_kinds[vehicles.list[vehicle].kind].wheel_count ? "drive" : "fly") : "ride");
+
+				hud.set_prompt(text);
+			}
+
+			else if (const auto target{ pickup_target(player.eye, forward) }; target >= 0)
 			{
 				const auto kind{ nodes[target].kind };
 
