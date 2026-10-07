@@ -95,6 +95,7 @@
 #include "game/weapons/weapons.hpp"
 #include "game/viewmodel/viewmodel.hpp"
 #include "game/train/train.hpp"
+#include "game/vehicles/vehicles.hpp"
 #include "game/gates/gates.hpp"
 #include "game/marks/marks.hpp"
 
