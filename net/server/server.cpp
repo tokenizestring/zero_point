@@ -938,6 +938,36 @@ namespace zp
 
 		fauna.simulate(delta);
 
+		vehicles.simulate(delta);
+
+		for (auto& vehicle : vehicles.list)
+		{
+			if (vehicle.scrape > vehicle_bang_speed)
+			{
+				sound_at(-1, structures::sound_hit_metal, vehicle.position + structures::vec3_s{ 0.0f, 1.0f, 0.0f }, std::min(1.0f, vehicle.scrape / 12.0f), 0.7f + random() * 0.2f, audio_event_mid);
+			}
+
+			for (auto seat{ 0u }; seat < 2u; seat++)
+			{
+				if (const auto rider{ vehicle.riders[seat] }; rider >= 0 && rider < static_cast<std::int32_t>(clients.size()) && clients[rider].active && clients[rider].alive)
+				{
+					if (vehicle.health <= 0.0f)
+					{
+						vehicles.alight(clients[rider].state, rider);
+
+						hurt(rider, vehicle_wreck_damage, structures::death_vehicle, -1);
+					}
+
+					else if (vehicle.scrape > vehicle_crash_speed)
+					{
+						hurt(rider, (vehicle.scrape - vehicle_crash_speed) * vehicle_bruise_scale, structures::death_vehicle, -1);
+					}
+				}
+			}
+
+			vehicle.scrape = 0.0f;
+		}
+
 		for (const auto& bite : fauna.bites)
 		{
 			for (auto index{ 0 }; index < static_cast<std::int32_t>(clients.size()); index++)
@@ -1177,7 +1207,12 @@ namespace zp
 		{
 			marks.impact(hit, direction, item_definitions[item].damage, false);
 
-			if (hit.brush >= 0)
+			if (const auto mover{ hit.brush - mover_brush_base }; mover >= 0 && mover < static_cast<std::int32_t>(world.movers.size()) && world.movers[mover].owner >= vehicle_owner_base && world.movers[mover].owner < vehicle_owner_base + vehicles.list.size())
+			{
+				vehicles.damage(world.movers[mover].owner - vehicle_owner_base, item_definitions[item].damage * vehicle_bullet_scale);
+			}
+
+			else if (hit.brush >= 0)
 			{
 				building.damage(hit.brush, item_definitions[item].damage * 0.25f, true);
 			}
@@ -1571,11 +1606,28 @@ namespace zp
 
 			peer.command_time = command.time;
 
+			vehicles.pilot(peer.state, command);
+
 			movement.simulate(peer.state, command);
 
 			marks.tread(peer.state, peer.tread);
 
-			const auto usable{ peer.alive && (peer.state.flags & structures::movement_swimming) == 0u };
+			if ((command.buttons & structures::button_use) && (peer.tool.flags & structures::tool_flag_use_held) == 0u)
+			{
+				const auto seated{ (peer.state.flags & structures::movement_seated) != 0u };
+
+				if (seated || vehicles.board(peer.state, index, peer.state.position + structures::vec3_s{ 0.0f, peer.state.eye_height, 0.0f }, mathematics.forward_from_angles(command.yaw, command.pitch)))
+				{
+					if (seated)
+					{
+						vehicles.alight(peer.state, index);
+					}
+
+					peer.tool.flags |= structures::tool_flag_use_held;
+				}
+			}
+
+			const auto usable{ peer.alive && (peer.state.flags & (structures::movement_swimming | structures::movement_seated)) == 0u };
 
 			weapons.step(peer.weapon, survivors[index], command, usable, mathematics.length(structures::vec3_s{ peer.state.velocity.x, 0.0f, peer.state.velocity.z }) > 1.0f);
 
@@ -1686,6 +1738,11 @@ namespace zp
 
 			survivors[index].vitals.health = 0.0f;
 			survivors[index].vitals.dead = true;
+
+			if (peer.state.flags & structures::movement_seated)
+			{
+				vehicles.alight(peer.state, index);
+			}
 
 			if (peer.bot == false)
 			{
@@ -1865,6 +1922,17 @@ namespace zp
 				writer.u8(static_cast<std::uint8_t>(weather_phases[weather_phase].cloud * 255.0f));
 				writer.u8(static_cast<std::uint8_t>(weather_phases[weather_phase].rain * 255.0f));
 				writer.u8(static_cast<std::uint8_t>(weather_phases[weather_phase].storm * 255.0f));
+
+				const auto driven{ (peer.state.flags & structures::movement_seated) && peer.state.seat == 0u ? vehicles.find(peer.state.vehicle) : nullptr };
+
+				writer.u8(driven ? 1u : 0u);
+
+				if (driven)
+				{
+					vehicles.write_state(writer, *driven);
+				}
+
+				vehicles.write(writer, peer.state.position, driven ? driven->id : 0u);
 
 				heard.clear();
 
@@ -2346,6 +2414,11 @@ namespace zp
 				writer.u8(structures::packet_disconnect);
 
 				send_raw(peer.connection.address, packet, writer.size);
+			}
+
+			if (peer.state.flags & structures::movement_seated)
+			{
+				vehicles.alight(peer.state, index);
 			}
 
 			if (peer.bot == false)
