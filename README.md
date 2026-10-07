@@ -34,6 +34,13 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Gulls wheel over the coast and crows over the fields and woods, flapping and gliding, and a gunshot sends them climbing away. Schools of mackerel and sea bass swim offshore and scatter when you swim close
 - Day and night cycle with a procedural sky, weather (overcast, rain, storms with lightning), an ocean you can swim and dive in
 - Buildings modelled in Blender with interiors, collision and loot spots
+- Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a granite war memorial, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, and rows of furnished Victorian terraced houses with back yards. A church, hall, pub, shops, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
+- Wrecked cars, barricades and junk in the streets and yards, with loot to find
+
+**Vehicles**
+- An armoured junk rover and a scrap helicopter you can drive and fly, with a seat for a passenger. The Blender models are on the way; simple stand-ins are in the game until then
+- Simulated on the server: sprung wheels with tyre grip, weight transfer and a handbrake for the rover, and a rotor that spools up, holds height and climbs at a set rate for the helicopter. The driver's game predicts every input so steering feels instant, and everyone else sees the vehicle move smoothly
+- Bullets and crashes damage the hull, hard crashes hurt the people inside, damaged vehicles smoke and wrecks burn out and come back after a while. Headlights come on after dusk
 
 **Survival**
 - Health, food, water, breath, body temperature and wetness
@@ -73,29 +80,29 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 
 ## Numbers
 
-Counted on 7 October 2026. Build output, the portable Blender install and binary assets are not included in these counts.
+Counted on 8 October 2026. Build output, the portable Blender install and binary assets are not included in these counts.
 
 | Language | Files | Lines |
 |---|---:|---:|
-| C++ source (.cpp) | 77 | 45,888 |
-| C++ headers (.hpp) | 67 | 10,413 |
+| C++ source (.cpp) | 78 | 47,906 |
+| C++ headers (.hpp) | 68 | 10,936 |
 | HLSL shaders | 18 | 3,852 |
-| Python asset tools | 82 | 46,343 |
+| Python asset tools | 88 | 52,576 |
 | Batch | 1 | 135 |
-| **Total** | **245** | **106,631** |
+| **Total** | **253** | **115,405** |
 
 | Part of the game | Files | Lines of C++ |
 |---|---:|---:|
-| Gameplay (`game`) | 44 | 17,084 |
-| Engine core (`core`) | 8 | 9,575 |
+| Gameplay (`game`) | 46 | 18,982 |
+| Engine core (`core`) | 8 | 10,100 |
 | Renderer (`render`) | 48 | 9,290 |
 | Asset baker (`tools/baker`) | 15 | 7,215 |
-| Networking (`net`) | 12 | 6,490 |
+| Networking (`net`) | 12 | 6,607 |
 | Interface (`ui`) | 8 | 4,647 |
 | Audio (`audio`) | 2 | 1,238 |
 | Utilities (`utils`) | 4 | 610 |
 
-Other numbers: about 290 texture sets, 279 sounds, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
+Other numbers: about 290 texture sets, 281 sounds, 2 kinds of vehicle, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
 
 ## Building
 

@@ -97,6 +97,9 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [ ] Level crossing gates that swing shut with flashing lamps before the train passes, and a horn blast before every crossing (code in, waiting for the gate models)
 34. [ ] Detailed, fully furnished structures (Blender-built or CC0 downloads):
     - [x] Cottage, two-storey house, ruin, shed and barn built in Blender with interiors, collision and loot spots; town, villages, farms and hamlets placed across the island
+    - [x] Saint Aubin laid out as a planned town: two main streets crossing at a square, back lanes, kerbed pavements, centre lines, lamps, a granite memorial, planters with oaks, bollards and benches, wrecks and barricades, building rows packed by each model's real size
+    - [ ] Furnished town buildings from Blender: terraced houses in; shop, pub, church, police station, clinic, garage, fuel station, flats, school and hall still to come
+    - [ ] Offshore oil rig
     - [ ] Fisherman's cottages (kitchen, table, beds, shelves, stove, clutter)
     - [ ] Farmhouse, barn, silo and sheds
     - [ ] Village: church, pub, shop and houses in different states of ruin
@@ -146,6 +149,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 52. [ ] Footsteps per surface, cloth rustle, sprint breathing, heartbeat when hurt
     - [x] Footstep sound follows the ground layer you stand on
     - [x] Positional sound realism: walls and hills muffle sounds, sounds behind you are duller, bullets crack and whiz past, ricochets, and other players hear your reloads, bolt work, swings and hits
+    - [x] Gunshots built from real firearm recordings, with a separate layer for your own gun and smooth open-field tails
 53. [ ] Ambience layers per biome and weather, music stingers
     - [x] Birdsong, crickets and wind scale with the biome (loud woods, quiet windy moor)
 54. [ ] UI: inventory drag and drop, crafting menu, map markers, notes, tooltips, death screen
@@ -174,4 +178,10 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [x] Names belong to the first identity key that uses them (no more logging in as someone else); `forget <name>` frees one
     - [x] Server and client clocks in double precision (the old clock stopped after about nine hours of uptime); commands carry an exact timestamp
     - [x] Moving platforms in the shared movement code (the train), predicted with zero corrections
+    - [x] Dedicated server built to idle: sleeps on a high-resolution timer between ticks, rests at two ticks a second while empty (under 0.1% of one core), far herds update twice a second, render-only data freed after loading (55 MB private memory)
     - [ ] Remote console
+57. [ ] Vehicles: armoured rover and scrap helicopter
+    - [x] Server physics (sprung wheels, tyre grip, anti-roll, handbrake; rotor spool-up, hover, climb rate, tilt to fly), seats with enter and exit, driver prediction replayed on every snapshot, smooth interpolation for everyone else, collision with players and the world
+    - [x] Hull damage from bullets and crashes, injured occupants, smoke, burning wrecks that respawn, headlights at dusk, exhaust and dust, engine and rotor sounds
+    - [ ] Blender models (rover with separate wheels and steering wheel, helicopter with separate rotors) checked in game
+    - [ ] Fuel, seated poses for drivers and passengers, rotor blur
