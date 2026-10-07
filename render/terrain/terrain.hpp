@@ -43,6 +43,7 @@ namespace zp
 		void destroy();
 		bool load();
 		void unload();
+		std::uint64_t strip();
 		std::float_t height(std::float_t x, std::float_t z);
 		structures::vec3_s normal(std::float_t x, std::float_t z);
 		std::uint32_t ground(std::float_t x, std::float_t z);

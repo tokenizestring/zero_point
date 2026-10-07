@@ -193,6 +193,20 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	std::uint64_t terrain_c::strip()
+	{
+		const auto freed{ grass_mask.capacity() + instances.capacity() * sizeof(structures::vec4_s) };
+
+		grass_mask.clear();
+		grass_mask.shrink_to_fit();
+		instances.clear();
+		instances.shrink_to_fit();
+
+		return freed;
+	}
+	/*
+	//=====================================================================================
+	*/
 	std::float_t terrain_c::sample(std::int32_t x, std::int32_t z)
 	{
 		const auto limit{ static_cast<std::int32_t>(header.resolution) - 1 };
