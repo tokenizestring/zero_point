@@ -289,6 +289,8 @@ namespace zp
 		reader.text(entry.name, sizeof(entry.name));
 		reader.text(entry.map, sizeof(entry.map));
 
+		const auto hold{ static_cast<std::double_t>(reader.f32()) };
+
 		if (reader.overflow == false && answer == nonce && version == net_protocol_version)
 		{
 			auto found{ std::find_if(servers.begin(), servers.end(), [&](const structures::server_entry_s& known) { return known.address == address || known.instance == entry.instance; }) };
@@ -309,7 +311,7 @@ namespace zp
 			found->maximum = entry.maximum;
 			found->instance = entry.instance;
 			found->locked = entry.locked;
-			found->ping = static_cast<std::float_t>(std::max(clock - found->queried, 0.001));
+			found->ping = static_cast<std::float_t>(std::max(clock - found->queried - hold, 0.001));
 			found->responded = true;
 
 			const auto kept{ found->address };
