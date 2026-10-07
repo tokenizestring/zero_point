@@ -29,6 +29,7 @@ namespace zp
 		char name[net_server_name_length]{};
 		char map[32]{};
 		std::double_t clock = 0.0;
+		std::double_t arrival = 0.0;
 		std::float_t hours = net_start_hours;
 		std::float_t crop_timer = 0.0f;
 		std::float_t decay_timer = 0.0f;
@@ -51,10 +52,12 @@ namespace zp
 		std::uint64_t bytes_sent = 0u;
 		std::uint64_t bytes_received = 0u;
 		bool running = false;
+		bool dormant = false;
 
 		bool start(std::uint16_t port, const char* server_name, const char* map_name, std::uint32_t maximum_players);
 		void stop();
 		void update(std::float_t delta);
+		std::float_t due();
 		void set_weather(std::uint32_t phase, std::float_t duration);
 		void receive();
 		void handle_query(const structures::address_s& address, stream_reader_c& reader);

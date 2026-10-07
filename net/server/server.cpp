@@ -72,7 +72,6 @@ namespace zp
 	*/
 	void server_c::update(std::float_t delta)
 	{
-		const auto step{ 1.0f / net_server_tick_rate };
 		const auto snapshot_step{ 1.0f / net_snapshot_rate };
 
 		clock += static_cast<std::double_t>(delta);
@@ -97,7 +96,20 @@ namespace zp
 			set_weather(chosen, mathematics.lerp(weather_phases[chosen].shortest, weather_phases[chosen].longest, random()));
 		}
 
+		arrival = clock - (dormant ? 0.0 : static_cast<std::double_t>(delta) * 0.5);
+
 		receive();
+
+		if (dormant != (player_count == 0u))
+		{
+			dormant = player_count == 0u;
+			tick_accumulator = 0.0f;
+			snapshot_accumulator = 0.0f;
+
+			logger.write(dormant ? "server: nobody online, resting at %.0f ticks a second" : "server: player online, back to %.0f ticks a second", dormant ? 1.0f / net_hibernate_step : net_server_tick_rate);
+		}
+
+		const auto step{ dormant ? net_hibernate_step : 1.0f / net_server_tick_rate };
 
 		tick_accumulator = std::min(tick_accumulator + delta, step * 8.0f);
 
@@ -110,7 +122,7 @@ namespace zp
 			tick_count++;
 		}
 
-		snapshot_accumulator += delta;
+		snapshot_accumulator += dormant ? 0.0f : delta;
 
 		if (snapshot_accumulator >= snapshot_step)
 		{
@@ -133,7 +145,7 @@ namespace zp
 
 		status_timer += delta;
 
-		if (status_timer >= net_status_interval || (status_timer >= 10.0f && tick_count < net_early_status_ticks))
+		if (status_timer >= net_status_interval || (status_timer >= 10.0f && clock < net_early_status_time))
 		{
 			const auto bots{ std::count_if(clients.begin(), clients.end(), [](const structures::server_client_s& peer) { return peer.active && peer.bot; }) };
 
@@ -143,6 +155,16 @@ namespace zp
 			bytes_sent = 0u;
 			bytes_received = 0u;
 		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t server_c::due()
+	{
+		const auto step{ dormant ? net_hibernate_step : 1.0f / net_server_tick_rate };
+		const auto snapshot{ dormant ? step : 1.0f / net_snapshot_rate - snapshot_accumulator };
+
+		return std::clamp(std::min(step - tick_accumulator, snapshot), 0.0f, step);
 	}
 	/*
 	//=====================================================================================
@@ -218,6 +240,7 @@ namespace zp
 		writer.u16(static_cast<std::uint16_t>(maximum));
 		writer.text(name, net_server_name_length);
 		writer.text(map, 32u);
+		writer.f32(static_cast<std::float_t>(clock - arrival));
 
 		if (reader.overflow == false)
 		{
@@ -811,7 +834,7 @@ namespace zp
 		if (reader.overflow == false && static_cast<std::int32_t>(sent - peer.echo_stamp) > 0)
 		{
 			peer.echo_stamp = sent;
-			peer.echo_received = clock;
+			peer.echo_received = arrival;
 		}
 
 		for (auto entry{ 0u }; entry < count; entry++)
