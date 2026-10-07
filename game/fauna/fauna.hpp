@@ -40,6 +40,8 @@ namespace zp
 		void place(std::uint32_t index, std::uint32_t species, std::uint32_t herd, structures::vec3_s home, bool leader);
 		bool habitat(std::uint32_t kind, structures::vec3_s& home, bool far_from_watchers);
 		void simulate(std::float_t delta);
+		void live(structures::animal_s& animal, std::float_t delta);
+		bool watched(structures::vec3_s position);
 		void think(structures::animal_s& animal);
 		void steer(structures::animal_s& animal, std::float_t delta);
 		bool walkable(structures::vec3_s point);

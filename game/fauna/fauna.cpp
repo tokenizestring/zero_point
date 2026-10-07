@@ -231,53 +231,74 @@ namespace zp
 					herd.empty = fauna_respawn_time * 0.5f;
 				}
 			}
-		}
 
-		for (auto& animal : animals)
+			herd.rest += delta;
+
+			if (herd.rest >= fauna_dormant_step || watched(animals[herd.first].position))
+			{
+				for (auto member{ herd.first }; member < herd.first + herd.count; member++)
+				{
+					live(animals[member], herd.rest);
+				}
+
+				herd.rest = 0.0f;
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void fauna_c::live(structures::animal_s& animal, std::float_t delta)
+	{
+		if (animal.alive)
 		{
-			if (animal.alive)
+			animal.think -= delta;
+			animal.timer -= delta;
+			animal.hurt = std::max(animal.hurt - delta * 0.5f, 0.0f);
+			animal.fear = std::max(animal.fear - fauna_calm_rate * delta, 0.0f);
+
+			if (animal.think <= 0.0f)
 			{
-				animal.think -= delta;
-				animal.timer -= delta;
-				animal.hurt = std::max(animal.hurt - delta * 0.5f, 0.0f);
-				animal.fear = std::max(animal.fear - fauna_calm_rate * delta, 0.0f);
+				animal.think = std::max(animal.think + fauna_think_interval, 0.0f);
 
-				if (animal.think <= 0.0f)
-				{
-					animal.think += fauna_think_interval;
-
-					think(animal);
-				}
-
-				steer(animal, delta);
-
-				if (animal.bleed > 0.0f)
-				{
-					animal.health -= animal.bleed * delta;
-					animal.bleed = std::max(animal.bleed - animal.bleed * fauna_clot * delta - 0.002f * delta, 0.0f);
-					animal.drip -= delta;
-
-					if (animal.drip <= 0.0f && animal.bleed > fauna_drip_threshold)
-					{
-						animal.drip = fauna_drip * (0.6f + random() * 0.8f);
-
-						marks.bleed(animal.position + structures::vec3_s{ 0.0f, 0.35f, 0.0f }, { 0.0f, -1.0f, 0.0f });
-					}
-
-					if (animal.health <= 0.0f)
-					{
-						die(animal);
-					}
-				}
+				think(animal);
 			}
 
-			else if (animal.yields)
+			steer(animal, delta);
+
+			if (animal.bleed > 0.0f)
 			{
-				animal.dead_time += delta;
-				animal.speed = 0.0f;
-				animal.yields = animal.dead_time > fauna_carcass_time ? 0u : animal.yields;
+				animal.health -= animal.bleed * delta;
+				animal.bleed = std::max(animal.bleed - animal.bleed * fauna_clot * delta - 0.002f * delta, 0.0f);
+				animal.drip -= delta;
+
+				if (animal.drip <= 0.0f && animal.bleed > fauna_drip_threshold)
+				{
+					animal.drip = fauna_drip * (0.6f + random() * 0.8f);
+
+					marks.bleed(animal.position + structures::vec3_s{ 0.0f, 0.35f, 0.0f }, { 0.0f, -1.0f, 0.0f });
+				}
+
+				if (animal.health <= 0.0f)
+				{
+					die(animal);
+				}
 			}
 		}
+
+		else if (animal.yields)
+		{
+			animal.dead_time += delta;
+			animal.speed = 0.0f;
+			animal.yields = animal.dead_time > fauna_carcass_time ? 0u : animal.yields;
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool fauna_c::watched(structures::vec3_s position)
+	{
+		return std::any_of(watchers.begin(), watchers.end(), [&](const structures::watcher_s& watcher) { return mathematics.distance(watcher.position, position) < fauna_wake_range; });
 	}
 	/*
 	//=====================================================================================
