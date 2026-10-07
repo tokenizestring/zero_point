@@ -92,6 +92,25 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	std::uint64_t models_c::strip()
+	{
+		auto freed{ 0ull };
+
+		for (auto& model : models)
+		{
+			freed += model.vertices.capacity() * sizeof(structures::vertex_s) + model.indices.capacity() * sizeof(std::uint32_t);
+
+			model.vertices.clear();
+			model.vertices.shrink_to_fit();
+			model.indices.clear();
+			model.indices.shrink_to_fit();
+		}
+
+		return freed;
+	}
+	/*
+	//=====================================================================================
+	*/
 	structures::model_s* models_c::find(const char* name)
 	{
 		for (auto& model : models)

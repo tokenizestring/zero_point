@@ -17,6 +17,7 @@ namespace zp
 
 		bool load();
 		void destroy();
+		std::uint64_t strip();
 		structures::model_s* find(const char* name);
 		const structures::model_part_s* part(const structures::model_s& model, const char* name);
 		bool upload(structures::model_s& model);
