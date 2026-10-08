@@ -223,7 +223,9 @@ def render_skin(part, frame, a0, a1, z_top, openings, rng, patches, name="render
         edge = kit.wander(rng)
         a = a1 - rng.uniform(0.15, 0.35)
         while a > a0 + 0.2:
-            outline.append((a, z_top - top_loss * edge(a * 1.7) + rng.uniform(-0.03, 0.03)))
+            dip = z_top - top_loss * edge(a * 1.7) + rng.uniform(-0.03, 0.03)
+            heads = [o[3] + 0.12 for o in openings if o[0] - 0.45 < a < o[1] + 0.45]
+            outline.append((a, min(z_top, max([dip] + heads))))
             a -= rng.uniform(0.15, 0.35)
     outline.append((a0, z_top))
     blocked = holes + [kit.rect(d[0] - 0.08, d[1] + 0.08, low[0], d[3] + 0.08) for d in doors]
@@ -748,7 +750,93 @@ def chimney_breast(b, part, x_wall, inward, y0, y1, z0, z1, opening_width, openi
     return x_face
 
 
-def terrace_roof(b, parts, x0, x1, gable, rng, moss=0.3, missing=0.01, holes=(), slipped=0.02, boards=True, surface="rock", gutters=True, broken_gutter=None, verge=True, sides=(-1.0, 1.0)):
+def slate_geo_light(gable, side, xa, xb, d0, length, thick, lift_butt, cell, tile, rng_local, broken=False, spin=0.0):
+    cu0, cu1, cv0, cv1 = cell
+    cx = (xa + xb) * 0.5
+    cd = d0 + length * 0.5
+    cosine = math.cos(spin)
+    sine = math.sin(spin)
+    upward = gable.upslope(side)
+
+    def at(x, d, n):
+        rx = cx + (x - cx) * cosine - (d - cd) * sine
+        rd = cd + (x - cx) * sine + (d - cd) * cosine
+        return gable.point(side, rx, rd, n)
+
+    def lift(d):
+        return lift_butt * (1.0 - (d - d0) / length)
+
+    def uv(x, d):
+        return (cu0 + (x - xa) / (xb - xa) * (cu1 - cu0), cv0 + (d - d0) / tile)
+
+    outline = [(xa, d0), (xb, d0), (xb, d0 + length), (xa, d0 + length)]
+    if broken:
+        cut_x = rng_local.uniform(0.05, 0.14)
+        cut_d = rng_local.uniform(0.04, 0.14)
+        if rng_local.random() < 0.5:
+            outline = [(xa, d0 + cut_d), (xa + cut_x, d0), (xb, d0), (xb, d0 + length), (xa, d0 + length)]
+        else:
+            outline = [(xa, d0), (xb - cut_x, d0), (xb, d0 + cut_d), (xb, d0 + length), (xa, d0 + length)]
+    count = len(outline)
+    points = [at(x, d, lift(d)) for x, d in outline] + [at(x, d, lift(d) + thick) for x, d in outline]
+    faces = []
+    uvs = []
+    face, face_uv = kit.oriented_face(tuple(range(count, 2 * count)), [uv(x, d) for x, d in outline], points, gable.normal(side))
+    faces.append(face)
+    uvs.append(face_uv)
+    sliver = thick / tile
+    for i in range(count):
+        j = (i + 1) % count
+        (xi, di), (xj, dj) = outline[i], outline[j]
+        if abs(xj - xi) < 1e-4 or (di > d0 + length - 1e-6 and dj > d0 + length - 1e-6):
+            continue
+        expected = V(dj - di, 0.0, 0.0) + upward * (xi - xj)
+        base = [uv(xi, di), uv(xj, dj), (uv(xj, dj)[0], uv(xj, dj)[1] + sliver), (uv(xi, di)[0], uv(xi, di)[1] + sliver)]
+        face, face_uv = kit.oriented_face((i, j, count + j, count + i), base, points, expected)
+        faces.append(face)
+        uvs.append(face_uv)
+    return kit.Geo(points, faces, uvs)
+
+
+def slate_roof_light(part, gable, side, rng_local, moss=None, missing=None, slipped=None, name="slate_roof", moss_name="roof_moss", gauge=0.27, length=0.58, width=0.34, thick=0.008, gap=0.004, x0=None, x1=None, d_end=None):
+    x0 = gable.x0 if x0 is None else x0
+    x1 = gable.x1 if x1 is None else x1
+    tile = kit.tile_of(name)
+    cells = kit.catalog[name]["cells"]
+    end = gable.run if d_end is None else d_end
+    course = 0
+    d = 0.0
+    count = 0
+    while d < end - 0.06:
+        span = min(length, end + 0.03 - d)
+        offset = (width * 0.5) if course % 2 else 0.0
+        edges = [x0]
+        x = x0 + offset if offset > 0.0 else x0 + width
+        while x < x1 - 0.1:
+            edges.append(x)
+            x += width
+        edges.append(x1)
+        if len(edges) > 2 and edges[1] - edges[0] < 0.1:
+            edges.pop(1)
+        for xa, xb in zip(edges[:-1], edges[1:]):
+            mid = (xa + xb) * 0.5
+            if missing is not None and missing(mid, d):
+                continue
+            slip = slipped(mid, d) if slipped is not None else 0.0
+            lift_butt = thick * (1.0 if course == 0 else 2.0) + rng_local.uniform(-0.0015, 0.0015)
+            spin = rng_local.uniform(-0.012, 0.012) + (rng_local.uniform(-0.12, 0.12) if slip > 0.0 else 0.0)
+            broken = rng_local.random() < 0.05
+            cell = rng_local.choice(cells)
+            chosen = moss_name if moss is not None and moss(mid, d) else name
+            geo = slate_geo_light(gable, side, xa + gap * 0.5, xb - gap * 0.5, d - slip + rng_local.uniform(-0.004, 0.004), span, thick, lift_butt + (0.006 if slip > 0.0 else 0.0), cell, tile, rng_local, broken, spin)
+            emit(part, geo, chosen, None, "texture")
+            count += 1
+        d += gauge
+        course += 1
+    return count
+
+
+def terrace_roof(b, parts, x0, x1, gable, rng, moss=0.3, missing=0.01, holes=(), slipped=0.02, boards=True, surface="rock", gutters=True, broken_gutter=None, verge=True, sides=(-1.0, 1.0), gauge=0.27, length=0.58, width=0.34):
     roof = parts["roof"]
     moss_field = kit.smooth_noise(random.Random(int(rng.random() * 1000)), 5, 1.2)
     for side in sides:
@@ -758,7 +846,7 @@ def terrace_roof(b, parts, x0, x1, gable, rng, moss=0.3, missing=0.01, holes=(),
                     return True
             return rng.random() < missing
         threshold = 0.55 - moss
-        kit.slate_roof(roof, gable, side, rng, lambda x, d, side=side: moss_field(V(x * 0.5, d * 0.7, 2.0 * side)) > threshold or (d < 0.5 and rng.random() < moss), lost, lambda x, d: rng.uniform(0.05, 0.15) if rng.random() < slipped else 0.0, gauge=0.27, length=0.58, width=0.34, x0=x0 + 0.03, x1=x1 - 0.03)
+        slate_roof_light(roof, gable, side, rng, lambda x, d, side=side: moss_field(V(x * 0.5, d * 0.7, 2.0 * side)) > threshold or (d < 0.5 and rng.random() < moss), lost, lambda x, d: rng.uniform(0.05, 0.15) if rng.random() < slipped else 0.0, gauge=gauge, length=length, width=width, x0=x0 + 0.03, x1=x1 - 0.03)
         if boards:
             sarking(roof, gable, side, x0, x1, holes)
             for hx0, hx1, hd0, hd1, hs in holes:

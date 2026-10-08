@@ -18,8 +18,10 @@ kit.preview_root = os.path.join(kit.root, "assets", "previews", "town")
 
 def registry():
     import town_terrace
+    import town_shop
     return {
         "terrace": (town_terrace.terrace, town_terrace.terrace_far, None),
+        "shop": (town_shop.shop, town_shop.shop_far, None),
     }
 
 
@@ -44,6 +46,26 @@ specs = {
             "landing": ((0.9, -1.85, 4.7), (1.6, 1.4, 3.9), 18.0),
         },
         "levels": [("GROUND", 2.6, -0.4, 2.7), ("UPPER", 5.4, 2.8, 5.6), ("ROOF", 11.0, 5.6, 11.0)],
+        "margin": 0.06,
+    },
+    "shop": {
+        "shots": {
+            "street": ((-6.0, -14.0, 1.7), (0.4, -5.0, 3.0), 26.0),
+            "shopfront": ((2.2, -9.5, 1.7), (0.2, -5.0, 2.2), 30.0),
+            "rear": ((5.5, 12.0, 4.0), (0.0, 4.5, 2.5), 28.0),
+        },
+        "rooms": {
+            "shop": ((-1.6, -4.0, 1.65), (2.0, 0.6, 1.0), 16.0),
+            "counter": ((2.5, 0.75, 1.75), (-1.5, -4.0, 1.0), 16.0),
+            "storeroom": ((2.6, 3.9, 1.75), (-1.6, 1.8, 0.7), 16.0),
+            "stair": ((-0.4, 3.6, 1.7), (-2.8, 0.8, 2.6), 18.0),
+            "lounge": ((2.75, -4.3, 5.25), (-2.5, -1.5, 4.4), 16.0),
+            "lounge_back": ((-2.6, -4.2, 5.2), (2.5, -1.6, 4.3), 16.0),
+            "kitchenette": ((0.2, 0.4, 5.2), (-2.8, 4.2, 4.3), 16.0),
+            "bedroom": ((2.75, 1.0, 5.3), (1.0, 4.3, 4.0), 16.0),
+            "corridor": ((2.9, -0.5, 5.2), (-3.0, -0.4, 4.6), 18.0),
+        },
+        "levels": [("GROUND", 3.2, -0.4, 3.3), ("UPPER", 5.9, 3.4, 6.0), ("ROOF", 12.5, 6.0, 12.5)],
         "margin": 0.06,
     },
 }
