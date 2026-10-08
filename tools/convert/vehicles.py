@@ -687,7 +687,7 @@ def rover_far(m):
     body.add(vk.block(v(-0.44, -2.14, 0.47), v(0.44, 2.2, 0.74)), "steel")
     body.add(vk.block(v(-0.8, -2.26, 0.58), v(0.8, -2.0, 1.28)), "steel")
     body.add(vk.block(v(0.9, 0.38, 0.8), v(1.0, 0.48, 2.56)), "steel")
-    body.add(vk.lathe([(0.0, -0.13), (0.4, -0.13), (0.4, 0.13), (0.0, 0.13)], 10), "steel", m.spare)
+    body.add(vk.cylinder(0.4, 0.26, 10), "steel", m.spare @ Matrix.Translation((-0.13, 0.0, 0.0)))
     center, side = m.wheels["wheel_fl"]
     far_wheel = m.far("wheel_fl", 40.0, center)
     far_wheel.add(vk.cylinder(0.4, 0.27, 12), "steel", Matrix.Translation(center - X * 0.135))
@@ -957,8 +957,21 @@ def heli():
 
 def heli_far(m):
     body = m.far("body")
-    body.add(vk.block(v(-0.76, -2.4, 0.64), v(0.76, 0.1, 2.04)), "steel")
-    body.add(vk.block(v(-0.62, 0.1, 0.66), v(0.62, 1.7, 2.1)), "steel")
+    body.add(vk.block(v(-0.76, -2.3, 0.66), v(0.76, 0.1, 1.27)), "steel")
+    body.add(vk.block(v(-0.5, -2.56, 0.92), v(0.5, -2.3, 1.45)), "steel")
+    screen = bmesh.new()
+    screen.faces.new([screen.verts.new(p) for p in (v(-0.35, -2.53, 1.47), v(0.35, -2.53, 1.47), v(0.62, -1.81, 1.98), v(-0.62, -1.81, 1.98))])
+    vk.thicken(screen, 0.02)
+    body.add(screen, "steel")
+    body.add(vk.block(v(-0.66, -1.85, 1.98), v(0.66, 0.1, 2.04)), "steel")
+    for x, y in ((0.72, -1.8), (0.74, -1.0), (0.7, 0.1)):
+        for side in (-1.0, 1.0):
+            body.add(vk.block(v(side * x - 0.025, y - 0.025, 1.27), v(side * x + 0.025, y + 0.025, 2.0)), "steel")
+    body.add(vk.block(v(-0.62, 0.1, 0.66), v(0.62, 1.7, 0.76)), "steel")
+    body.add(vk.block(v(-0.45, 0.5, 0.76), v(0.45, 1.4, 1.3)), "steel")
+    body.add(vk.block(v(-0.9, 0.55, 0.73), v(-0.34, 1.41, 1.31)), "steel")
+    body.add(vk.block(v(-0.2, 0.05, 1.67), v(0.2, 0.45, 2.02)), "steel")
+    body.add(vk.block(v(-0.05, 0.2, 2.02), v(0.05, 0.3, 2.35)), "steel")
     body.add(vk.prism([(-0.36, 1.5), (0.36, 1.5), (0.0, 2.05)], 1.6, 3.95), "steel")
     body.add(vk.prism([(-0.24, 1.64), (0.24, 1.64), (0.0, 2.02)], 3.95, 6.3), "steel")
     body.add(vk.slab([(6.0, 1.78), (6.55, 1.75), (6.72, 2.95), (6.45, 2.95), (6.0, 2.05)], 0.012), "steel", Matrix(((0.0, 0.0, 1.0, -0.05), (1.0, 0.0, 0.0, 0.0), (0.0, 1.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0))))
@@ -1050,7 +1063,7 @@ def bake(name):
 
 def write_manifest(name, m, near, far, objects):
     document = {
-        "space": "Blender model space in metres. +X = vehicle left, -X = vehicle right, -Y = forward (nose / front bumper), +Z = up. Origin on the ground plane under the centre of the vehicle (between the axles for the rover, under the main rotor mast for the helicopter). The engine baker maps Blender (x, y, z) to engine (x, z, y), so engine forward is -Z.",
+        "space": "Blender model space in metres. +X = vehicle left, -X = vehicle right, -Y = forward (nose / front bumper), +Z = up. Origin on the ground plane on the centreline (rover: midway between the axles; helicopter: 0.25 m ahead of the main rotor mast, which stands at y = 0.25). The engine baker maps Blender (x, y, z) to engine (x, z, y), so engine forward is -Z.",
         "model": name,
         "far_model": name + "_far",
         "triangles": near["triangles"],

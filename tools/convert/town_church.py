@@ -18,45 +18,52 @@ dressed = "granite_ashlar"
 oak = "timber_beam"
 board = "timber_planks_weathered"
 tower_x = 3.2
-tower_y = (-13.0, -6.6)
+tower_y = (-12.05, -5.65)
 tower_t = 0.85
 tix = 2.35
-tiy = (-12.15, -7.45)
+tiy = (tower_y[0] + tower_t, tower_y[1] - tower_t)
+ty = tiy[0]
+tower_center = (tiy[0] + tiy[1]) * 0.5
 tower_top = 19.2
 tower_roof = 17.6
 levels = (4.4, 8.8, 13.2)
-nave_x = 6.0
-nave_y = (-6.6, 8.4)
+clock_z = 11.0
+nave_x = 5.4
+nave_y = (-5.65, 8.4)
 nave_t = 0.75
-nix = 5.25
-niy = (-5.85, 7.65)
+nix = nave_x - nave_t
+niy = (nave_y[0] + nave_t, nave_y[1] - nave_t)
 chancel_x = 3.6
-chancel_y = (8.4, 13.0)
+chancel_y = (8.4, 12.4)
 chancel_t = 0.6
-cix = 3.0
-ciy = (8.4, 12.4)
+cix = chancel_x - chancel_t
+ciy = (8.4, chancel_y[1] - chancel_t)
 chancel_floor = 0.3
-vestry_x = (3.6, 6.0)
+sanctuary_y = ciy[1] - 1.2
+rail_y = sanctuary_y - 0.12
+vestry_x = (3.6, 5.85)
 vestry_y = (8.4, 11.6)
 vestry_t = 0.45
-vix = (3.6, 5.55)
-viy = (8.4, 11.15)
+vix = (3.6, vestry_x[1] - vestry_t)
+viy = (8.4, vestry_y[1] - vestry_t)
 west_door = (-0.75, 0.75, -0.05, 2.8, 3.45)
 west_window = (-0.45, 0.45, 5.2, 6.9, 7.5)
 belfry_light = (14.0, 16.0, 16.75)
 tower_arch = (-1.4, 1.4, -0.05, 3.3, 4.1)
 chancel_arch = (-2.6, 2.6, -0.05, 4.2, 5.8)
-nave_windows = (-3.0, 1.0, 5.0)
+nave_windows = (-2.9, 1.0, 5.0)
 lancet_z = (2.4, 4.8, 5.7)
-chancel_window = (10.4, 11.2, 2.2, 3.9, 4.6)
+chancel_window = (-11.1, -10.3, 2.2, 3.9, 4.6)
 east_window = (-1.3, 1.3, 1.8, 5.0, 6.4)
-vestry_door = (9.55, 10.7, chancel_floor, 2.55)
+vestry_door = (8.9, 10.05, chancel_floor, 2.55)
 vestry_out = (-5.35, -4.2, chancel_floor, 2.55)
 vestry_window = (9.6, 10.4, 1.4, 2.4)
 stair_slits = ((-1.0, 2.0, 2.9), (1.0, 6.4, 7.3), (-1.0, 10.8, 11.7))
-collar_z = 9.8
-truss_y = (-4.1, -0.6, 2.9, 6.3)
-roof_holes = [(0.4, 1.8, 2.8, 4.4, -1.0), (4.6, 5.6, 5.0, 6.2, 1.0)]
+collar_z = 9.4
+truss_y = (-3.9, -0.5, 2.9, 6.3)
+roof_holes = [(0.4, 1.8, 2.8, 4.4, -1.0), (4.6, 5.6, 4.6, 5.8, 1.0)]
+flight_foot = ty + 0.2
+landing = (ty + 2.8, ty + 3.7)
 
 
 def nave_gable():
@@ -68,7 +75,7 @@ def chancel_gable():
 
 
 def vestry_gable():
-    return tk.YGable(vestry_y[0], vestry_y[1], vestry_x[1] - vestry_x[0], 0.25, 3.35, 30.0, vestry_x[0])
+    return tk.YGable(vestry_y[0], vestry_y[1], vestry_x[1] - vestry_x[0], 0.0, 3.5, 30.0, vestry_x[0])
 
 
 def gable_outline(gable, inner, outer, top, depth=0.05):
@@ -146,13 +153,13 @@ def tower_walls(b, parts, rng):
     kit.wall_boxes(b, "rock", "tower", east, -tower_x, tower_x, -1.5, tower_top, tower_t, [rect_of(s) for s in east_shapes])
     louvred = [(west, belfry_face), (east, belfry_face)]
     for frame, sign in ((left, -1.0), (right, 1.0)):
-        center = -9.8 if sign > 0 else 9.8
+        center = sign * tower_center
         shape = (center - 0.5, center + 0.5) + belfry_light
         holes = [tk.lancet(*shape)]
         rects = [rect_of(shape)]
         for slit_side, z0, z1 in stair_slits:
             if slit_side == sign:
-                a = -10.6 if sign > 0 else 10.6
+                a = sign * (ty + 1.55)
                 holes.append(kit.rect(a - 0.12, a + 0.12, z0, z1))
                 rects.append((a - 0.12, a + 0.12, z0, z1))
         a_low, a_high = (tiy[0], tiy[1]) if sign > 0 else (-tiy[1], -tiy[0])
@@ -172,21 +179,18 @@ def tower_walls(b, parts, rng):
             slope = (frame[3] * 0.6 - up).normalized()
             emit(joinery, kit.geo_box(a1 - a0 + 0.04, 0.3, 0.025), board, kit.place(center, frame[1], slope.cross(frame[1]).normalized()), "board")
         tk.opening_block(b, "wood", "louvre", frame, (a0, a1, z0, apex), tower_t)
-    for frame, a0, a1 in ((west, -tower_x, tower_x), (east, -tower_x, tower_x), (left, 6.6, 13.0), (right, -13.0, -6.6)):
+    for frame, a0, a1 in ((west, -tower_x, tower_x), (east, -tower_x, tower_x), (left, -tower_y[1], -tower_y[0]), (right, tower_y[0], tower_y[1])):
         frame_block(shell, dressed, frame, a0, a1, -0.45, 0.35, -0.08, 0.0, 0.0)
         for z in levels:
             frame_block(shell, dressed, frame, a0, a1, z - 0.08, z + 0.08, -0.07, 0.0, 0.0)
         frame_block(shell, dressed, frame, a0 - 0.08, a1 + 0.08, tower_top - 0.02, tower_top + 0.1, -0.1, tower_t + 0.05, 0.0)
-        a = a0 + 0.35
-        merlon = True
-        while a < a1 - 0.3:
-            width = min(0.55, a1 - 0.35 - a)
-            if merlon and width > 0.2:
-                frame_block(shell, dressed, frame, a, a + width, tower_top + 0.1, tower_top + 0.65, 0.0, tower_t, 0.01)
-            a += width + 0.02
-            merlon = not merlon
-    emit(shell, kit.geo_lathe([(0.66, 0.0), (0.84, 0.0), (0.84, 0.05), (0.66, 0.05)], 20), dressed, kit.place(V(0.0, tower_y[0], 10.7), V(1.0, 0.0, 0.0), V(0.0, -1.0, 0.0)), "given", True)
-    tp.disc(shell, "town_print", V(0.0, tower_y[0] - 0.035, 10.7), V(0.0, -1.0, 0.0), 0.68, tp.pr("clock", 2.0), 20)
+        slots = max(1, int((a1 - a0 - 0.7) / 0.57))
+        pitch = (a1 - a0 - 0.7) / slots
+        for index in range(0, slots, 2):
+            a = a0 + 0.35 + index * pitch
+            frame_block(shell, dressed, frame, a, a + pitch - 0.02, tower_top + 0.1, tower_top + 0.65, 0.0, tower_t, 0.01)
+    emit(shell, kit.geo_lathe([(0.66, 0.0), (0.84, 0.0), (0.84, 0.05), (0.66, 0.05)], 20), dressed, kit.place(V(0.0, tower_y[0], clock_z), V(1.0, 0.0, 0.0), V(0.0, -1.0, 0.0)), "given", True)
+    tp.disc(shell, "town_print", V(0.0, tower_y[0] - 0.035, clock_z), V(0.0, -1.0, 0.0), 0.68, tp.pr("clock", 2.0), 20)
     block(shell, "concrete", V(-tix, tiy[0], tower_roof - 0.12), V(tix, tiy[1], tower_roof), 0.0, "world")
     block(parts["floors"], board, V(-tix, tiy[0], tower_roof - 0.15), V(tix, tiy[1], tower_roof - 0.12), 0.0, "world")
     tk.col(b, "rock", "tower_roof", -tix, tix, tiy[0], tiy[1], tower_roof - 0.15, tower_roof)
@@ -195,8 +199,8 @@ def tower_walls(b, parts, rng):
             block(shell, dressed, V(cx - 0.25, cy - 0.25, tower_top + 0.1), V(cx + 0.25, cy + 0.25, tower_top + 0.95), 0.01)
             emit(shell, kit.geo_frustum(0.27, 0.27, 0.0, 0.0, 0.7), dressed, kit.Matrix.Translation(V(cx, cy, tower_top + 0.95)), "box")
     for sx in (-1.0, 1.0):
-        buttress(shell, b, V(sx * (tower_x - 0.45), tower_y[0], 0.0), V(0.0, -1.0, 0.0), 0.8, [(5.0, 0.95), (10.0, 0.65), (14.2, 0.35)])
-        buttress(shell, b, V(sx * tower_x, tower_y[0] + 0.45, 0.0), V(sx, 0.0, 0.0), 0.8, [(5.0, 0.95), (10.0, 0.65), (14.2, 0.35)])
+        buttress(shell, b, V(sx * (tower_x - 0.45), tower_y[0], 0.0), V(0.0, -1.0, 0.0), 0.8, [(5.0, 0.9), (10.0, 0.62), (14.2, 0.34)])
+        buttress(shell, b, V(sx * tower_x, tower_y[0] + 0.45, 0.0), V(sx, 0.0, 0.0), 0.8, [(5.0, 0.9), (10.0, 0.62), (14.2, 0.34)])
     return west
 
 
@@ -211,10 +215,8 @@ def west_doors(b, parts, rng, west):
     d_axis = 0.25 + 0.1 - 0.0225
     tk.door_leaf_light(joinery, board, west, ja0 + 0.005, 1.0, d_axis, 0.01, jtop - 0.02, width, 104.0, rng, "ledged", 2.0)
     tk.door_leaf_light(joinery, board, west, ja1 - 0.005, -1.0, d_axis, 0.01, jtop - 0.02, width, 88.0, rng, "ledged", 1.0)
-    block(shell, dressed, V(a0 - 0.2, tower_y[0] - 0.55, -0.45), V(a1 + 0.2, tower_y[0] + 0.02, -0.07), 0.015)
-    block(shell, dressed, V(a0 - 0.35, tower_y[0] - 0.95, -0.6), V(a1 + 0.35, tower_y[0] - 0.5, -0.12), 0.015)
-    tk.col(b, "rock", "step", a0 - 0.2, a1 + 0.2, tower_y[0] - 0.55, tower_y[0], -1.5, -0.07)
-    tk.col(b, "rock", "step", a0 - 0.35, a1 + 0.35, tower_y[0] - 0.95, tower_y[0] - 0.55, -1.5, -0.12)
+    block(shell, dressed, V(a0 - 0.2, tower_y[0] - 0.45, -0.45), V(a1 + 0.2, tower_y[0] + 0.02, -0.07), 0.015)
+    tk.col(b, "rock", "step", a0 - 0.2, a1 + 0.2, tower_y[0] - 0.45, tower_y[0], -1.5, -0.07)
     tk.col(b, "rock", "threshold", a0, a1, tower_y[0], tiy[0], -1.5, 0.0)
     block(shell, dressed, V(a0, tower_y[0], -0.08), V(a1, tiy[0] + 0.03, 0.0), 0.004)
     block(joinery, "town_paint_navy", V(1.05, tower_y[0] - 0.06, 1.25), V(2.15, tower_y[0], 2.15), 0.004, "board")
@@ -227,26 +229,26 @@ def tower_inside(b, parts, rng):
     tk.tile_floor(floors, dressed, -tix, tix, tiy[0], tiy[1], 0.0, 0.03)
     tk.col(b, "rock", "floor", -tix, tix, tiy[0], tiy[1], -0.3, 0.0)
     for z, (hx0, hx1) in zip(levels, ((-tix, -1.5), (1.5, tix), (-tix, -1.5))):
-        hole = (hx0, hx1, tiy[0], -9.35)
+        hole = (hx0, hx1, tiy[0], landing[0])
         tk.board_floor(floors, -tix, tix, tiy[0], tiy[1], z, rng, "x", [hole], "floorboards", 0.02, 0.05, (0.2, 0.28), ())
         tk.floor_cols(b, "wood", "tower_floor", -tix, tix, tiy[0], tiy[1], z - 0.2, z, [hole])
         for x in (-1.0, 0.9):
             block(floors, oak, V(x - 0.09, tiy[0], z - 0.3), V(x + 0.09, tiy[1], z - 0.03), 0.004)
         inner = hx1 if hx0 < 0 else hx0
-        bd.balustrade(b, joinery, V(inner, -11.3, z), V(inner, -9.37, z), rng, 0.9, 0.16, oak, oak, 0.12, (True, True), True, "rail")
-        bd.balustrade(b, joinery, V(hx0, -9.33, z), V(hx1, -9.33, z), rng, 0.9, 0.16, oak, oak, 0.12, (False, False), True, "rail")
+        bd.balustrade(b, joinery, V(inner, ty + 1.2, z), V(inner, landing[0] - 0.02, z), rng, 0.9, 0.16, oak, oak, 0.12, (True, True), True, "rail")
+        bd.balustrade(b, joinery, V(hx0, landing[0] + 0.02, z), V(hx1, landing[0] + 0.02, z), rng, 0.9, 0.16, oak, oak, 0.12, (False, False), True, "rail")
     for z0, sx in ((0.0, -1.0), (levels[0], 1.0), (levels[1], -1.0)):
         inner = (0.65, 1.5) if sx > 0 else (-1.5, -0.65)
         outer = (1.5, tix) if sx > 0 else (-tix, -1.5)
-        tk.stair_flight(b, parts, inner[0], inner[1], -11.95, z0, 2.6, 2.2, 10, rng, 1.0, board, oak, None, None, "wood", "tower_stair")
+        tk.stair_flight(b, parts, inner[0], inner[1], flight_foot, z0, landing[0] - flight_foot, 2.2, 10, rng, 1.0, board, oak, None, None, "wood", "tower_stair")
         lx0 = min(inner[0], outer[0])
         lx1 = max(inner[1], outer[1])
-        block(floors, board, V(lx0, -9.35, z0 + 2.12), V(lx1, -8.45, z0 + 2.2), 0.0, "board")
-        block(floors, oak, V(lx0, -8.55, z0 + 1.98), V(lx1, -8.45, z0 + 2.12), 0.004)
+        block(floors, board, V(lx0, landing[0], z0 + 2.12), V(lx1, landing[1], z0 + 2.2), 0.0, "board")
+        block(floors, oak, V(lx0, landing[1] - 0.1, z0 + 1.98), V(lx1, landing[1], z0 + 2.12), 0.004)
         for x in (lx0 + 0.06, lx1 - 0.06):
-            block(floors, oak, V(x - 0.05, -8.6, z0), V(x + 0.05, -8.5, z0 + 1.98), 0.004)
-        tk.col(b, "wood", "landing", lx0, lx1, -9.35, -8.45, z0, z0 + 2.2)
-        tk.stair_flight(b, parts, outer[0], outer[1], -9.35, z0 + 2.2, 2.6, 2.2, 10, rng, -1.0, board, oak, None, None, "wood", "tower_stair")
+            block(floors, oak, V(x - 0.05, landing[1] - 0.15, z0), V(x + 0.05, landing[1] - 0.05, z0 + 1.98), 0.004)
+        tk.col(b, "wood", "landing", lx0, lx1, landing[0], landing[1], z0, z0 + 2.2)
+        tk.stair_flight(b, parts, outer[0], outer[1], landing[0], z0 + 2.2, landing[0] - flight_foot, 2.2, 10, rng, -1.0, board, oak, None, None, "wood", "tower_stair")
 
 
 def bell_frame(b, parts, rng):
@@ -254,7 +256,7 @@ def bell_frame(b, parts, rng):
     furniture = parts["furniture"]
     z = levels[2]
     cx = 0.65
-    cy = -9.8
+    cy = tower_center
     for x in (cx - 0.95, cx + 0.95):
         for y in (cy - 1.1, cy + 1.1):
             top_y = cy - 0.12 if y < cy else cy + 0.12
@@ -284,27 +286,28 @@ def bell_frame(b, parts, rng):
     for level in levels[1:]:
         emit(furniture, kit.geo_lathe([(0.03, -0.02), (0.08, -0.02), (0.08, 0.02), (0.03, 0.02)], 8), oak, kit.Matrix.Translation(V(rope_top.x, rope_top.y, level + 0.02)), "given", True)
     tk.col(b, "wood", "bell_frame", cx - 1.1, cx + 1.1, cy - 1.3, cy + 1.3, z, z + 2.55)
-    tk.chips(parts["debris"], "plaster_interior", -2.0, 2.0, -11.8, -7.8, z, 10, rng, (0.01, 0.04), (0.004, 0.008))
-    tk.chips(parts["debris"], "plaster_interior", -0.5, 2.0, -11.8, -7.8, levels[1], 6, rng, (0.01, 0.03), (0.004, 0.006))
+    tk.chips(parts["debris"], "plaster_interior", -2.0, 2.0, ty + 0.35, tiy[1] - 0.35, z, 10, rng, (0.01, 0.04), (0.004, 0.008))
+    tk.chips(parts["debris"], "plaster_interior", -0.5, 2.0, ty + 0.35, tiy[1] - 0.35, levels[1], 6, rng, (0.01, 0.03), (0.004, 0.006))
 
 
 def tower_rooms(b, parts, rng):
     furniture = parts["furniture"]
     clutter = parts["clutter"]
     interior = parts["interior"]
-    tp.bench_light(b, furniture, V(tix - 0.25, -10.4, 0.0), math.pi * 0.5, rng, 1.6, board, oak)
-    tp.wall_sheet(interior, V(tix - 0.012, -8.9, 1.6), V(-1.0, 0.0, 0.0), "notice", rng, 1.0, 0.02)
-    tp.wall_sheet(interior, V(tix - 0.012, -11.65, 1.5), V(-1.0, 0.0, 0.0), "poster", rng, 1.0, -0.03)
-    tk.pendant(b, interior, V(0.4, -9.8, levels[0] - 0.2), rng, "glass_dirty", 0.6, "warm", 8)
-    tp.papers(parts["debris"], -0.6, 1.8, -11.9, -8.0, 0.0, 4, rng, ("notice", "card", "newspaper"))
-    tk.chips(parts["debris"], "foliage", -0.6, 1.8, -12.0, -10.5, 0.0, 10, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
+    tp.bench_light(b, furniture, V(tix - 0.25, ty + 1.75, 0.0), math.pi * 0.5, rng, 1.6, board, oak)
+    tp.wall_sheet(interior, V(tix - 0.012, ty + 3.25, 1.6), V(-1.0, 0.0, 0.0), "notice", rng, 1.0, 0.02)
+    tp.wall_sheet(interior, V(tix - 0.012, ty + 0.5, 1.5), V(-1.0, 0.0, 0.0), "poster", rng, 1.0, -0.03)
+    tk.pendant(b, interior, V(0.4, tower_center, levels[0] - 0.2), rng, "glass_dirty", 0.6, "warm", 8)
+    tp.papers(parts["debris"], -0.6, 1.8, ty + 0.25, tiy[1] - 0.5, 0.0, 4, rng, ("notice", "card", "newspaper"))
+    tk.chips(parts["debris"], "foliage", -0.6, 1.8, ty + 0.15, ty + 1.65, 0.0, 10, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
     tp.bench_light(b, furniture, V(-0.4, tiy[1] - 0.25, levels[0]), 0.0, rng, 1.4, board, oak)
     b.loot("box", V(-0.4, tiy[1] - 0.25, levels[0] + 0.45))
     tp.crate_light(clutter, V(-1.25, tiy[1] - 0.3, levels[0]), (0.5, 0.4, 0.36), 0.2, rng)
-    tp.framed(interior, V(-tix + 0.006, -8.3, levels[0] + 1.6), V(1.0, 0.0, 0.0), 0.42, 0.56, tp.pr("notice"), rng, oak, 0.02)
+    tp.framed(interior, V(-tix + 0.006, ty + 3.85, levels[0] + 1.6), V(1.0, 0.0, 0.0), 0.42, 0.56, tp.pr("notice"), rng, oak, 0.02)
     tp.framed(interior, V(0.0, tiy[1] - 0.006, levels[0] + 1.75), V(0.0, -1.0, 0.0), 0.4, 0.5, tp.pr("calendar"), rng, oak, -0.03)
-    tk.pendant(b, interior, V(-0.2, -10.6, levels[1] - 0.2), rng, "glass_dirty", 0.5, "warm", 8)
-    frame = kit.turned(V(0.4, -11.3, levels[1]), 0.0)
+    tk.pendant(b, interior, V(-0.2, ty + 1.55, levels[1] - 0.2), rng, "glass_dirty", 0.5, "warm", 8)
+    mechanism = V(0.2, ty + 2.2, levels[1])
+    frame = kit.turned(mechanism, 0.0)
     for sx in (-0.45, 0.45):
         for sy in (-0.25, 0.25):
             local_block(furniture, "rusty_metal", frame, sx - 0.03, sx + 0.03, sy - 0.03, sy + 0.03, 0.0, 0.95)
@@ -312,8 +315,9 @@ def tower_rooms(b, parts, rng):
     local_block(furniture, "rusty_metal", frame, -0.5, 0.5, -0.3, 0.3, 0.3, 0.34)
     for x, radius in ((-0.2, 0.22), (0.15, 0.16), (0.32, 0.1)):
         emit(furniture, kit.geo_lathe([(0.0, -0.015), (radius, -0.015), (radius, 0.015), (0.0, 0.015)], 12), "town_brass", frame @ kit.Matrix.Translation(V(x, 0.0, 0.62)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X'), "given", True)
-    rod(furniture, "rusty_metal", frame @ V(0.0, -0.3, 0.62), V(0.0, tiy[0] + 0.02, 10.7), 0.012, 5)
-    tk.col(b, "metal", "clock", -0.15, 0.95, -11.65, -10.95, levels[1], levels[1] + 1.0)
+    rod(furniture, "rusty_metal", frame @ V(-0.2, 0.0, 0.98), V(mechanism.x - 0.2, mechanism.y, clock_z), 0.012, 5)
+    rod(furniture, "rusty_metal", V(mechanism.x - 0.2, mechanism.y, clock_z), V(0.0, tiy[0] + 0.02, clock_z), 0.012, 5)
+    tk.col(b, "metal", "clock", mechanism.x - 0.5, mechanism.x + 0.5, mechanism.y - 0.3, mechanism.y + 0.3, levels[1], levels[1] + 1.0)
 
 
 def nave_walls(b, parts, rng):
@@ -322,7 +326,6 @@ def nave_walls(b, parts, rng):
     interior = parts["interior"]
     g = nave_gable()
     wall_top = g.height(nave_x, 0.03)
-    frames = {}
     for sign in (-1.0, 1.0):
         frame = kit.plane(V(sign * nave_x, 0.0, 0.0), V(sign, 0.0, 0.0))
         a_low, a_high = nave_y if sign > 0 else (-nave_y[1], -nave_y[0])
@@ -345,7 +348,6 @@ def nave_walls(b, parts, rng):
         kit.prism(shell, stone, kit.Matrix.Identity(4), points, niy[0], niy[1])
         kit.member(joinery, oak, V(sign * (nix - 0.1), niy[0], wall_top + 0.05), V(sign * (nix - 0.1), niy[1], wall_top + 0.05), 0.2, 0.18, up, 0.0, "box")
         frame_block(shell, dressed, frame, a_low, a_high, -0.45, 0.3, -0.07, 0.0, 0.0)
-        frames[sign] = frame
     west = kit.plane(V(0.0, nave_y[0], 0.0), V(0.0, -1.0, 0.0))
     kit.wall(shell, stone, west, gable_outline(g, nix, nave_x, wall_top), [tk.lancet(*tower_arch)], nave_t)
     kit.wall_boxes(b, "rock", "nave_west", west, -nix, nix, -1.5, wall_top, nave_t, [rect_of(tower_arch)])
@@ -356,15 +358,13 @@ def nave_walls(b, parts, rng):
     kit.wall_boxes(b, "rock", "nave_east", east, -nix, nix, -1.5, wall_top, nave_t, [rect_of(chancel_arch)])
     gable_cols_y(b, "nave_gable", nave_y[1] - nave_t, nave_y[1], g, wall_top)
     tk.inner_skin(interior, east, nave_t, inner_gable(g, nix, 0.0), [tk.lancet(*chancel_arch)], rng, 3)
-    inner_east = kit.plane(V(0.0, niy[1], 0.0), V(0.0, -1.0, 0.0))
-    surround(shell, inner_east, chancel_arch, 0.18, 0.03)
-    inner_west = kit.plane(V(0.0, niy[0], 0.0), V(0.0, 1.0, 0.0))
-    surround(shell, inner_west, (-tower_arch[1], -tower_arch[0]) + tower_arch[2:], 0.15, 0.03)
+    surround(shell, kit.plane(V(0.0, niy[1], 0.0), V(0.0, -1.0, 0.0)), chancel_arch, 0.18, 0.03)
+    surround(shell, kit.plane(V(0.0, niy[0], 0.0), V(0.0, 1.0, 0.0)), tower_arch, 0.15, 0.03)
     for sign in (-1.0, 1.0):
-        buttress(shell, b, V(sign * nave_x, nave_y[1] - 0.45, 0.0), V(sign, 0.0, 0.0), 0.75, [(3.0, 0.8), (5.2, 0.45)])
-        buttress(shell, b, V(sign * nave_x, -1.0, 0.0), V(sign, 0.0, 0.0), 0.7, [(2.6, 0.7), (4.8, 0.4)])
-        buttress(shell, b, V(sign * nave_x, 3.0, 0.0), V(sign, 0.0, 0.0), 0.7, [(2.6, 0.7), (4.8, 0.4)])
-        buttress(shell, b, V(sign * (nave_x - 0.4), nave_y[0], 0.0), V(0.0, -1.0, 0.0), 0.75, [(3.0, 0.8), (5.2, 0.45)])
+        buttress(shell, b, V(sign * nave_x, nave_y[1] - 0.45, 0.0), V(sign, 0.0, 0.0), 0.7, [(3.0, 0.6), (5.2, 0.34)])
+        buttress(shell, b, V(sign * nave_x, -1.0, 0.0), V(sign, 0.0, 0.0), 0.65, [(2.6, 0.6), (4.8, 0.34)])
+        buttress(shell, b, V(sign * nave_x, 3.0, 0.0), V(sign, 0.0, 0.0), 0.65, [(2.6, 0.6), (4.8, 0.34)])
+        buttress(shell, b, V(sign * (nave_x - 0.4), nave_y[0], 0.0), V(0.0, -1.0, 0.0), 0.7, [(3.0, 0.6), (5.2, 0.34)])
     return g, wall_top, east
 
 
@@ -378,7 +378,7 @@ def trusses(parts, g, wall_top):
             top = V(0.0, y, g.height(0.0, 0.3))
             kit.member(joinery, oak, foot, top, 0.14, 0.22, V(sx * g.sin, 0.0, g.cos), 0.0, "box")
             collar_end = V(sx * (reach + 0.05), y, collar_z)
-            knee = V(sx * (nix - 0.95), y, collar_z - 2.0)
+            knee = V(sx * (nix - 0.9), y, collar_z - 2.0)
             post_top = V(sx * (nix - 0.12), y, wall_top - 0.2)
             post_foot = V(sx * (nix - 0.12), y, wall_top - 2.2)
             kit.member(joinery, oak, post_foot, post_top, 0.14, 0.18, V(0.0, 1.0, 0.0), 0.0, "box")
@@ -389,7 +389,7 @@ def trusses(parts, g, wall_top):
         kit.member(joinery, oak, V(-reach, y, collar_z), V(reach, y, collar_z), 0.14, 0.2, up, 0.0, "box")
     kit.member(joinery, oak, V(0.0, niy[0], g.height(0.0, 0.28)), V(0.0, niy[1], g.height(0.0, 0.28)), 0.16, 0.22, up, 0.0, "box")
     for sx in (-1.0, 1.0):
-        x = sx * 2.9
+        x = sx * 2.6
         kit.member(joinery, oak, V(x, niy[0], g.height(x, 0.2)), V(x, niy[1], g.height(x, 0.2)), 0.14, 0.18, V(sx * g.sin, 0.0, g.cos), 0.0, "box")
 
 
@@ -411,7 +411,7 @@ def chancel_walls(b, parts, rng):
     door_hole = kit.rect(vestry_door[0], vestry_door[1], vestry_door[2] - 0.05, vestry_door[3])
     kit.wall(shell, stone, right, kit.rect(chancel_y[0], chancel_y[1], -1.5, top), [door_hole], chancel_t)
     kit.wall_boxes(b, "rock", "chancel", right, chancel_y[0], chancel_y[1], -1.5, top, chancel_t, [vestry_door])
-    tk.door_unit(joinery, right, vestry_door[0], vestry_door[1], vestry_door[2], vestry_door[3] - vestry_door[2], chancel_t, oak, rng, "high", -95.0, "ledged")
+    tk.door_unit(joinery, right, vestry_door[0], vestry_door[1], vestry_door[2], vestry_door[3] - vestry_door[2], chancel_t, oak, rng, "low", -95.0, "ledged")
     tk.inner_skin(interior, right, chancel_t, kit.rect(ciy[0], ciy[1], chancel_floor, top - 0.04), [kit.rect(vestry_door[0], vestry_door[1], vestry_door[2], vestry_door[3])], rng, 2)
     east = kit.plane(V(0.0, chancel_y[1], 0.0), V(0.0, 1.0, 0.0))
     kit.wall(shell, stone, east, gable_outline(g, cix, chancel_x, top), [tk.lancet(*east_window)], chancel_t)
@@ -433,10 +433,10 @@ def chancel_walls(b, parts, rng):
             points = [(x_out, top - 0.02), (x_in, top - 0.02), (x_in, g.height(cix, 0.06))]
         kit.prism(shell, stone, kit.Matrix.Identity(4), points, ciy[0], ciy[1])
         kit.member(joinery, oak, V(sign * (cix - 0.1), ciy[0], top + 0.05), V(sign * (cix - 0.1), ciy[1], top + 0.05), 0.18, 0.16, up, 0.0, "box")
-        buttress(shell, b, V(sign * (chancel_x - 0.35), chancel_y[1], 0.0), V(0.0, 1.0, 0.0), 0.6, [(2.6, 0.6), (4.2, 0.35)])
-    buttress(shell, b, V(-chancel_x, chancel_y[1] - 0.35, 0.0), V(-1.0, 0.0, 0.0), 0.6, [(2.6, 0.6), (4.2, 0.35)])
+        buttress(shell, b, V(sign * (chancel_x - 0.35), chancel_y[1], 0.0), V(0.0, 1.0, 0.0), 0.6, [(2.6, 0.55), (4.2, 0.32)])
+    buttress(shell, b, V(-chancel_x, chancel_y[1] - 0.35, 0.0), V(-1.0, 0.0, 0.0), 0.6, [(2.6, 0.55), (4.2, 0.32)])
     kit.member(joinery, oak, V(0.0, ciy[0], g.height(0.0, 0.26)), V(0.0, ciy[1], g.height(0.0, 0.26)), 0.14, 0.2, up, 0.0, "box")
-    for y in (9.6, 11.2):
+    for y in (9.3, 10.9):
         for sx in (-1.0, 1.0):
             kit.member(joinery, oak, V(sx * (cix - 0.1), y, top + 0.1), V(0.0, y, g.height(0.0, 0.26)), 0.12, 0.18, V(sx * g.sin, 0.0, g.cos), 0.0, "box")
     return g, top, right
@@ -458,10 +458,10 @@ def vestry_walls(b, parts, rng, nave_east, chancel_right):
     door_hole = kit.rect(vestry_out[0], vestry_out[1], vestry_out[2] - 0.05, vestry_out[3])
     kit.wall(shell, stone, east, outline, [door_hole], vestry_t)
     kit.wall_boxes(b, "rock", "vestry", east, -vix[1], -vix[0], -1.5, g.height(vix[1], 0.06), vestry_t, [vestry_out])
-    tk.door_unit(joinery, east, vestry_out[0], vestry_out[1], vestry_out[2], vestry_out[3] - vestry_out[2], vestry_t, "town_paint_red", rng, "low", 82.0, "ledged")
+    tk.door_unit(joinery, east, vestry_out[0], vestry_out[1], vestry_out[2], vestry_out[3] - vestry_out[2], vestry_t, "town_paint_red", rng, "low", -100.0, "ledged")
     tk.inner_skin(interior, east, vestry_t, [(-vix[1], chancel_floor), (-vix[0], chancel_floor), (-vix[0], g.height(vix[0], 0.08)), (-vix[1], g.height(vix[1], 0.08))], [kit.rect(vestry_out[0], vestry_out[1], vestry_out[2], vestry_out[3])], rng, 1)
-    block(shell, dressed, V(-vestry_out[1] - 0.1, vestry_y[1] - 0.02, -0.45), V(-vestry_out[0] + 0.1, vestry_y[1] + 0.45, 0.1), 0.012)
-    tk.col(b, "rock", "step", -vestry_out[1] - 0.1, -vestry_out[0] + 0.1, vestry_y[1] - 0.02, vestry_y[1] + 0.45, -1.5, 0.1)
+    block(shell, dressed, V(-vestry_out[1] - 0.1, vestry_y[1] - 0.02, -0.45), V(-vestry_out[0] + 0.1, vestry_y[1] + 0.4, 0.1), 0.012)
+    tk.col(b, "rock", "step", -vestry_out[1] - 0.1, -vestry_out[0] + 0.1, vestry_y[1] - 0.02, vestry_y[1] + 0.4, -1.5, 0.1)
     tk.col(b, "rock", "threshold", -vestry_out[1], -vestry_out[0], viy[1], vestry_y[1], -1.5, chancel_floor)
     kit.skin(interior, "plaster_interior", nave_east, kit.rect(-vix[1], -vix[0], chancel_floor, 3.75), [], 0.015, 0.0)
     kit.skin(interior, "plaster_interior", chancel_right, kit.rect(viy[0], viy[1], chancel_floor, g.height(vix[0], 0.1)), [kit.rect(vestry_door[0], vestry_door[1], vestry_door[2], vestry_door[3])], 0.015, 0.0)
@@ -476,96 +476,96 @@ def floors(b, parts, rng):
     tk.tile_floor(floor, "town_tiles", -0.85, 0.85, niy[0] + 0.3, niy[1] - 0.1, 0.006, 0.006)
     block(floor, dressed, V(-chancel_arch[1], niy[1], 0.0), V(chancel_arch[1], ciy[0], chancel_floor), 0.0, "world")
     tk.tile_floor(floor, "town_tiles", -cix, cix, ciy[0], ciy[1], chancel_floor, 0.03)
-    block(floor, dressed, V(-cix, 11.0, chancel_floor), V(cix, ciy[1], chancel_floor + 0.15), 0.004, "world")
+    block(floor, dressed, V(-cix, sanctuary_y, chancel_floor), V(cix, ciy[1], chancel_floor + 0.15), 0.004, "world")
     tk.board_floor(floor, vix[0], vix[1], viy[0], viy[1], chancel_floor, rng, "y", (), "floorboards", 0.02, 0.05, (0.16, 0.22), ())
     tk.col(b, "rock", "floor", -tower_arch[1], tower_arch[1], tiy[1], niy[0], -0.3, 0.0)
     tk.col(b, "rock", "floor", -nix, nix, niy[0], niy[1], -0.3, 0.0)
     tk.col(b, "rock", "chancel", -chancel_arch[1], chancel_arch[1], niy[1], ciy[0], -0.3, chancel_floor)
     tk.col(b, "rock", "chancel", -cix, cix, ciy[0], ciy[1], -0.3, chancel_floor)
-    tk.col(b, "rock", "sanctuary", -cix, cix, 11.0, ciy[1], chancel_floor, chancel_floor + 0.15)
+    tk.col(b, "rock", "sanctuary", -cix, cix, sanctuary_y, ciy[1], chancel_floor, chancel_floor + 0.15)
     tk.col(b, "wood", "vestry", vix[0], vix[1], viy[0], viy[1], -0.3, chancel_floor)
     tk.col(b, "rock", "threshold", cix, chancel_x, vestry_door[0], vestry_door[1], -0.3, chancel_floor)
 
 
-def nave_furniture(b, parts, rng, g):
+def nave_furniture(b, parts, rng):
     furniture = parts["furniture"]
     clutter = parts["clutter"]
     interior = parts["interior"]
     debris = parts["debris"]
-    rows = [-3.0 + index for index in range(9)]
+    rows = [-2.6 + index for index in range(9)]
     missing = {(-1.0, 3), (1.0, 6), (1.0, 0)}
     toppled = {(-1.0, 4), (1.0, 7)}
     for index, y in enumerate(rows):
         for sx in (-1.0, 1.0):
             if (sx, index) in missing:
                 continue
-            center = V(sx * 2.7, y, 0.0)
+            center = V(sx * 2.45, y, 0.0)
             if (sx, index) in toppled:
-                tp.pew_light(b, furniture, center + V(rng.uniform(-0.2, 0.2), 0.0, 0.0), math.pi + rng.uniform(-0.12, 0.12), rng, 3.4, -math.pi * 0.5)
+                tp.pew_light(b, furniture, center + V(rng.uniform(-0.15, 0.15), 0.0, 0.0), math.pi + rng.uniform(-0.12, 0.12), rng, 2.9, -math.pi * 0.5)
                 continue
             twist = rng.uniform(-0.25, 0.25) if rng.random() < 0.18 else rng.uniform(-0.02, 0.02)
-            shift = V(rng.uniform(-0.15, 0.15), rng.uniform(-0.08, 0.08), 0.0) if abs(twist) > 0.05 else V(0.0, 0.0, 0.0)
-            base = tp.pew_light(b, furniture, center + shift, math.pi + twist, rng, 3.4)
+            shift = V(rng.uniform(-0.12, 0.12), rng.uniform(-0.08, 0.08), 0.0) if abs(twist) > 0.05 else V(0.0, 0.0, 0.0)
+            base = tp.pew_light(b, furniture, center + shift, math.pi + twist, rng, 2.9)
             if rng.random() < 0.3:
-                start = base @ V(rng.uniform(-1.3, 0.6), 0.33, 0.785)
+                start = base @ V(rng.uniform(-1.1, 0.5), 0.33, 0.785)
                 tp.book_row(clutter, start, (base @ V(1.0, 0.33, 0.785)) - (base @ V(0.0, 0.33, 0.785)), rng.uniform(0.15, 0.4), rng, (0.1, 0.13), (0.14, 0.18), False, 0.3)
             if rng.random() < 0.25:
-                lump(clutter, "fabric_tartan", base @ V(rng.uniform(-1.2, 1.2), -0.45, 0.05), (0.18, 0.12, 0.05), rng, 0.2, 1)
-    tp.font_light(b, furniture, V(-3.3, -4.7, 0.0), rng)
-    tp.pulpit_light(b, furniture, V(-4.45, 6.7, 0.0), rng)
+                lump(clutter, "fabric_tartan", base @ V(rng.uniform(-1.0, 1.0), -0.45, 0.05), (0.18, 0.12, 0.05), rng, 0.2, 1)
+    tp.font_light(b, furniture, V(-2.9, -4.15, 0.0), rng)
+    tp.pulpit_light(b, furniture, V(-3.8, 6.7, 0.0), rng)
     tp.lectern_light(b, furniture, clutter, V(1.5, 6.9, 0.0), math.pi, rng)
-    tp.organ_light(b, furniture, clutter, V(4.75, 6.6, 0.0), -math.pi * 0.5, rng)
-    tp.framed(interior, V(-nix + 0.006, -1.0, 2.1), V(1.0, 0.0, 0.0), 0.5, 0.5, tp.pr("hymns"), rng, oak)
+    tp.organ_light(b, furniture, clutter, V(4.15, 6.6, 0.0), -math.pi * 0.5, rng)
+    tp.framed(interior, V(-nix + 0.006, -0.9, 2.1), V(1.0, 0.0, 0.0), 0.5, 0.5, tp.pr("hymns"), rng, oak)
     tp.framed(interior, V(nix - 0.006, 3.0, 2.1), V(-1.0, 0.0, 0.0), 0.5, 0.5, tp.pr("hymns"), rng, oak, 0.02)
-    for x_wall, normal, y, z in ((-nix, 1.0, 3.0, 1.9), (-nix, 1.0, -5.0, 2.0), (nix, -1.0, -1.0, 1.85), (nix, -1.0, -4.8, 2.2)):
+    for x_wall, normal, y, z in ((-nix, 1.0, 3.0, 1.9), (-nix, 1.0, -4.3, 2.0), (nix, -1.0, -0.9, 1.85), (nix, -1.0, -4.2, 2.2)):
         lo, hi = kit.box_between(V(x_wall, y - 0.32, z - 0.42), V(x_wall + normal * 0.05, y + 0.32, z + 0.42))
         block(interior, dressed, lo, hi, 0.01)
         lo, hi = kit.box_between(V(x_wall + normal * 0.05, y - 0.26, z - 0.34), V(x_wall + normal * 0.07, y + 0.26, z + 0.34))
         block(interior, "ceramic", lo, hi, 0.004)
     for y in truss_y[:3]:
         tk.pendant(b, interior, V(0.0, y, collar_z - 0.1), rng, "town_brass", collar_z - 0.1 - 3.6, "warm", 8)
-    kit.member(furniture, oak, V(2.3, 0.15, 0.95), V(4.6, 2.1, 0.08), 0.12, 0.18, None, 0.0, "box")
-    tk.chips(debris, "slate_roof", 2.6, 4.6, 0.0, 2.2, 0.0, 12, rng, (0.08, 0.17), (0.006, 0.008))
-    tk.chips(debris, "slate_roof", -3.0, -1.6, 4.4, 5.8, 0.0, 8, rng, (0.08, 0.17), (0.006, 0.008))
-    tk.chips(debris, "foliage", -1.0, 1.0, -5.8, -2.0, 0.0, 16, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
-    tk.chips(debris, "plaster_interior", -5.0, 5.0, -5.6, 7.4, 0.0, 18, rng)
-    tp.papers(debris, -1.0, 1.0, -5.5, 6.5, 0.0, 6, rng, ("music", "notice", "letter", "card"))
+    kit.member(furniture, oak, V(2.0, 0.2, 0.95), V(3.9, 2.0, 0.08), 0.12, 0.18, None, 0.0, "box")
+    tk.chips(debris, "slate_roof", 2.3, 3.9, 0.2, 2.0, 0.0, 12, rng, (0.08, 0.17), (0.006, 0.008))
+    tk.chips(debris, "slate_roof", -2.4, -1.1, 4.4, 5.8, 0.0, 8, rng, (0.08, 0.17), (0.006, 0.008))
+    tk.chips(debris, "foliage", -0.9, 0.9, niy[0] + 0.1, -1.5, 0.0, 16, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
+    tk.chips(debris, "plaster_interior", -4.4, 4.4, niy[0] + 0.3, niy[1] - 0.2, 0.0, 18, rng)
+    tp.papers(debris, -0.9, 0.9, niy[0] + 0.3, 6.5, 0.0, 6, rng, ("music", "notice", "letter", "card"))
     for index in range(4):
-        tp.book_row(clutter, V(rng.uniform(-0.8, 0.6), rng.uniform(-4.0, 6.0), 0.0), V(math.cos(rng.uniform(0.0, tau)), math.sin(rng.uniform(0.0, tau)), 0.0), 0.12, rng, (0.1, 0.13), (0.14, 0.18), False, 1.0)
+        tp.book_row(clutter, V(rng.uniform(-0.7, 0.5), rng.uniform(-3.5, 6.0), 0.0), V(math.cos(rng.uniform(0.0, tau)), math.sin(rng.uniform(0.0, tau)), 0.0), 0.12, rng, (0.1, 0.13), (0.14, 0.18), False, 1.0)
 
 
-def chancel_furniture(b, parts, rng, g, top):
+def chancel_furniture(b, parts, rng, g):
     furniture = parts["furniture"]
     clutter = parts["clutter"]
     interior = parts["interior"]
-    tp.choir_stall(b, furniture, V(-2.45, 9.6, chancel_floor), math.pi * 0.5, rng, 1.8)
-    tp.chair_light(furniture, V(2.55, 8.95, chancel_floor), -math.pi * 0.5 + 0.3, rng)
-    tp.altar_rail(b, furniture, -cix + 0.05, -0.5, 10.9, chancel_floor, rng)
-    tp.altar_rail(b, furniture, 0.5, cix - 0.05, 10.9, chancel_floor, rng)
-    tp.altar_light(b, furniture, clutter, V(0.0, 11.95, chancel_floor + 0.15), 0.0, rng)
-    tk.pendant(b, interior, V(0.0, 10.4, g.height(0.0, 0.4)), rng, "town_brass", g.height(0.0, 0.4) - 3.5, "warm", 8)
-    tp.framed(interior, V(-cix + 0.006, 9.4, 2.4), V(1.0, 0.0, 0.0), 0.36, 0.46, tp.pr("portrait_a"), rng, "town_brass")
-    tp.candlestick(clutter, V(0.9, 10.6, chancel_floor), rng)
-    tp.papers(parts["debris"], -2.0, 2.0, 8.6, 10.6, chancel_floor, 3, rng, ("music", "letter"))
-    tk.chips(parts["debris"], "plaster_interior", -2.6, 2.6, 8.6, 12.2, chancel_floor, 8, rng)
+    tp.choir_stall(b, furniture, V(-2.45, 9.35, chancel_floor), math.pi * 0.5, rng, 1.6)
+    tp.chair_light(furniture, V(2.45, rail_y - 0.35, chancel_floor), -math.pi * 0.5 + 0.3, rng)
+    tp.altar_rail(b, furniture, -cix + 0.05, -0.5, rail_y, chancel_floor, rng)
+    tp.altar_rail(b, furniture, 0.5, cix - 0.05, rail_y, chancel_floor, rng)
+    tp.altar_light(b, furniture, clutter, V(0.0, ciy[1] - 0.45, chancel_floor + 0.15), 0.0, rng)
+    tk.pendant(b, interior, V(0.0, 10.0, g.height(0.0, 0.4)), rng, "town_brass", g.height(0.0, 0.4) - 3.5, "warm", 8)
+    tp.framed(interior, V(-cix + 0.006, 9.2, 2.4), V(1.0, 0.0, 0.0), 0.36, 0.46, tp.pr("portrait_a"), rng, "town_brass")
+    tp.candlestick(clutter, V(0.9, rail_y - 0.3, chancel_floor), rng)
+    tp.papers(parts["debris"], -2.0, 2.0, 8.6, rail_y - 0.4, chancel_floor, 3, rng, ("music", "letter"))
+    tk.chips(parts["debris"], "plaster_interior", -2.6, 2.6, 8.6, ciy[1] - 0.2, chancel_floor, 8, rng)
 
 
 def vestry_furniture(b, parts, rng, g):
     furniture = parts["furniture"]
     clutter = parts["clutter"]
     interior = parts["interior"]
-    tp.wardrobe_light(b, furniture, clutter, V(vix[1] - 0.3, 8.95, chancel_floor), -math.pi * 0.5, rng, 1.0, 0.56, oak, oak)
-    tp.chest_light(b, furniture, V(4.3, viy[0] + 0.24, chancel_floor), math.pi, rng, 0.8, 0.44, 0.75, oak, 3)
-    b.loot("box", V(4.3, viy[0] + 0.24, chancel_floor + 0.8))
-    tp.table_light(furniture, 4.65, 9.45, chancel_floor, 0.8, 0.5, 0.74, rng)
-    tk.col(b, "wood", "table", 4.25, 5.05, 9.2, 9.7, chancel_floor, chancel_floor + 0.74)
-    tp.chair_light(furniture, V(4.05, 9.55, chancel_floor), -math.pi * 0.5 - 0.2, rng)
-    tp.book_row(clutter, V(4.4, 9.35, chancel_floor + 0.74), V(1.0, 0.0, 0.0), 0.4, rng, (0.2, 0.26), (0.03, 0.05), False, 1.0)
-    tp.papers(clutter, 4.3, 5.0, 9.25, 9.65, chancel_floor + 0.745, 3, rng, ("letter", "notice", "envelope"))
-    bd.coat_rail(interior, clutter, V(vix[0], 10.85, 1.95), V(vix[0], 11.05, 1.95), V(1.0, 0.0, 0.0), rng, 1)
-    tp.framed(interior, V(4.0, viy[0] + 0.02, 2.0), V(0.0, 1.0, 0.0), 0.36, 0.46, tp.pr("portrait_b"), rng, oak, 0.03)
-    tk.pendant(b, interior, V(4.55, 10.0, g.height(4.55, 0.1)), rng, "glass_dirty", g.height(4.55, 0.1) - 2.7, "warm", 8)
-    tp.papers(parts["debris"], 3.8, 5.3, 9.8, 11.0, chancel_floor, 3, rng, ("letter", "envelope"))
+    tp.wardrobe_light(b, furniture, clutter, V(vix[1] - 0.29, 8.95, chancel_floor), -math.pi * 0.5, rng, 1.0, 0.56, oak, oak)
+    tp.chest_light(b, furniture, V(4.25, viy[0] + 0.23, chancel_floor), math.pi, rng, 0.76, 0.42, 0.75, oak, 3)
+    b.loot("box", V(4.25, viy[0] + 0.23, chancel_floor + 0.8))
+    tp.table_light(furniture, vix[1] - 0.26, 10.0, chancel_floor, 0.8, 0.5, 0.74, rng, "floorboards", "timber_beam", math.pi * 0.5)
+    tk.col(b, "wood", "table", vix[1] - 0.51, vix[1], 9.6, 10.4, chancel_floor, chancel_floor + 0.74)
+    tp.chair_light(furniture, V(4.55, 10.05, chancel_floor), tk.facing(V(4.55, 10.05, 0.0), V(5.2, 10.0, 0.0)) + 0.2, rng)
+    tp.book_row(clutter, V(vix[1] - 0.35, 9.7, chancel_floor + 0.74), V(0.0, 1.0, 0.0), 0.36, rng, (0.2, 0.26), (0.03, 0.05), False, 1.0)
+    tp.papers(clutter, vix[1] - 0.45, vix[1] - 0.1, 10.1, 10.35, chancel_floor + 0.745, 3, rng, ("letter", "notice", "envelope"))
+    bd.coat_rail(interior, clutter, V(vix[0], 10.35, 1.95), V(vix[0], 10.95, 1.95), V(1.0, 0.0, 0.0), rng, 1)
+    tp.framed(interior, V(4.25, viy[0] + 0.02, 2.0), V(0.0, 1.0, 0.0), 0.36, 0.46, tp.pr("portrait_b"), rng, oak, 0.03)
+    tk.pendant(b, interior, V(4.5, 9.9, g.height(4.5, 0.1)), rng, "glass_dirty", g.height(4.5, 0.1) - 2.7, "warm", 8)
+    tp.papers(parts["debris"], 3.8, 4.6, 9.2, 10.9, chancel_floor, 3, rng, ("letter", "envelope"))
 
 
 def exterior(b, parts, rng, nave_g, chancel_g, vestry_g):
@@ -587,16 +587,16 @@ def exterior(b, parts, rng, nave_g, chancel_g, vestry_g):
                 z -= 1.7
     tk.ivy_light(plants, V(-1.6, tower_y[0] - 0.02, -0.15), V(0.0, -1.0, 0.0), rng, 7.5, 1.2, 4, 10.0)
     tk.ivy_light(plants, V(-nave_x - 0.02, 4.2, -0.15), V(-1.0, 0.0, 0.0), rng, 4.5, 1.0, 3, 10.0)
-    tk.ivy_light(plants, V(tower_x + 0.02, -8.0, -0.15), V(1.0, 0.0, 0.0), rng, 5.0, 0.8, 3, 10.0)
+    tk.ivy_light(plants, V(tower_x + 0.02, tower_y[1] - 1.4, -0.15), V(1.0, 0.0, 0.0), rng, 5.0, 0.8, 3, 10.0)
     tk.weeds_line(plants, V(-tower_x + 0.4, tower_y[0] - 0.15, -0.15), V(west_door[0] - 0.3, tower_y[0] - 0.15, -0.15), rng, 3)
     tk.weeds_line(plants, V(west_door[1] + 0.3, tower_y[0] - 0.15, -0.15), V(tower_x - 0.4, tower_y[0] - 0.15, -0.15), rng, 3)
     for sx in (-1.0, 1.0):
         tk.weeds_line(plants, V(sx * (nave_x + 0.15), nave_y[0] + 0.5, -0.15), V(sx * (nave_x + 0.15), nave_y[1] - 0.5, -0.15), rng, 6)
         tk.weeds_line(plants, V(sx * (tower_x + 0.15), tower_y[0] + 1.0, -0.15), V(sx * (tower_x + 0.15), tower_y[1] - 0.2, -0.15), rng, 2)
     tk.weeds_line(plants, V(-chancel_x + 0.3, chancel_y[1] + 0.15, -0.15), V(chancel_x - 0.3, chancel_y[1] + 0.15, -0.15), rng, 3)
-    tk.chips(parts["debris"], "slate_roof", -6.4, -6.05, -5.0, 7.5, -0.15, 6, rng, (0.08, 0.17), (0.006, 0.008))
-    tk.chips(parts["debris"], "slate_roof", 6.05, 6.4, -5.0, 7.5, -0.15, 6, rng, (0.08, 0.17), (0.006, 0.008))
-    tp.papers(parts["debris"], -1.5, 1.5, -14.2, -13.4, -0.15, 4, rng, ("notice", "newspaper", "card"))
+    tk.chips(parts["debris"], "slate_roof", -nave_x - 0.4, -nave_x - 0.05, -4.0, 7.5, -0.15, 6, rng, (0.08, 0.17), (0.006, 0.008))
+    tk.chips(parts["debris"], "slate_roof", nave_x + 0.05, nave_x + 0.4, -4.0, 7.5, -0.15, 6, rng, (0.08, 0.17), (0.006, 0.008))
+    tp.papers(parts["debris"], -1.5, 1.5, tower_y[0] - 0.9, tower_y[0] - 0.5, -0.15, 3, rng, ("notice", "newspaper", "card"))
 
 
 def church():
@@ -615,8 +615,8 @@ def church():
     chancel_g, chancel_top, chancel_right = chancel_walls(b, parts, rng)
     vestry_g = vestry_walls(b, parts, rng, nave_east, chancel_right)
     floors(b, parts, rng)
-    nave_furniture(b, parts, rng, nave_g)
-    chancel_furniture(b, parts, rng, chancel_g, chancel_top)
+    nave_furniture(b, parts, rng)
+    chancel_furniture(b, parts, rng, chancel_g)
     vestry_furniture(b, parts, rng, vestry_g)
     exterior(b, parts, rng, nave_g, chancel_g, vestry_g)
     return b
@@ -634,9 +634,9 @@ def church_far():
     right = kit.plane(V(tower_x, 0.0, 0.0), V(1.0, 0.0, 0.0))
     for frame, a0, a1 in ((west, -tower_x, tower_x), (east, -tower_x, tower_x), (left, -tiy[1], -tiy[0]), (right, tiy[0], tiy[1])):
         kit.wall(shell, stone, frame, kit.rect(a0, a1, -1.5, tower_top + 0.6), [], tower_t)
-    for frame, shape in ((west, west_door), (west, west_window), (west, (-0.5, 0.5) + belfry_light), (east, (-0.5, 0.5) + belfry_light), (left, (9.3, 10.3) + belfry_light), (right, (-10.3, -9.3) + belfry_light)):
+    for frame, shape in ((west, west_door), (west, west_window), (west, (-0.5, 0.5) + belfry_light), (east, (-0.5, 0.5) + belfry_light), (left, (-tower_center - 0.5, -tower_center + 0.5) + belfry_light), (right, (tower_center - 0.5, tower_center + 0.5) + belfry_light)):
         kit.skin(shell, "soot", frame, tk.lancet(*shape), [], 0.004, 0.001, False)
-    tp.disc(shell, "town_print", V(0.0, tower_y[0] - 0.01, 10.7), V(0.0, -1.0, 0.0), 0.68, tp.pr("clock", 2.0), 12)
+    tp.disc(shell, "town_print", V(0.0, tower_y[0] - 0.01, clock_z), V(0.0, -1.0, 0.0), 0.68, tp.pr("clock", 2.0), 12)
     block(shell, "concrete", V(-tix, tiy[0], tower_roof - 0.1), V(tix, tiy[1], tower_roof), 0.0, "world")
     for cx in (-tower_x + 0.25, tower_x - 0.25):
         for cy in (tower_y[0] + 0.25, tower_y[1] - 0.25):
@@ -661,9 +661,9 @@ def church_far():
     vtop = vestry_g.height(vestry_x[1], 0.03)
     kit.wall(shell, stone, kit.plane(V(vestry_x[1], 0.0, 0.0), V(1.0, 0.0, 0.0)), kit.rect(vestry_y[0], vestry_y[1], -1.5, vtop), [], vestry_t)
     kit.wall(shell, stone, kit.plane(V(0.0, vestry_y[1], 0.0), V(0.0, 1.0, 0.0)), [(-vix[1], -1.5), (-vix[0], -1.5), (-vix[0], vestry_g.height(vix[0], 0.06)), (-vix[1], vestry_g.height(vix[1], 0.06))], [], vestry_t)
-    for gable, sides, name in ((nave_g, (-1.0, 1.0), "slate_roof"), (chancel_g, (-1.0, 1.0), "slate_roof"), (vestry_g, (-1.0,), "slate_roof")):
+    for gable, sides in ((nave_g, (-1.0, 1.0)), (chancel_g, (-1.0, 1.0)), (vestry_g, (-1.0,))):
         for side in sides:
-            tk.roof_slab_y(shell, gable, side, gable.x0, gable.x1, name if side < 0 else "roof_moss", 0.15)
+            tk.roof_slab_y(shell, gable, side, gable.x0, gable.x1, "slate_roof" if side < 0 else "roof_moss", 0.15)
     for gable in (nave_g, chancel_g):
         block(shell, "terracotta", V(gable.origin_x - 0.13, gable.x0, gable.ridge_top - 0.04), V(gable.origin_x + 0.13, gable.x1, gable.ridge_top + 0.09))
     return b

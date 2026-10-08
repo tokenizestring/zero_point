@@ -1952,6 +1952,23 @@ def bake(name):
     vk.log("BAKE DONE", name, round(time.time() - started, 1), "s")
 
 
+def record_only(name):
+    import json
+    vk.reset()
+    looks()
+    m = builders[name]()
+    path = os.path.join(vk.models_root, name, name + ".gltf")
+    with open(path, "r", encoding="utf-8") as handle:
+        near = vk.audit(path, json.load(handle))
+    far = None
+    far_path = os.path.join(vk.models_root, name + "_far", name + "_far.gltf")
+    if os.path.exists(far_path):
+        with open(far_path, "r", encoding="utf-8") as handle:
+            far = vk.audit(far_path, json.load(handle))
+    record(name, m, near, far)
+    vk.log("RECORDED", name, near["triangles"], far["triangles"] if far else 0)
+
+
 def record(name, m, near, far):
     document = {}
     if os.path.exists(manifest_path):
@@ -2002,6 +2019,8 @@ def main():
         elif mode == "all":
             bake(name)
             preview(name)
+        elif mode == "record":
+            record_only(name)
     vk.log("DONE", mode, names, round(time.time() - started, 1), "s")
 
 

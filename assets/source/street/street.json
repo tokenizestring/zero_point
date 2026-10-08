@@ -24,6 +24,21 @@
    "markers": [
     "col_metal_1"
    ],
+   "footprint_min": [
+    -0.11,
+    -0.11,
+    0.0
+   ],
+   "footprint_max": [
+    0.11,
+    0.11,
+    1.0
+   ],
+   "footprint_size": [
+    0.22,
+    0.22,
+    1.0
+   ],
    "footprint_radius": 0.134,
    "kind": "point"
   },
@@ -52,6 +67,21 @@
     "col_wood_2",
     "col_metal_1",
     "col_metal_2"
+   ],
+   "footprint_min": [
+    -0.93,
+    -0.29,
+    0.0
+   ],
+   "footprint_max": [
+    0.93,
+    0.33,
+    0.9
+   ],
+   "footprint_size": [
+    1.86,
+    0.62,
+    0.9
    ],
    "kind": "point",
    "front": "-Y (seat faces -Y)",
@@ -85,6 +115,21 @@
     "col_wood_1",
     "col_metal_2"
    ],
+   "footprint_min": [
+    -1.63,
+    -0.81,
+    0.0
+   ],
+   "footprint_max": [
+    1.63,
+    0.81,
+    3.0
+   ],
+   "footprint_size": [
+    3.26,
+    1.62,
+    3.0
+   ],
    "kind": "point",
    "front": "-Y (open side)",
    "length": 3.24
@@ -111,6 +156,21 @@
    "triangles_far": 56,
    "markers": [
     "col_metal_1"
+   ],
+   "footprint_min": [
+    -0.48,
+    -0.48,
+    0.0
+   ],
+   "footprint_max": [
+    0.48,
+    0.48,
+    2.4
+   ],
+   "footprint_size": [
+    0.96,
+    0.96,
+    2.4
    ],
    "kind": "point",
    "front": "-Y (door, hinged on -X side, ajar)",
@@ -142,6 +202,21 @@
    "markers": [
     "col_metal_1"
    ],
+   "footprint_min": [
+    -0.31,
+    -0.31,
+    0.0
+   ],
+   "footprint_max": [
+    0.31,
+    0.31,
+    1.6
+   ],
+   "footprint_size": [
+    0.62,
+    0.62,
+    1.6
+   ],
    "kind": "point",
    "front": "-Y (aperture and door)",
    "footprint_radius": 0.31
@@ -169,6 +244,21 @@
    "markers": [
     "col_metal_1"
    ],
+   "footprint_min": [
+    -0.12,
+    -0.12,
+    0.0
+   ],
+   "footprint_max": [
+    0.12,
+    0.12,
+    2.75
+   ],
+   "footprint_size": [
+    0.24,
+    0.24,
+    2.75
+   ],
    "kind": "point",
    "front": "-Y"
   },
@@ -194,6 +284,21 @@
    "triangles_far": 112,
    "markers": [
     "col_metal_1"
+   ],
+   "footprint_min": [
+    -0.26,
+    -0.26,
+    0.0
+   ],
+   "footprint_max": [
+    0.26,
+    0.26,
+    1.05
+   ],
+   "footprint_size": [
+    0.52,
+    0.52,
+    1.05
    ],
    "kind": "point",
    "front": "-Y",
@@ -228,6 +333,21 @@
     "col_wood_5",
     "col_wood_6"
    ],
+   "footprint_min": [
+    -1.24,
+    -0.64,
+    0.0
+   ],
+   "footprint_max": [
+    1.24,
+    0.64,
+    2.32
+   ],
+   "footprint_size": [
+    2.48,
+    1.28,
+    2.32
+   ],
    "kind": "point",
    "front": "-Y (counter side)",
    "variant": "a"
@@ -258,6 +378,21 @@
     "col_wood_3",
     "loot_food_1",
     "col_wood_4"
+   ],
+   "footprint_min": [
+    -1.24,
+    -0.64,
+    0.0
+   ],
+   "footprint_max": [
+    1.24,
+    0.64,
+    2.32
+   ],
+   "footprint_size": [
+    2.48,
+    1.28,
+    2.32
    ],
    "kind": "point",
    "front": "-Y (counter side)",
@@ -513,6 +648,21 @@
    "triangles_far": 44,
    "markers": [
     "col_fabric_1"
+   ],
+   "footprint_min": [
+    -0.19,
+    -0.19,
+    0.0
+   ],
+   "footprint_max": [
+    0.19,
+    0.19,
+    0.75
+   ],
+   "footprint_size": [
+    0.38,
+    0.38,
+    0.75
    ],
    "kind": "point",
    "footprint": [

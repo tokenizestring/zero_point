@@ -868,6 +868,19 @@ def terrace_roof(b, parts, x0, x1, gable, rng, moss=0.3, missing=0.01, holes=(),
             b.ramp("ny", surface, "roof", V(x0, gable.origin_y, gable.eave_top), V(x1, gable.origin_y + gable.edge, gable.ridge_top))
 
 
+def gable_cols_x(b, tag, x0, x1, gable, base, steps=4, surface="rock"):
+    for index in range(steps):
+        z0 = base + (gable.ridge_top - base) * index / steps
+        z1 = base + (gable.ridge_top - base) * (index + 1) / steps
+        reach = min(gable.half, (gable.ridge_top - z0) / gable.tan)
+        if reach > 0.05:
+            b.col(surface, tag, V(x0, gable.origin_y - reach, z0), V(x1, gable.origin_y + reach, z1))
+
+
+def valley_outline(front, back, half_y, depth=0.05):
+    return [(-half_y, -1.5), (half_y, -1.5), (half_y, back.under(half_y, depth)), (back.origin_y, back.under(back.origin_y, depth)), (0.0, front.under(0.0, depth)), (front.origin_y, front.under(front.origin_y, depth)), (-half_y, front.under(-half_y, depth))]
+
+
 class YGable(kit.Gable):
     def __init__(self, y0, y1, half, overhang, eave_top, pitch_degrees, origin_x=0.0):
         kit.Gable.__init__(self, y0, y1, half, overhang, eave_top, pitch_degrees, 0.0)
