@@ -98,8 +98,8 @@ namespace zp
 			const D3D11_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<std::float_t>(renderer.width), static_cast<std::float_t>(renderer.height), 0.0f, 1.0f };
 
 			ID3D11RenderTargetView* targets[2] = { renderer.hdr.rtv, renderer.gbuffer[4].rtv };
-			ID3D11ShaderResourceView* resources[4] = { scene_copy.srv, renderer.depth.srv, normal_view, sky.prefiltered };
-			ID3D11ShaderResourceView* unbound[4]{};
+			ID3D11ShaderResourceView* resources[5] = { scene_copy.srv, renderer.depth.srv, normal_view, sky.prefiltered, clouds.shadow_map.srv ? clouds.shadow_map.srv : renderer.white.srv };
+			ID3D11ShaderResourceView* unbound[5]{};
 			ID3D11ShaderResourceView* height_view{ terrain.enabled ? terrain.height_view : nullptr };
 			ID3D11SamplerState* samplers[2] = { gpu.sampler_linear_clamp, gpu.sampler_linear_wrap };
 
@@ -125,12 +125,13 @@ namespace zp
 			gpu.context->VSSetSamplers(0u, 2u, samplers);
 			gpu.context->PSSetShader(pixel_shader, nullptr, 0u);
 			gpu.context->PSSetConstantBuffers(3u, 1u, &constant_buffer);
-			gpu.context->PSSetShaderResources(0u, 4u, resources);
+			gpu.context->PSSetConstantBuffers(5u, 1u, &clouds.constant_buffer);
+			gpu.context->PSSetShaderResources(0u, 5u, resources);
 			gpu.context->PSSetSamplers(0u, 2u, samplers);
 
 			gpu.context->DrawIndexed(index_count, 0u, 0);
 
-			gpu.context->PSSetShaderResources(0u, 4u, unbound);
+			gpu.context->PSSetShaderResources(0u, 5u, unbound);
 			gpu.context->VSSetShaderResources(terrain_height_slot, 1u, unbound);
 			gpu.context->OMSetRenderTargets(0u, nullptr, nullptr);
 		}

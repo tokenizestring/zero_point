@@ -2,11 +2,13 @@
 //=====================================================================================
 
 #include "common.hlsli"
+#include "clouds.hlsli"
 
 Texture2D<float4> scene_color : register(t0);
 Texture2D<float> scene_depth : register(t1);
 Texture2D<float4> water_normal_map : register(t2);
 TextureCube<float4> sky_prefiltered : register(t3);
+Texture2D<float> cloud_shadows : register(t4);
 Texture2D<float> water_terrain : register(t21);
 SamplerState linear_clamp : register(s0);
 SamplerState linear_wrap : register(s1);
@@ -267,7 +269,7 @@ water_output ps_main(water_vertex input)
 		float crest = saturate((offset.y - 0.95 * input.calm) * 2.0) * input.calm * saturate(1.0 - surface_distance / 140.0);
 		float foam = saturate((smoothstep(0.3, 0.55, lace + roller * 0.25) * (roller + wake * 0.4) + smoothstep(0.34, 0.6, lace) * (film * 0.5 + crest)) * water_absorption.w);
 
-		color = lerp(refracted + glow, reflection, saturate(fresnel)) + sun_color.rgb * specular * (1.0 - foam);
+		color = lerp(refracted + glow, reflection, saturate(fresnel)) + sun_color.rgb * specular * (1.0 - foam) * cloud_sunlight(cloud_shadows, linear_clamp, input.world_position);
 		color = lerp(color, ambient * 0.85, foam);
 		output.color = float4(apply_fog(color, input.world_position), 0.0);
 	}
