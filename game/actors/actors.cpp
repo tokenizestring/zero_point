@@ -455,14 +455,19 @@ namespace zp
 	void actors_c::animate(structures::actor_s& actor, std::float_t delta)
 	{
 		const auto& character{ *actor.character };
-		const structures::vec3_s horizontal{ actor.velocity.x, 0.0f, actor.velocity.z };
+		const structures::vec3_s horizontal{ actor.seated ? 0.0f : actor.velocity.x, 0.0f, actor.seated ? 0.0f : actor.velocity.z };
 		const auto speed{ mathematics.length(horizontal) };
 
 		actor.speed = mathematics.damp(actor.speed, speed, character_blend_sharpness, delta);
-		actor.crouch = mathematics.damp(actor.crouch, actor.crouched ? 1.0f : 0.0f, 8.0f, delta);
-		actor.air = mathematics.damp(actor.air, actor.grounded ? 0.0f : 1.0f, 10.0f, delta);
+		actor.crouch = mathematics.damp(actor.crouch, actor.crouched && actor.seated == false ? 1.0f : 0.0f, 8.0f, delta);
+		actor.air = mathematics.damp(actor.air, actor.grounded || actor.seated ? 0.0f : 1.0f, 10.0f, delta);
 
-		if (speed > 0.25f)
+		if (actor.seated)
+		{
+			actor.turning = false;
+		}
+
+		else if (speed > 0.25f)
 		{
 			const auto move_yaw{ std::atan2(horizontal.x, horizontal.z) };
 			const auto backwards{ std::fabs(mathematics.angle_difference(actor.look_yaw, move_yaw)) > character_backpedal_angle };
@@ -554,13 +559,13 @@ namespace zp
 
 		const auto was_holding{ actor.holding };
 
-		actor.holding = actor.held && actor.dead == false && hold(actor);
+		actor.holding = actor.held && actor.dead == false && actor.seated == false && hold(actor);
 
 		const auto twist_yaw{ std::clamp(mathematics.angle_difference(actor.body_yaw, actor.look_yaw), -actor_twist_yaw_limit, actor_twist_yaw_limit) };
 		const auto twist_pitch{ std::clamp(actor.look_pitch + actor.hurt * 0.4f, -actor_twist_pitch_limit, actor_twist_pitch_limit) };
 		const auto fallen{ actor.dead ? std::min(1.0f, actor.death * actor.death * 2.6f) : 0.0f };
 
-		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data(), actor.holding ? actor.blade : 0.0f);
+		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data(), actor.holding ? actor.blade : 0.0f, actor.seated ? 1.0f : 0.0f);
 
 		if (actor.holding)
 		{
