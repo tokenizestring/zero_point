@@ -159,6 +159,7 @@ namespace zp
 			char text[96]{};
 
 			auto seat{ 0u };
+			auto gap{ 0.0f };
 
 			if (player.state.flags & structures::movement_seated)
 			{
@@ -172,9 +173,16 @@ namespace zp
 
 			else if (const auto vehicle{ vehicles.reach(player.eye, forward, seat) }; vehicle >= 0)
 			{
-				std::snprintf(text, sizeof(text), "%s   [E] %s", vehicle_kinds[vehicles.list[vehicle].kind].name, seat == 0u ? (vehicle_kinds[vehicles.list[vehicle].kind].wheel_count ? "drive" : "fly") : "ride");
+				const auto mode{ vehicle_kinds[vehicles.list[vehicle].kind].mode };
+
+				std::snprintf(text, sizeof(text), "%s   [E] %s", vehicle_kinds[vehicles.list[vehicle].kind].name, seat == 0u && mode == structures::vehicle_mode_wheels ? "drive" : (seat == 0u && mode == structures::vehicle_mode_rotor ? "fly" : "ride"));
 
 				hud.set_prompt(text);
+			}
+
+			else if (const auto horse{ fauna.ray(player.eye, forward, vehicle_enter_reach, gap) }; horse >= 0 && fauna.animals[horse].alive && fauna.animals[horse].species == structures::species_horse)
+			{
+				hud.set_prompt("Wild horse   [E] ride");
 			}
 
 			else if (const auto target{ pickup_target(player.eye, forward) }; target >= 0)
