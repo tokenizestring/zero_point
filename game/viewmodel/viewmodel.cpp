@@ -11,7 +11,7 @@ namespace zp
 
 	bool viewmodel_c::create()
 	{
-		if (const auto source{ characters.find(viewmodel_character) }; source && source->bones.size())
+		if (const auto source{ characters.find(arms_source) }; source && source->bones.size())
 		{
 			upper_arm = characters.bone(*source, "Bip01 R UpperArm");
 			forearm = characters.bone(*source, "Bip01 R Forearm");

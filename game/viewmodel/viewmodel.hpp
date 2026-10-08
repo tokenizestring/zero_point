@@ -98,6 +98,7 @@ namespace zp
 		bool punching = false;
 		bool grounded = true;
 		bool ready = false;
+		const char* arms_source = viewmodel_character;
 		bool visible = false;
 		bool history = false;
 
