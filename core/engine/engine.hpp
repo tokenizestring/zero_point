@@ -306,6 +306,13 @@ namespace zp
 	constexpr const char* character_twist_bones[] = { "Bip01 Spine", "Bip01 Spine1", "Bip01 Spine2", "Bip01 Neck", "Bip01 Head" };
 	constexpr const char* character_sit_bones[] = { "Bip01 L Thigh", "Bip01 R Thigh", "Bip01 L Calf", "Bip01 R Calf", "Bip01 L UpperArm", "Bip01 R UpperArm", "Bip01 L Forearm", "Bip01 R Forearm" };
 	constexpr std::float_t character_sit_angles[] = { 1.45f, 1.45f, -1.5f, -1.5f, 0.55f, 0.55f, 0.75f, 0.75f };
+	constexpr std::float_t character_ride_angles[] = { 0.62f, 0.62f, -0.75f, -0.75f, 0.5f, 0.5f, 1.0f, 1.0f };
+	constexpr std::float_t character_spread_angles[] = { 0.82f, -0.82f, -0.72f, 0.72f, 0.0f, 0.0f, 0.0f, 0.0f };
+	constexpr auto horse_trot_speed = 4.4f;
+	constexpr auto horse_step = 0.7f;
+	constexpr auto horse_wade = 1.25f;
+	constexpr auto horse_probe = 1.05f;
+	constexpr auto horse_gravity = 14.0f;
 	constexpr std::float_t character_twist_shares[] = { 0.15f, 0.2f, 0.25f, 0.2f, 0.2f };
 	constexpr std::float_t character_blade_shares[] = { 0.25f, 0.35f, 0.4f, 0.0f, -1.0f };
 	constexpr const char* character_roster[] = { "military_male_01", "military_male_04", "police_male_02", "male_adult_05", "construction_male_01" };
@@ -1826,7 +1833,17 @@ namespace zp
 		{
 			vehicle_rover,
 			vehicle_heli,
+			vehicle_horse,
 			vehicle_kind_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum vehicle_mode_e : std::uint32_t
+		{
+			vehicle_mode_wheels,
+			vehicle_mode_rotor,
+			vehicle_mode_hooves
 		};
 		/*
 		//=====================================================================================
@@ -1863,6 +1880,7 @@ namespace zp
 			vec3_s lights[2];
 			vec3_s exhaust;
 			std::float_t health;
+			std::uint32_t mode;
 		};
 		/*
 		//=====================================================================================
@@ -1877,6 +1895,7 @@ namespace zp
 			std::float_t heading;
 			bool brake;
 			bool engine;
+			bool sprint;
 		};
 		/*
 		//=====================================================================================
@@ -2939,6 +2958,8 @@ namespace zp
 			std::vector<std::float_t> twist_shares;
 			std::vector<std::float_t> blade_shares;
 			std::vector<std::float_t> sit_shares;
+			std::vector<std::float_t> ride_shares;
+			std::vector<std::float_t> spread_shares;
 			std::uint32_t alpha_first_index;
 			vec3_s bounds_min;
 			vec3_s bounds_max;
@@ -3078,6 +3099,7 @@ namespace zp
 			std::float_t blade;
 			bool holding;
 			bool seated;
+			bool mounted;
 			bool crouched;
 			bool grounded;
 			bool turning;
@@ -4443,6 +4465,8 @@ namespace zp
 			bool keypad_test;
 			bool dead_test;
 			std::uint32_t ragdoll_test;
+			bool horse_test;
+			char arms[64];
 			bool title_test;
 			bool wake_test;
 			bool pause_test;
@@ -5295,9 +5319,12 @@ namespace zp
 	constexpr auto vehicle_stale_time = 3.0;
 	constexpr structures::vehicle_kind_s vehicle_kinds[structures::vehicle_kind_count] =
 	{
-		{ "veh_rover", "Armoured rover", 1900.0f, { 0.0f, 1.15f, 0.0f }, { 0.98f, 0.72f, 2.25f }, { 0.0f, 0.75f, 0.1f }, 4u, { { -0.84f, 0.44f, 1.42f }, { 0.84f, 0.44f, 1.42f }, { -0.84f, 0.44f, -1.36f }, { 0.84f, 0.44f, -1.36f } }, 0.44f, 0.32f, 30000.0f, 3200.0f, 2900.0f, 5200.0f, 0.62f, 1.15f, 30.0f, 7.0f, 0.0f, 0.0f, 0.0f, {}, {}, 0.0f, 2u, { { -0.42f, 1.55f, 0.25f }, { 0.42f, 1.55f, 0.25f } }, { { -1.8f, 0.1f, 0.2f }, { 1.8f, 0.1f, 0.2f } }, { { -0.6f, 1.0f, 2.3f }, { 0.6f, 1.0f, 2.3f } }, { 0.8f, 2.3f, -0.6f }, 600.0f },
-		{ "veh_heli", "Scrap helicopter", 950.0f, { 0.0f, 1.25f, 0.6f }, { 0.85f, 0.85f, 1.9f }, { 0.0f, 1.1f, 0.3f }, 0u, {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.65f, 0.42f, 1.3f, { 0.0f, 2.75f, 0.4f }, { 0.25f, 1.9f, -5.1f }, 4.1f, 2u, { { -0.35f, 1.7f, 1.2f }, { 0.35f, 1.7f, 1.2f } }, { { -1.6f, 0.1f, 0.8f }, { 1.6f, 0.1f, 0.8f } }, { { 0.0f, 0.9f, 2.4f }, { 0.0f, 0.9f, 2.4f } }, { 0.0f, 2.2f, -0.6f }, 400.0f }
+		{ "veh_rover", "Armoured rover", 2850.0f, { 0.0f, 1.2f, 0.0f }, { 0.99f, 0.75f, 2.4f }, { 0.0f, 0.95f, -0.05f }, 4u, { { -0.775f, 0.4f, 1.397f }, { 0.775f, 0.4f, 1.397f }, { -0.775f, 0.4f, -1.397f }, { 0.775f, 0.4f, -1.397f } }, 0.4f, 0.32f, 45000.0f, 4800.0f, 4350.0f, 7800.0f, 0.62f, 1.15f, 30.0f, 7.0f, 0.0f, 0.0f, 0.0f, {}, {}, 0.0f, 2u, { { 0.42f, 1.76f, 0.13f }, { -0.42f, 1.76f, 0.13f } }, { { 1.65f, 0.1f, 0.13f }, { -1.65f, 0.1f, 0.13f } }, { { -0.68f, 1.0f, 2.05f }, { 0.68f, 1.0f, 2.05f } }, { -0.95f, 2.56f, -0.42f }, 600.0f, structures::vehicle_mode_wheels },
+		{ "veh_heli", "Scrap helicopter", 1150.0f, { 0.0f, 1.25f, 0.6f }, { 0.85f, 0.85f, 1.9f }, { 0.0f, 1.25f, -0.1f }, 0u, {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.65f, 0.42f, 1.3f, { 0.0f, 2.62f, -0.25f }, { -0.33f, 1.93f, -6.22f }, 4.0f, 2u, { { 0.35f, 1.74f, 1.2f }, { -0.35f, 1.74f, 1.2f } }, { { 1.6f, 0.1f, 1.2f }, { -1.6f, 0.1f, 1.2f } }, { { 0.0f, 0.83f, 2.52f }, { 0.0f, 0.83f, 2.52f } }, { -0.42f, 1.67f, -1.65f }, 400.0f, structures::vehicle_mode_rotor },
+		{ "horse", "Horse", 500.0f, { 0.0f, 1.2f, 0.0f }, { 0.3f, 0.42f, 1.0f }, { 0.0f, 1.1f, 0.0f }, 0u, {}, 0.0f, 0.0f, 0.0f, 0.0f, 3.2f, 6.5f, 1.7f, 0.0f, 13.0f, 1.4f, 4.6f, 0.0f, 0.85f, {}, {}, 0.0f, 1u, { { 0.0f, 2.32f, 0.0f }, {} }, { { -1.15f, 0.1f, 0.0f }, { 1.15f, 0.1f, 0.0f } }, {}, {}, 300.0f, structures::vehicle_mode_hooves }
 	};
+	constexpr structures::vec3_s rover_steering_hub = { 0.42f, 1.42f, 0.42f };
+	constexpr structures::vec3_s rover_steering_axis = { 0.0f, 0.6f, -0.8f };
 	constexpr structures::vehicle_spawn_s vehicle_spawns[] =
 	{
 		{ structures::vehicle_rover, { 506.0f, -421.5f }, half_pi },
@@ -6055,7 +6082,17 @@ namespace zp
 		{ "prop_traffic_cone", { -110.4f, 2.0f }, 0.0f, structures::surface_fabric },
 		{ "prop_wreck_hatch", { 1.4f, -84.0f }, 0.25f, structures::surface_metal }
 	};
-	constexpr structures::vec3_s town_barriers[] = { { -2.4f, 98.0f, 0.25f }, { 2.6f, 101.5f, -0.3f }, { -1.0f, -96.0f, 0.15f }, { 2.8f, -99.0f, -0.4f }, { -112.0f, 1.6f, 1.75f }, { -115.0f, -2.2f, 1.3f } };
+	constexpr const char* roadside_wrecks[4] = { "prop_wreck_hatch", "prop_wreck_saloon", "prop_wreck_van", "covered_car" };
+	constexpr auto roadside_gap_min = 220.0f;
+	constexpr auto roadside_gap_max = 560.0f;
+	constexpr auto roadside_shoulder = 1.6f;
+	constexpr auto roadside_spread = 1.8f;
+	constexpr auto roadside_clearance = 30.0f;
+	constexpr auto roadside_room = 4.5f;
+	constexpr auto roadside_steep = 0.86f;
+	constexpr auto roadside_barrel_chance = 0.55f;
+	constexpr auto roadside_crate_chance = 0.4f;
+	constexpr structures::vec3_s town_barriers[] ={ { -2.4f, 98.0f, 0.25f }, { 2.6f, 101.5f, -0.3f }, { -1.0f, -96.0f, 0.15f }, { 2.8f, -99.0f, -0.4f }, { -112.0f, 1.6f, 1.75f }, { -115.0f, -2.2f, 1.3f } };
 	constexpr const char* surface_names[structures::surface_count] = { "concrete", "metal", "grate", "wood", "glass", "fabric", "dirt", "flesh", "water", "grass", "sand", "rock", "gravel" };
 	constexpr const char* biome_names[structures::biome_count] = { "sea", "beach", "rocky shore", "dunes", "marsh", "meadow", "farmland", "broadleaf woodland", "pinewood", "coastal heath", "moorland", "summit" };
 	constexpr auto biome_scatter = 7.0f;
