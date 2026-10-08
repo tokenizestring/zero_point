@@ -1734,6 +1734,17 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		struct town_run_s
+		{
+			const char* model;
+			vec2_s from;
+			vec2_s to;
+			std::float_t piece;
+			std::uint32_t surface;
+		};
+		/*
+		//=====================================================================================
+		*/
 		struct route_path_s
 		{
 			std::uint32_t kind;
@@ -5728,7 +5739,8 @@ namespace zp
 	constexpr auto town_wrecks = 12u;
 	constexpr auto town_junction_clear = 9.0f;
 	constexpr const char* town_lamp_model = "street_lamp_01";
-	constexpr const char* town_wreck_models[1] = { "covered_car" };
+	constexpr const char* town_wreck_models[2] = { "covered_car", "prop_wreck_hatch" };
+	constexpr auto town_loot_chance = 0.45f;
 	constexpr const char* town_barrier_models[2] = { "concrete_road_barrier", "concrete_road_barrier_02" };
 	constexpr structures::town_building_s town_buildings[structures::town_building_count] =
 	{
@@ -5821,6 +5833,25 @@ namespace zp
 		{ { 62.0f, 38.0f }, { 98.0f, 48.0f }, 4u }
 	};
 	constexpr structures::vec2_s town_memorial = { 31.75f, 26.75f };
+	constexpr const char* town_memorial_model = "prop_war_memorial";
+	constexpr structures::town_run_s town_runs[] =
+	{
+		{ "prop_garden_wall", { 60.5f, 49.5f }, { 99.5f, 49.5f }, 4.0f, structures::surface_rock },
+		{ "prop_garden_wall", { 99.5f, 49.5f }, { 99.5f, 19.0f }, 4.0f, structures::surface_rock },
+		{ "prop_garden_wall", { 60.5f, 49.5f }, { 60.5f, 37.0f }, 4.0f, structures::surface_rock },
+		{ "prop_garden_wall", { 60.5f, 19.0f }, { 60.5f, 9.0f }, 4.0f, structures::surface_rock },
+		{ "prop_railing", { -3.8f, 6.5f }, { -3.8f, 15.5f }, 3.0f, structures::surface_metal },
+		{ "prop_railing", { -15.5f, 3.8f }, { -6.5f, 3.8f }, 3.0f, structures::surface_metal },
+		{ "prop_railing", { -3.8f, -15.5f }, { -3.8f, -6.5f }, 3.0f, structures::surface_metal },
+		{ "prop_railing", { -6.5f, -3.8f }, { -15.5f, -3.8f }, 3.0f, structures::surface_metal },
+		{ "prop_railing", { 3.8f, -6.5f }, { 3.8f, -9.5f }, 3.0f, structures::surface_metal },
+		{ "prop_railing", { 15.5f, -3.8f }, { 6.5f, -3.8f }, 3.0f, structures::surface_metal },
+		{ "prop_sandbags", { -6.0f, -88.0f }, { -3.0f, -88.0f }, 3.0f, structures::surface_fabric },
+		{ "prop_sandbags", { 3.0f, -91.0f }, { 6.0f, -91.0f }, 3.0f, structures::surface_fabric },
+		{ "prop_sandbags", { -3.0f, 93.0f }, { -6.0f, 93.0f }, 3.0f, structures::surface_fabric },
+		{ "prop_sandbags", { -108.0f, 6.5f }, { -108.0f, 3.5f }, 3.0f, structures::surface_fabric },
+		{ "prop_sandbags", { -108.0f, -3.5f }, { -108.0f, -6.5f }, 3.0f, structures::surface_fabric }
+	};
 	constexpr std::float_t town_memorial_steps[3] = { 5.4f, 4.2f, 3.0f };
 	constexpr auto town_memorial_rise = 0.2f;
 	constexpr auto town_memorial_plinth = 1.6f;
@@ -5847,8 +5878,33 @@ namespace zp
 		{ "prop_street_sign", { -5.2f, -6.8f }, 0.0f, structures::surface_metal },
 		{ "prop_street_sign", { 4.8f, 82.0f }, 0.0f, structures::surface_metal },
 		{ "prop_street_sign", { -4.8f, -78.0f }, pi, structures::surface_metal },
+		{ "prop_market_stall_a", { 11.5f, 21.0f }, -half_pi, structures::surface_wood },
+		{ "prop_market_stall_b", { 11.5f, 25.5f }, -half_pi, structures::surface_wood },
+		{ "prop_market_stall_a", { 11.5f, 30.0f }, -half_pi, structures::surface_wood },
+		{ "prop_market_stall_b", { 11.5f, 34.5f }, -half_pi, structures::surface_wood },
+		{ "prop_horse_trough", { 5.4f, 44.0f }, half_pi, structures::surface_rock },
+		{ "prop_litter_bin", { -4.8f, 30.0f }, -half_pi, structures::surface_metal },
+		{ "prop_litter_bin", { 4.8f, 62.0f }, half_pi, structures::surface_metal },
+		{ "prop_litter_bin", { -4.8f, -32.0f }, -half_pi, structures::surface_metal },
+		{ "prop_litter_bin", { 4.8f, -52.0f }, half_pi, structures::surface_metal },
+		{ "prop_litter_bin", { 28.0f, -4.8f }, pi, structures::surface_metal },
+		{ "prop_litter_bin", { 82.0f, 4.8f }, 0.0f, structures::surface_metal },
+		{ "prop_litter_bin", { -38.0f, 4.8f }, 0.0f, structures::surface_metal },
+		{ "prop_litter_bin", { -40.0f, -4.8f }, pi, structures::surface_metal },
+		{ "prop_litter_bin", { 7.5f, 46.0f }, 0.0f, structures::surface_metal },
 		{ "prop_bus_shelter", { 5.0f, 96.0f }, half_pi, structures::surface_metal },
-		{ "prop_bus_shelter", { -95.0f, -5.0f }, pi, structures::surface_metal }
+		{ "prop_bus_shelter", { -95.0f, -5.0f }, pi, structures::surface_metal },
+		{ "prop_traffic_cone", { -2.6f, -93.4f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { -1.2f, -93.8f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { 0.4f, -94.0f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { 1.9f, -96.4f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { -2.8f, -101.0f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { 0.6f, 95.5f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { -0.6f, 104.5f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { 3.0f, 105.0f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { -110.0f, -0.4f }, 0.0f, structures::surface_fabric },
+		{ "prop_traffic_cone", { -110.4f, 2.0f }, 0.0f, structures::surface_fabric },
+		{ "prop_wreck_hatch", { 1.4f, -84.0f }, 0.25f, structures::surface_metal }
 	};
 	constexpr structures::vec3_s town_barriers[] = { { -2.4f, 98.0f, 0.25f }, { 2.6f, 101.5f, -0.3f }, { -1.0f, -96.0f, 0.15f }, { 2.8f, -99.0f, -0.4f }, { -112.0f, 1.6f, 1.75f }, { -115.0f, -2.2f, 1.3f } };
 	constexpr const char* surface_names[structures::surface_count] = { "concrete", "metal", "grate", "wood", "glass", "fabric", "dirt", "flesh", "water", "grass", "sand", "rock", "gravel" };
