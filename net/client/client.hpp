@@ -24,6 +24,8 @@ namespace zp
 		std::vector<std::int32_t> free_actors;
 		std::vector<structures::reliable_s> delivered;
 		structures::predicted_s history[net_history_size]{};
+		structures::vec3_s steered_trail[net_history_size]{};
+		std::float_t steered_gap = 0.0f;
 		std::uint8_t buffer[net_receive_bytes]{};
 		std::uint8_t packet[net_packet_bytes]{};
 		std::uint8_t scratch[net_reliable_bytes]{};

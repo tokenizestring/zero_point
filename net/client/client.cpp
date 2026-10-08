@@ -174,7 +174,9 @@ namespace zp
 				{
 					report_timer = 0.0f;
 
-					logger.write("client: ping %.1f ms, %zu players nearby, %zu reliable pending, correction %.3f m, worst miss %.4f m (%u of %u snapshots), health %.0f", latency * 1000.0f, remotes.size(), connection.outgoing.size(), mathematics.length(error), worst_miss, misses, reconciles, health);
+					logger.write("client: ping %.1f ms, %zu players nearby, %zu reliable pending, correction %.3f m, worst miss %.4f m (%u of %u snapshots), vehicle gap %.4f m, health %.0f", latency * 1000.0f, remotes.size(), connection.outgoing.size(), mathematics.length(error), worst_miss, misses, reconciles, steered_gap, health);
+
+					steered_gap = 0.0f;
 
 					worst_miss = 0.0f;
 					misses = 0u;
@@ -1114,12 +1116,21 @@ namespace zp
 
 				vehicle = &vehicles.list.back();
 				vehicle->id = driven.id;
+				vehicle->predicted = true;
+			}
+
+			if (vehicle)
+			{
+				vehicle->seen = latest_snapshot;
+				vehicle->riders[0] = static_cast<std::int32_t>(id);
 			}
 
 			const auto shown{ vehicle ? vehicle->position : structures::vec3_s{} };
 
 			if (vehicle)
 			{
+				steered_gap = std::max(steered_gap, mathematics.distance(steered_trail[last % net_history_size], driven.position));
+
 				vehicles.adopt(*vehicle, driven);
 			}
 
@@ -1176,6 +1187,11 @@ namespace zp
 	void client_c::record(const structures::usercmd_s& command, bool usable, bool moving)
 	{
 		history[command.sequence % net_history_size] = { command, usable, moving, true };
+
+		if (const auto vehicle{ (player.state.flags & structures::movement_seated) ? vehicles.find(player.state.vehicle) : nullptr }; vehicle)
+		{
+			steered_trail[command.sequence % net_history_size] = vehicle->position;
+		}
 	}
 	/*
 	//=====================================================================================
@@ -1359,7 +1375,18 @@ namespace zp
 						actor.grounded = (newer.flags & structures::movement_on_ground) != 0u || (newer.flags & structures::movement_swimming) != 0u;
 						actor.dead = (newer.flags & 0x8000u) != 0u;
 						actor.death = actor.dead ? actor.death + delta : 0.0f;
-						actor.hidden = (actor.dead && loot.nearest(actor.position) >= 0) || (newer.flags & structures::movement_seated) != 0u;
+						actor.hidden = actor.dead && loot.nearest(actor.position) >= 0;
+						actor.seated = (newer.flags & structures::movement_seated) != 0u && actor.dead == false;
+
+						for (const auto& vehicle : vehicles.list)
+						{
+							if (actor.seated && (vehicle.riders[0] == static_cast<std::int32_t>(remote.id) || vehicle.riders[1] == static_cast<std::int32_t>(remote.id)))
+							{
+								const auto ahead{ mathematics.quat_rotate(vehicle.shown_orientation, { 0.0f, 0.0f, 1.0f }) };
+
+								actor.body_yaw = std::atan2(ahead.x, ahead.z);
+							}
+						}
 						actor.held = remote.item < structures::item_count ? remote.item : 0u;
 
 						const auto speed{ mathematics.length(structures::vec3_s{ actor.velocity.x, 0.0f, actor.velocity.z }) };
