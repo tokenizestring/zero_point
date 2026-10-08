@@ -39,11 +39,13 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Buildings modelled in Blender with interiors, collision and loot spots
 - Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a war memorial, market stalls, a horse trough, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, pillar boxes, finger posts and guard railings at the crossroads, rows of furnished Victorian terraced houses and high street shops with flats above, and a corner pub on the square with a furnished bar and rooms upstairs. A church, hall, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
 - Sandbag checkpoints with traffic cones and concrete barriers at the edges of town, burnt out hatchbacks, saloons and vans in the streets, and junk in the yards, with loot to find: crates behind the sandbags, goods left on the market stalls
+- Abandoned cars on the verges of every road across the island, with fuel drums and crates to search beside them
 
 **Vehicles**
-- An armoured junk rover and a scrap helicopter you can drive and fly, with a seat for a passenger. The Blender models are on the way; simple stand-ins are in the game until then
+- An armoured junk rover and a scrap helicopter you can drive and fly, both built in Blender in full detail: the rover is right-hand drive with welded armour plate, a bull bar, caged lamps, a roof rack and a spare wheel; the helicopter has a welded tube airframe, an armour-plated cockpit and a two-blade rotor. Each has a seat for a passenger
 - Simulated on the server: sprung wheels with tyre grip, weight transfer and a handbrake for the rover, and a rotor that spools up, holds height and climbs at a set rate for the helicopter. The driver's game predicts every input so steering feels instant, and everyone else sees the vehicle move smoothly
 - Bullets and crashes damage the hull, hard crashes hurt the people inside, damaged vehicles smoke and wrecks burn out and come back after a while. Headlights come on after dusk
+- Wild horses can be ridden: walk up to one and press E to climb on, then trot, gallop with sprint and jump with space. Ridden horses run on the server and are predicted for the rider like the cars, other players see you astride, and a horse shot from under you leaves a carcass to carve
 
 **Survival**
 - Health, food, water, breath, body temperature and wetness

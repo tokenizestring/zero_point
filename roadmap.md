@@ -124,7 +124,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 42. [ ] Cooking: campfire, drying rack, boiling water
 43. [ ] Animals: deer, boar, wolf, bear, chicken, rabbit, with AI, hunting and skinning (meat, hide, bone, fat)
     - [ ] Rigged and animated models: red deer stag and hind, wild boar and horse done; Jersey cow, wolf, fox and rabbit next, then birds, fish and crabs
-    - [ ] Riding horses
+    - [x] Riding horses: press E on a wild horse to climb on; it becomes a server-simulated horse vehicle (trot, gallop with sprint, jump, turns slower at speed, stops at walls and deep water) predicted for the rider, animated by the fauna gait blend, with the rider astride; a horse killed under you drops a carcass (--horse test)
     - [x] Server-simulated herds by biome (deer, boar, wild horses), replicated to nearby players and interpolated; graze, rest, wander, turn to stare, bolt as a herd, boars charge when cornered; noise-based senses (crouching lets you stalk closer)
     - [x] Hit zones (head and heart drop an animal, gut and haunch shots wound), wounded animals bleed out and leave a blood trail; bullets, arrows and melee all hit; carve carcasses for meat, hide, fat and bone; hoofbeats per ground surface
 44. [ ] Clothing crafted from hide and cloth, with warmth and protection
