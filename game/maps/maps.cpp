@@ -1909,6 +1909,17 @@ namespace zp
 				{
 					place_collision(part.bounds_min, part.bounds_max, placement, rotation, 1.0f, structures::prop_collision_bounds, surface_named(part.name + 4));
 				}
+
+				else if (std::strncmp(part.name, "loot_", 5u) == 0 && chance() < town_loot_chance)
+				{
+					const structures::vec3_s spot{ (part.bounds_min.x + part.bounds_max.x) * 0.5f, part.bounds_min.y, (part.bounds_min.z + part.bounds_max.z) * 0.5f };
+					const auto buried{ std::any_of(model->parts.begin(), model->parts.end(), [&](const structures::model_part_s& other) { return std::strncmp(other.name, "col_", 4u) == 0 && spot.x > other.bounds_min.x && spot.x < other.bounds_max.x && spot.y + 0.05f > other.bounds_min.y && spot.y + 0.05f < other.bounds_max.y && spot.z > other.bounds_min.z && spot.z < other.bounds_max.z; }) };
+
+					if (buried == false)
+					{
+						container_node(loot_named(part.name + 5), mathematics.transform_point(spot, placement), yaw);
+					}
+				}
 			}
 
 			if (marked == false)
@@ -2079,7 +2090,33 @@ namespace zp
 			solid({ x, ground + town_planter_soil * 0.5f, z }, { inner, town_planter_soil, inner }, soil_material, structures::surface_dirt);
 		}
 
-		build_memorial({ center.x + town_memorial.x, 0.0f, center.z + town_memorial.y });
+		if (const structures::vec3_s spot{ center.x + town_memorial.x, 0.0f, center.z + town_memorial.y }; models.find(town_memorial_model))
+		{
+			fixture(town_memorial_model, { spot.x, terrain.height(spot.x, spot.z) + town_pavings[structures::town_square].top, spot.z }, 0.0f, structures::surface_rock);
+		}
+
+		else
+		{
+			build_memorial(spot);
+		}
+
+		for (const auto& run : town_runs)
+		{
+			const structures::vec2_s span{ run.to.x - run.from.x, run.to.y - run.from.y };
+			const auto length{ std::sqrt(span.x * span.x + span.y * span.y) };
+			const auto pieces{ std::max(1u, static_cast<std::uint32_t>(std::round(length / run.piece))) };
+			const auto yaw{ std::atan2(-span.y, span.x) };
+
+			for (auto piece{ 0u }; piece < pieces; piece++)
+			{
+				const auto along{ (static_cast<std::float_t>(piece) + 0.5f) / static_cast<std::float_t>(pieces) };
+				const structures::vec2_s spot{ run.from.x + span.x * along, run.from.y + span.y * along };
+				const auto x{ center.x + spot.x };
+				const auto z{ center.z + spot.y };
+
+				fixture(run.model, { x, terrain.height(x, z) + paving_top(spot), z }, yaw, run.surface);
+			}
+		}
 
 		for (const auto& entry : town_props)
 		{
