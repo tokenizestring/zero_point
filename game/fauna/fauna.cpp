@@ -583,6 +583,29 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void fauna_c::fall(std::uint32_t species, structures::vec3_s position, std::float_t yaw)
+	{
+		if (animals.size() < fauna_maximum)
+		{
+			structures::animal_s animal{};
+
+			animal.position = position;
+			animal.goal = position;
+			animal.yaw = yaw;
+			animal.species = species;
+			animal.herd = UINT32_MAX;
+			animal.id = next_id++;
+
+			next_id = next_id ? next_id : 1u;
+
+			die(animal);
+
+			animals.push_back(std::move(animal));
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	bool fauna_c::carve(survival_c& owner, std::uint32_t index)
 	{
 		auto& animal{ animals[index] };

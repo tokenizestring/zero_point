@@ -49,6 +49,7 @@ namespace zp
 		std::int32_t ray(structures::vec3_s origin, structures::vec3_s direction, std::float_t range, std::float_t& distance);
 		bool damage(std::uint32_t index, std::float_t amount, structures::vec3_s origin);
 		void die(structures::animal_s& animal);
+		void fall(std::uint32_t species, structures::vec3_s position, std::float_t yaw);
 		bool carve(survival_c& owner, std::uint32_t index);
 		std::uint32_t melee(survival_c& owner, structures::vec3_s eye, structures::vec3_s forward, std::float_t reach, std::float_t strength, structures::vec3_s& point);
 		std::int32_t carcass(structures::vec3_s eye, structures::vec3_s forward);
