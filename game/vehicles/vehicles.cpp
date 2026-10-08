@@ -11,7 +11,9 @@ namespace zp
 
 	void vehicles_c::create()
 	{
-		movers = static_cast<std::uint32_t>(world.movers.size());
+		const auto last{ static_cast<std::uint32_t>(std::size(train_consist) - 1u) };
+
+		movers = std::max(static_cast<std::uint32_t>(world.movers.size()), train.first_mover[last] + static_cast<std::uint32_t>(train.boxes[train_consist[last]].size()));
 		burnt = models.variant(structures::material_metal_rust, { 0.17f, 0.15f, 0.14f }, 0.15f);
 
 		for (auto kind{ 0u }; kind < structures::vehicle_kind_count; kind++)
@@ -1050,16 +1052,17 @@ namespace zp
 	*/
 	void vehicles_c::update(std::float_t delta, std::double_t render_time, bool mirrored)
 	{
+		const auto alpha{ mathematics.saturate(player.accumulator / tick_interval) };
+		const auto riding{ (player.state.flags & structures::movement_seated) ? player.state.vehicle : 0u };
+
 		if (mirrored)
 		{
-			list.erase(std::remove_if(list.begin(), list.end(), [&](const structures::vehicle_s& vehicle) { return vehicle.predicted == false && render_time - vehicle.seen > vehicle_stale_time; }), list.end());
+			list.erase(std::remove_if(list.begin(), list.end(), [&](const structures::vehicle_s& vehicle) { return vehicle.id != riding && render_time - vehicle.seen > vehicle_stale_time; }), list.end());
 		}
-
-		const auto alpha{ mathematics.saturate(player.accumulator / tick_interval) };
 
 		for (auto& vehicle : list)
 		{
-			vehicle.predicted = (player.state.flags & structures::movement_seated) && player.state.seat == 0u && player.state.vehicle == vehicle.id;
+			vehicle.predicted = riding == vehicle.id && player.state.seat == 0u;
 
 			if (mirrored && vehicle.predicted == false)
 			{
