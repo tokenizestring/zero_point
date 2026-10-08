@@ -1,0 +1,162 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "prop_wreck_saloon_far"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "prop_wreck_saloon_body",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "prop_wreck_saloon_far",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_normal",
+   "uri": "../prop_wreck_saloon/prop_wreck_saloon_body_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_orm",
+   "uri": "../prop_wreck_saloon/prop_wreck_saloon_body_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_albedo",
+   "uri": "../prop_wreck_saloon/prop_wreck_saloon_body_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 366,
+   "max": [
+    0.8701578974723816,
+    1.3200000524520874,
+    2.262610673904419
+   ],
+   "min": [
+    -0.8701578974723816,
+    -0.06580638885498047,
+    -2.250375509262085
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 366,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 366,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 936,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 4392,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 4392,
+   "byteOffset": 4392,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2928,
+   "byteOffset": 8784,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1872,
+   "byteOffset": 11712,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 13584,
+   "uri": "prop_wreck_saloon_far.bin"
+  }
+ ]
+}

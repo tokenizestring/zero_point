@@ -1,0 +1,162 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "prop_wreck_van_far"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "prop_wreck_van_body",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "prop_wreck_van_far",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_van_body_normal",
+   "uri": "../prop_wreck_van/prop_wreck_van_body_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_van_body_orm",
+   "uri": "../prop_wreck_van/prop_wreck_van_body_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_van_body_albedo",
+   "uri": "../prop_wreck_van/prop_wreck_van_body_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 338,
+   "max": [
+    0.9850738644599915,
+    1.9516301155090332,
+    2.3151485919952393
+   ],
+   "min": [
+    -0.9850738644599915,
+    -0.06507223844528198,
+    -2.316757917404175
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 338,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 338,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 900,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 4056,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 4056,
+   "byteOffset": 4056,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 2704,
+   "byteOffset": 8112,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1800,
+   "byteOffset": 10816,
+   "target": 34963
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 12616,
+   "uri": "prop_wreck_van_far.bin"
+  }
+ ]
+}

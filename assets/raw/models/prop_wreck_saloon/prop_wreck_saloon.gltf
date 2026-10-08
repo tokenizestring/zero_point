@@ -1,0 +1,491 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.5.51",
+  "version": "2.0"
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "prop_wreck_saloon_body"
+  },
+  {
+   "mesh": 1,
+   "name": "prop_wreck_saloon_cabin"
+  },
+  {
+   "mesh": 2,
+   "name": "loot_box_1"
+  },
+  {
+   "mesh": 3,
+   "name": "col_metal_1"
+  },
+  {
+   "mesh": 4,
+   "name": "col_metal_2"
+  }
+ ],
+ "materials": [
+  {
+   "doubleSided": true,
+   "name": "prop_wreck_saloon_body",
+   "normalTexture": {
+    "index": 0
+   },
+   "occlusionTexture": {
+    "index": 1
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 2
+    },
+    "metallicRoughnessTexture": {
+     "index": 1
+    }
+   }
+  },
+  {
+   "doubleSided": true,
+   "name": "prop_wreck_saloon_cabin",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "prop_wreck_saloon_body",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "prop_wreck_saloon_cabin",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  },
+  {
+   "name": "loot_box_1",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "col_metal_1",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 12,
+      "NORMAL": 13,
+      "TEXCOORD_0": 14
+     },
+     "indices": 11,
+     "material": 0
+    }
+   ]
+  },
+  {
+   "name": "col_metal_2",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 15,
+      "NORMAL": 16,
+      "TEXCOORD_0": 17
+     },
+     "indices": 11,
+     "material": 0
+    }
+   ]
+  }
+ ],
+ "textures": [
+  {
+   "sampler": 0,
+   "source": 0
+  },
+  {
+   "sampler": 0,
+   "source": 1
+  },
+  {
+   "sampler": 0,
+   "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
+  }
+ ],
+ "images": [
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_normal",
+   "uri": "prop_wreck_saloon_body_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_orm",
+   "uri": "prop_wreck_saloon_body_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_body_albedo",
+   "uri": "prop_wreck_saloon_body_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_cabin_normal",
+   "uri": "prop_wreck_saloon_cabin_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_cabin_orm",
+   "uri": "prop_wreck_saloon_cabin_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "prop_wreck_saloon_cabin_albedo",
+   "uri": "prop_wreck_saloon_cabin_albedo.png"
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 5828,
+   "max": [
+    1.056249976158142,
+    1.5223214626312256,
+    2.316999912261963
+   ],
+   "min": [
+    -1.7140549421310425,
+    0.11600479483604431,
+    -2.316999912261963
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 5828,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 5828,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 13578,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 12940,
+   "max": [
+    1.162839651107788,
+    1.3696479797363281,
+    1.6719999313354492
+   ],
+   "min": [
+    -1.2330373525619507,
+    -0.0027052138466387987,
+    -1.625
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 12940,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 12940,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 34428,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 24,
+   "max": [
+    -0.15000000596046448,
+    0.4899999797344208,
+    -0.6899999976158142
+   ],
+   "min": [
+    -0.25,
+    0.38999998569488525,
+    -0.7900000214576721
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5123,
+   "count": 36,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 12,
+   "componentType": 5126,
+   "count": 24,
+   "max": [
+    0.8500000238418579,
+    0.8399999737739563,
+    2.2249999046325684
+   ],
+   "min": [
+    -0.8500000238418579,
+    0.10000000149011612,
+    -2.2249999046325684
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 13,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 14,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 15,
+   "componentType": 5126,
+   "count": 24,
+   "max": [
+    0.7049999833106995,
+    1.3200000524520874,
+    0.7200000286102295
+   ],
+   "min": [
+    -0.7049999833106995,
+    0.8399999737739563,
+    -1.3600000143051147
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 16,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 17,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC2"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 69936,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 69936,
+   "byteOffset": 69936,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 46624,
+   "byteOffset": 139872,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 27156,
+   "byteOffset": 186496,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 155280,
+   "byteOffset": 213652,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 155280,
+   "byteOffset": 368932,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 103520,
+   "byteOffset": 524212,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 68856,
+   "byteOffset": 627732,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 696588,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 696876,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 697164,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 72,
+   "byteOffset": 697356,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 697428,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 697716,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 698004,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 698196,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 698484,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 698772,
+   "target": 34962
+  }
+ ],
+ "samplers": [
+  {
+   "magFilter": 9729,
+   "minFilter": 9987
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 698964,
+   "uri": "prop_wreck_saloon.bin"
+  }
+ ]
+}
