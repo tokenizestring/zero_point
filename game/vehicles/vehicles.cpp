@@ -20,7 +20,7 @@ namespace zp
 		{
 			shape(kind);
 
-			if (gpu.device)
+			if (gpu.device && vehicle_kinds[kind].mode != structures::vehicle_mode_hooves)
 			{
 				build(kind);
 			}
@@ -131,7 +131,7 @@ namespace zp
 					shop.append(*model, part->first_index, part->index_count, flip);
 					shop.upload(rotors[kind][rotor]);
 
-					hubs[kind][rotor] = turned((part->bounds_min + part->bounds_max) * 0.5f);
+					hubs[kind][rotor] = rotor == 0u ? definition.rotor_hub : definition.tail_hub;
 				}
 			}
 
@@ -143,7 +143,7 @@ namespace zp
 					shop.append(*model, part->first_index, part->index_count, flip);
 					shop.upload(steering[kind]);
 
-					wheel_hub[kind] = turned((part->bounds_min + part->bounds_max) * 0.5f);
+					wheel_hub[kind] = rover_steering_hub;
 				}
 			}
 
@@ -344,6 +344,7 @@ namespace zp
 		result.pitch = command.forward;
 		result.roll = command.side;
 		result.heading = command.yaw;
+		result.sprint = (command.buttons & structures::button_sprint) != 0u;
 
 		return result;
 	}
@@ -387,10 +388,17 @@ namespace zp
 	{
 		const auto& definition{ vehicle_kinds[vehicle.kind] };
 
+		if (definition.mode == structures::vehicle_mode_hooves)
+		{
+			stride(vehicle, controls, dt);
+
+			return;
+		}
+
 		structures::vec3_s force{ 0.0f, -vehicle_gravity * definition.mass, 0.0f };
 		structures::vec3_s torque{};
 
-		vehicle.rotor_speed = mathematics.approach(vehicle.rotor_speed, controls.engine && definition.wheel_count == 0u ? 1.0f : 0.0f, dt / vehicle_spool_time);
+		vehicle.rotor_speed = mathematics.approach(vehicle.rotor_speed, controls.engine && definition.mode == structures::vehicle_mode_rotor ? 1.0f : 0.0f, dt / vehicle_spool_time);
 		vehicle.rotor = std::fmod(vehicle.rotor + vehicle.rotor_speed * vehicle_rotor_turns * two_pi * dt, two_pi * 64.0f);
 
 		if (definition.wheel_count)
@@ -542,6 +550,67 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void vehicles_c::stride(structures::vehicle_s& vehicle, const structures::vehicle_controls_s& controls, std::float_t dt)
+	{
+		const auto& definition{ vehicle_kinds[vehicle.kind] };
+		const auto ahead{ mathematics.quat_rotate(vehicle.orientation, { 0.0f, 0.0f, 1.0f }) };
+		const auto heading{ std::atan2(ahead.x, ahead.z) };
+		const auto pace{ mathematics.dot(structures::vec3_s{ vehicle.velocity.x, 0.0f, vehicle.velocity.z }, mathematics.flat_forward(heading)) };
+		const auto wanted{ controls.engine == false ? 0.0f : (controls.throttle > 0.0f ? (controls.sprint ? definition.top_speed : horse_trot_speed) * controls.throttle : (controls.throttle < 0.0f ? -definition.reverse_speed : 0.0f)) };
+		const auto speed{ mathematics.approach(pace, wanted, (std::fabs(wanted) > std::fabs(pace) ? definition.drive : definition.brake) * dt) };
+		const auto course{ mathematics.flat_forward(heading + controls.steer * mathematics.lerp(definition.steer, definition.turn, mathematics.saturate(std::fabs(speed) / definition.top_speed)) * dt) };
+		const auto reach{ course * ((speed >= 0.0f ? definition.hull_half.z : -definition.hull_half.z) * 0.6f) };
+		const auto chest{ vehicle.position + structures::vec3_s{ 0.0f, 1.0f, 0.0f } + reach };
+		const auto next{ vehicle.position + course * (speed * dt) };
+		const auto deep{ terrain.enabled && terrain.height(next.x + reach.x, next.z + reach.z) < sea_level - horse_wade };
+		const auto blocked{ deep || world.trace(chest, chest + course * (speed * dt), { 0.28f, 0.55f, 0.28f }, structures::contents_solid).hit };
+		const auto pace_now{ blocked ? 0.0f : speed };
+
+		auto moved{ blocked ? vehicle.position : next };
+
+		vehicle.velocity.y -= horse_gravity * dt;
+		moved.y += vehicle.velocity.y * dt;
+
+		const auto floor{ footing(moved, moved.y - 1.0f) };
+		const auto settled{ vehicle.compression[0] > 0.5f && vehicle.velocity.y <= 0.0f && moved.y - floor < horse_step };
+
+		if (moved.y <= floor || settled)
+		{
+			moved.y = floor;
+			vehicle.velocity.y = controls.brake && controls.engine ? definition.lift : 0.0f;
+			vehicle.compression[0] = vehicle.velocity.y > 0.0f ? 0.0f : 1.0f;
+		}
+
+		else
+		{
+			vehicle.compression[0] = 0.0f;
+		}
+
+		const auto front{ footing(moved + course * horse_probe, moved.y) };
+		const auto back{ footing(moved - course * horse_probe, moved.y) };
+		const auto forward{ mathematics.normalize(course + structures::vec3_s{ 0.0f, std::clamp((front - back) / (horse_probe * 2.0f), -0.6f, 0.6f), 0.0f }) };
+		const auto right{ mathematics.normalize(mathematics.cross({ 0.0f, 1.0f, 0.0f }, forward)) };
+
+		vehicle.orientation = mathematics.quat_from_basis(right, mathematics.cross(forward, right), forward);
+		vehicle.velocity = { course.x * pace_now, vehicle.velocity.y, course.z * pace_now };
+		vehicle.position = moved;
+		vehicle.spin = {};
+		vehicle.steer = controls.steer;
+		vehicle.engine = 0.0f;
+		vehicle.rotor_speed = 0.0f;
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::float_t vehicles_c::footing(structures::vec3_s point, std::float_t fallback)
+	{
+		const auto hit{ world.trace(point + structures::vec3_s{ 0.0f, horse_step, 0.0f }, point - structures::vec3_s{ 0.0f, 3.0f, 0.0f }, { 0.2f, 0.02f, 0.2f }, structures::contents_solid) };
+
+		return hit.hit && hit.start_solid == false ? hit.end.y - 0.02f : fallback;
+	}
+	/*
+	//=====================================================================================
+	*/
 	void vehicles_c::collide(structures::vehicle_s& vehicle, std::float_t dt)
 	{
 		const auto& definition{ vehicle_kinds[vehicle.kind] };
@@ -643,7 +712,26 @@ namespace zp
 			}
 		}
 
+		bury();
+
 		update_movers();
+	}
+	/*
+	//=====================================================================================
+	*/
+	void vehicles_c::bury()
+	{
+		for (const auto& vehicle : list)
+		{
+			if (vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_hooves && vehicle.health <= 0.0f)
+			{
+				const auto ahead{ mathematics.quat_rotate(vehicle.orientation, { 0.0f, 0.0f, 1.0f }) };
+
+				fauna.fall(structures::species_horse, vehicle.position, std::atan2(ahead.x, ahead.z));
+			}
+		}
+
+		list.erase(std::remove_if(list.begin(), list.end(), [](const structures::vehicle_s& vehicle) { return vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_hooves && vehicle.health <= 0.0f; }), list.end());
 	}
 	/*
 	//=====================================================================================
@@ -736,23 +824,56 @@ namespace zp
 
 		if (const auto index{ state.vehicle == 0u ? reach(eye, forward, seat) : -1 }; index >= 0)
 		{
-			auto& vehicle{ list[index] };
-
-			vehicle.riders[seat] = rider;
-			vehicle.asleep = false;
-			vehicle.still = 0.0f;
-
-			state.vehicle = vehicle.id;
-			state.seat = seat;
-			state.flags = (state.flags | structures::movement_seated) & ~(structures::movement_crouched | structures::movement_sprinting | structures::movement_swimming | structures::movement_underwater);
-			state.platform = 0u;
-			state.velocity = vehicle.velocity;
-			state.position = seat_point(vehicle, seat) - structures::vec3_s{ 0.0f, player_eye_height, 0.0f };
+			mount(state, rider, static_cast<std::uint32_t>(index), seat);
 
 			return true;
 		}
 
 		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool vehicles_c::tame(structures::movement_state_s& state, std::int32_t rider, structures::vec3_s eye, structures::vec3_s forward)
+	{
+		auto distance{ 0.0f };
+
+		if (const auto target{ state.vehicle == 0u ? fauna.ray(eye, forward, vehicle_enter_reach, distance) : -1 }; target >= 0 && fauna.animals[target].alive && fauna.animals[target].species == structures::species_horse)
+		{
+			auto& animal{ fauna.animals[target] };
+
+			animal.alive = false;
+			animal.yields = 0u;
+			animal.state = structures::animal_dead;
+
+			spawn(structures::vehicle_horse, animal.position, animal.yaw);
+
+			mount(state, rider, static_cast<std::uint32_t>(list.size() - 1u), 0u);
+
+			update_movers();
+
+			return true;
+		}
+
+		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	void vehicles_c::mount(structures::movement_state_s& state, std::int32_t rider, std::uint32_t index, std::uint32_t seat)
+	{
+		auto& vehicle{ list[index] };
+
+		vehicle.riders[seat] = rider;
+		vehicle.asleep = false;
+		vehicle.still = 0.0f;
+
+		state.vehicle = vehicle.id;
+		state.seat = seat;
+		state.flags = (state.flags | structures::movement_seated) & ~(structures::movement_crouched | structures::movement_sprinting | structures::movement_swimming | structures::movement_underwater);
+		state.platform = 0u;
+		state.velocity = vehicle.velocity;
+		state.position = seat_point(vehicle, seat) - structures::vec3_s{ 0.0f, player_eye_height, 0.0f };
 	}
 	/*
 	//=====================================================================================
@@ -1098,11 +1219,50 @@ namespace zp
 			}
 
 			present(vehicle, delta);
+
+			if (vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_hooves)
+			{
+				gait(vehicle, delta);
+			}
 		}
+
+		std::erase_if(mounts, [&](const std::pair<const std::uint32_t, structures::animal_s>& entry) { return find(entry.first) == nullptr; });
 
 		update_movers();
 
 		sounds(delta);
+	}
+	/*
+	//=====================================================================================
+	*/
+	void vehicles_c::gait(structures::vehicle_s& vehicle, std::float_t delta)
+	{
+		const auto ahead{ mathematics.quat_rotate(vehicle.shown_orientation, { 0.0f, 0.0f, 1.0f }) };
+
+		auto& proxy{ mounts[vehicle.id] };
+
+		proxy.species = structures::species_horse;
+		proxy.id = static_cast<std::uint16_t>(vehicle.id);
+		proxy.alive = true;
+		proxy.state = structures::animal_idle;
+		proxy.shown = vehicle.shown_position;
+		proxy.shown_yaw = std::atan2(ahead.x, ahead.z);
+		proxy.shown_speed = mathematics.damp(proxy.shown_speed, mathematics.length(structures::vec3_s{ vehicle.shown_velocity.x, 0.0f, vehicle.shown_velocity.z }), 8.0f, delta);
+		proxy.position = proxy.shown;
+		proxy.yaw = proxy.shown_yaw;
+
+		if (fauna.bodies[structures::species_horse] && mathematics.distance(proxy.shown, renderer.camera.position) < fauna_draw_distance)
+		{
+			fauna.animate(proxy, delta);
+
+			proxy.world = mathematics.multiply(mathematics.rotation_y(species_table[structures::species_horse].facing), vehicle.world);
+			proxy.previous_world = mathematics.multiply(mathematics.rotation_y(species_table[structures::species_horse].facing), vehicle.previous_world);
+		}
+
+		else
+		{
+			proxy.frames = 0u;
+		}
 	}
 	/*
 	//=====================================================================================
@@ -1121,7 +1281,7 @@ namespace zp
 			const auto up{ vehicle.world.row3(1u) };
 			const auto behind{ vehicle.world.row3(2u) * -1.0f };
 			const auto speed{ mathematics.length(vehicle.shown_velocity) };
-			const auto damaged{ vehicle.health < definition.health * vehicle_smoke_health };
+			const auto damaged{ vehicle.health < definition.health * vehicle_smoke_health && definition.mode != structures::vehicle_mode_hooves };
 
 			vehicle.puff = mathematics.lerp(0.32f, 0.07f, mathematics.saturate(vehicle.engine)) * (0.8f + random() * 0.4f);
 
@@ -1135,7 +1295,7 @@ namespace zp
 				particles.emit(structures::particle_smoke, mathematics.transform_point(definition.hull_center + structures::vec3_s{ 0.0f, definition.hull_half.y, definition.hull_half.z * 0.5f }, vehicle.world), { 0.3f, 1.6f, 0.2f }, 0.35f, vehicle.health <= 0.0f ? 3u : 1u, false);
 			}
 
-			if (vehicle.health <= 0.0f)
+			if (vehicle.health <= 0.0f && definition.mode != structures::vehicle_mode_hooves)
 			{
 				particles.emit(structures::particle_fire, mathematics.transform_point(definition.hull_center, vehicle.world), { 0.0f, 1.2f, 0.0f }, 0.6f, 2u, false);
 			}
@@ -1151,7 +1311,7 @@ namespace zp
 				}
 			}
 
-			if (definition.wheel_count == 0u && vehicle.rotor_speed > 0.5f)
+			if (definition.mode == structures::vehicle_mode_rotor && vehicle.rotor_speed > 0.5f)
 			{
 				const auto hub{ mathematics.transform_point(definition.rotor_hub, vehicle.world) };
 				const auto slot{ index_of(vehicle.id) };
@@ -1187,12 +1347,12 @@ namespace zp
 			const auto& vehicle{ list[index] };
 			const auto close{ mathematics.distance(vehicle.shown_position, ear) };
 
-			if (vehicle_kinds[vehicle.kind].wheel_count && vehicle.engine > 0.05f && (engine_index < 0 || close < mathematics.distance(list[engine_index].shown_position, ear)))
+			if (vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_wheels && vehicle.engine > 0.05f && (engine_index < 0 || close < mathematics.distance(list[engine_index].shown_position, ear)))
 			{
 				engine_index = static_cast<std::int32_t>(index);
 			}
 
-			if (vehicle_kinds[vehicle.kind].wheel_count == 0u && vehicle.rotor_speed > 0.02f && (rotor_index < 0 || close < mathematics.distance(list[rotor_index].shown_position, ear)))
+			if (vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_rotor && vehicle.rotor_speed > 0.02f && (rotor_index < 0 || close < mathematics.distance(list[rotor_index].shown_position, ear)))
 			{
 				rotor_index = static_cast<std::int32_t>(index);
 			}
@@ -1230,6 +1390,18 @@ namespace zp
 			const auto detailed{ gap < vehicle_detail_distance || distant[vehicle.kind].index_count == 0u };
 			const auto skin{ vehicle.health <= 0.0f ? static_cast<std::float_t>(burnt) : -1.0f };
 
+			if (definition.mode == structures::vehicle_mode_hooves)
+			{
+				if (const auto proxy{ mounts.find(vehicle.id) }; proxy != mounts.end() && proxy->second.frames && fauna.bodies[structures::species_horse])
+				{
+					const auto* character{ gap > fauna_lod_distance && fauna.distant[structures::species_horse] ? fauna.distant[structures::species_horse] : fauna.bodies[structures::species_horse] };
+
+					renderer.submit_skinned(character, proxy->second.world, proxy->second.previous_world, proxy->second.palette.data(), proxy->second.previous_palette.data(), structures::draw_flag_character, 0.0f);
+				}
+
+				continue;
+			}
+
 			if (vehicle.riders[0] >= 0 && vehicle.health > 0.0f && dusk > 0.01f)
 			{
 				for (const auto& lamp : definition.lights)
@@ -1262,7 +1434,7 @@ namespace zp
 			if (steering[vehicle.kind].index_count)
 			{
 				const auto hub{ wheel_hub[vehicle.kind] };
-				const auto local{ mathematics.multiply(mathematics.multiply(mathematics.translation(-hub), mathematics.rotation_z(-vehicle.steer * 2.6f)), mathematics.translation(hub)) };
+				const auto local{ mathematics.multiply(mathematics.multiply(mathematics.translation(-hub), mathematics.rotation(mathematics.quat_axis_angle(rover_steering_axis, vehicle.steer * 2.6f))), mathematics.translation(hub)) };
 
 				renderer.submit(&steering[vehicle.kind], mathematics.multiply(local, vehicle.world), mathematics.multiply(local, vehicle.previous_world), -1.0f, flags);
 			}

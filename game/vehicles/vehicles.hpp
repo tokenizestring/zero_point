@@ -25,6 +25,7 @@ namespace zp
 		structures::vec3_s hubs[structures::vehicle_kind_count][2]{};
 		structures::vec3_s wheel_hub[structures::vehicle_kind_count]{};
 		structures::vec3_s inertia[structures::vehicle_kind_count]{};
+		std::unordered_map<std::uint32_t, structures::animal_s> mounts;
 		builder_c shop;
 		std::uint32_t next_id = 1u;
 		std::uint32_t seed = 0x6C8E9CF5u;
@@ -50,6 +51,8 @@ namespace zp
 		void step(structures::vehicle_s& vehicle, const structures::vehicle_controls_s& controls, std::float_t dt);
 		void suspend(structures::vehicle_s& vehicle, const structures::vehicle_controls_s& controls, std::float_t dt, structures::vec3_s& force, structures::vec3_s& torque);
 		void hover(structures::vehicle_s& vehicle, const structures::vehicle_controls_s& controls, std::float_t dt, structures::vec3_s& force, structures::vec3_s& torque);
+		void stride(structures::vehicle_s& vehicle, const structures::vehicle_controls_s& controls, std::float_t dt);
+		std::float_t footing(structures::vec3_s point, std::float_t fallback);
 		void collide(structures::vehicle_s& vehicle, std::float_t dt);
 		structures::vec3_s solve(const structures::vehicle_s& vehicle, structures::vec3_s torque);
 		void simulate(std::float_t delta);
@@ -60,6 +63,9 @@ namespace zp
 		structures::vec3_s exit_point(const structures::vehicle_s& vehicle, std::uint32_t seat);
 		std::int32_t reach(structures::vec3_s eye, structures::vec3_s forward, std::uint32_t& seat);
 		bool board(structures::movement_state_s& state, std::int32_t rider, structures::vec3_s eye, structures::vec3_s forward);
+		bool tame(structures::movement_state_s& state, std::int32_t rider, structures::vec3_s eye, structures::vec3_s forward);
+		void mount(structures::movement_state_s& state, std::int32_t rider, std::uint32_t index, std::uint32_t seat);
+		void bury();
 		void alight(structures::movement_state_s& state, std::int32_t rider);
 		std::float_t damage(std::uint32_t index, std::float_t amount);
 		std::int32_t ray(structures::vec3_s origin, structures::vec3_s direction, std::float_t range, std::float_t& distance);
@@ -70,6 +76,7 @@ namespace zp
 		void adopt(structures::vehicle_s& vehicle, const structures::vehicle_s& source);
 		void update(std::float_t delta, std::double_t render_time, bool mirrored);
 		void present(structures::vehicle_s& vehicle, std::float_t delta);
+		void gait(structures::vehicle_s& vehicle, std::float_t delta);
 		void sounds(std::float_t delta);
 		void submit();
 		std::float_t random();
