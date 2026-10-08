@@ -89,6 +89,7 @@ namespace zp
 
 				character.twist_shares.assign(character.bones.size(), 0.0f);
 				character.blade_shares.assign(character.bones.size(), 0.0f);
+				character.sit_shares.assign(character.bones.size(), 0.0f);
 
 				for (auto twist{ 0u }; twist < std::size(character_twist_bones); twist++)
 				{
@@ -96,6 +97,14 @@ namespace zp
 					{
 						character.twist_shares[found] = character_twist_shares[twist];
 						character.blade_shares[found] = character_blade_shares[twist];
+					}
+				}
+
+				for (auto limb{ 0u }; limb < std::size(character_sit_bones); limb++)
+				{
+					if (const auto found{ bone(character, character_sit_bones[limb]) }; found >= 0)
+					{
+						character.sit_shares[found] = character_sit_angles[limb];
 					}
 				}
 
@@ -282,7 +291,7 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade)
+	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade, std::float_t sit)
 	{
 		for (auto index{ 0u }; index < character.bones.size(); index++)
 		{
@@ -290,6 +299,13 @@ namespace zp
 			const auto local{ mathematics.compose(pose.translations[index], pose.rotations[index], bone_data.scale) };
 
 			globals[index] = bone_data.parent >= 0 ? mathematics.multiply(local, globals[bone_data.parent]) : local;
+
+			if (sit > 0.0f && index < character.sit_shares.size() && character.sit_shares[index] != 0.0f)
+			{
+				const auto joint{ globals[index].row3(3u) };
+
+				globals[index] = mathematics.multiply(mathematics.multiply(mathematics.multiply(globals[index], mathematics.translation(-joint)), mathematics.rotation(mathematics.quat_axis_angle({ 1.0f, 0.0f, 0.0f }, character.sit_shares[index] * sit))), mathematics.translation(joint));
+			}
 
 			if (character.twist_shares[index] > 0.0f)
 			{
