@@ -289,12 +289,12 @@ def wall_finish(part, side, finish, x0, x1, y0, y1, z0, z1, openings, rng, avoid
         wall_finish(part, side, above, x0, x1, y0, y1, z0 + height, z1, [(o[0], o[1], max(o[2], z0 + height), o[3]) for o in openings if o[3] > z0 + height + 0.02], rng, avoid)
 
 
-def skirting(part, side, x0, x1, y0, y1, z0, openings, name="painted_wood_white", height=0.2, depth=0.022, lift=0.012):
+def skirting(part, side, x0, x1, y0, y1, z0, openings, name="painted_wood_white", height=0.2, depth=0.022, lift=0.012, bevel=0.003):
     frame = side_frame(side, x0, x1, y0, y1)
     a_low, a_high = side_span(side, x0, x1, y0, y1)
     doors = sorted(to_side(side, o) for o in openings if o[2] <= z0 + 0.05)
     for c0, c1, b0, b1 in bands(a_low, a_high, z0, z0 + height, doors, 0.05):
-        frame_block(part, name, frame, c0, c1, b0, b1, lift, lift + depth, 0.003, "board")
+        frame_block(part, name, frame, c0, c1, b0, b1, lift, lift + depth, bevel, "board")
 
 
 def rail(part, side, x0, x1, y0, y1, z, openings, name="timber_beam", height=0.05, depth=0.03, lift=0.012):
@@ -305,7 +305,7 @@ def rail(part, side, x0, x1, y0, y1, z, openings, name="timber_beam", height=0.0
         frame_block(part, name, frame, c0, c1, b0, b1, lift, lift + depth, 0.004)
 
 
-def room(parts, rng, x0, x1, y0, y1, z0, z1, walls, openings=None, skirt="painted_wood_white", picture_rail=None, ceiling=True, ceiling_patches=2, ceiling_holes=(), avoid=None, chip_count=14):
+def room(parts, rng, x0, x1, y0, y1, z0, z1, walls, openings=None, skirt="painted_wood_white", picture_rail=None, ceiling=True, ceiling_patches=2, ceiling_holes=(), avoid=None, chip_count=14, skirt_bevel=0.003):
     interior = parts["interior"]
     openings = openings or {}
     avoid = avoid or {}
@@ -316,7 +316,7 @@ def room(parts, rng, x0, x1, y0, y1, z0, z1, walls, openings=None, skirt="painte
         holes = openings.get(side, [])
         wall_finish(interior, side, finish, x0, x1, y0, y1, z0, z1, holes, rng, avoid.get(side, ()))
         if skirt:
-            skirting(interior, side, x0, x1, y0, y1, z0, holes, skirt)
+            skirting(interior, side, x0, x1, y0, y1, z0, holes, skirt, 0.2, 0.022, 0.012, skirt_bevel)
         if picture_rail:
             rail(interior, side, x0, x1, y0, y1, picture_rail, holes)
     if ceiling:
@@ -330,8 +330,8 @@ def tile_floor(part, name, x0, x1, y0, y1, z, thickness=0.03):
     block(part, name, V(x0, y0, z - thickness), V(x1, y1, z), 0.0, "world")
 
 
-def board_floor(part, x0, x1, y0, y1, z, rng, along="y", holes=(), name="floorboards", warp=0.03, ragged=0.1):
-    kit.floor_boards(part, name, x0, x1, y0, y1, z, along, rng, width_range=(0.13, 0.19), joints=[x0 + (x1 - x0) * 0.4, x0 + (x1 - x0) * 0.7] if along == "x" else [y0 + (y1 - y0) * 0.4, y0 + (y1 - y0) * 0.7], holes=holes, ragged=ragged, warp=warp)
+def board_floor(part, x0, x1, y0, y1, z, rng, along="y", holes=(), name="floorboards", warp=0.03, ragged=0.1, width_range=(0.13, 0.19), splits=(0.4, 0.7)):
+    kit.floor_boards(part, name, x0, x1, y0, y1, z, along, rng, width_range=width_range, joints=[x0 + (x1 - x0) * t for t in splits] if along == "x" else [y0 + (y1 - y0) * t for t in splits], holes=holes, ragged=ragged, warp=warp)
 
 
 def door_frame_light(part, paint, frame, a0, a1, b0, b1, depth, fw=0.07, fd=0.11):
@@ -883,13 +883,13 @@ def weeds_line(part, a, b_point, rng, count, height=(0.15, 0.45)):
             kit.grass_tuft(part, p, rng, height, (4, 9), 0.06)
 
 
-def pendant(b, part, position, rng, shade="town_metal", drop=0.45, kind="warm"):
+def pendant(b, part, position, rng, shade="town_metal", drop=0.45, kind="warm", segments=10):
     rose = position
-    emit(part, kit.geo_lathe([(0.0, 0.0), (0.07, 0.0), (0.03, -0.03), (0.0, -0.035)], 8), "plaster_interior", kit.Matrix.Translation(rose), "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.07, 0.0), (0.03, -0.03), (0.0, -0.035)], max(6, segments - 2)), "plaster_interior", kit.Matrix.Translation(rose), "given", True)
     bottom = rose - V(rng.uniform(-0.02, 0.02), rng.uniform(-0.02, 0.02), drop)
     rod(part, "soot", rose - V(0.0, 0.0, 0.03), bottom + V(0.0, 0.0, 0.06), 0.004, 3)
     profile = [(0.02, 0.07), (0.05, 0.06), (0.16, -0.045), (0.15, -0.05), (0.045, 0.045)]
-    geo = kit.geo_lathe(profile, 10)
+    geo = kit.geo_lathe(profile, segments)
     if shade == "town_metal":
         geo = region_geo(geo, "town_metal", "cream", 0.4)
         emit(part, geo, shade, kit.Matrix.Translation(bottom), "texture", True)

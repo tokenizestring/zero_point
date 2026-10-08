@@ -87,6 +87,7 @@ def looks():
     vk.register("blade_paint", "paint", color=(0.04, 0.045, 0.04), under=(0.2, 0.2, 0.19), primer=(0.3, 0.3, 0.29), chips=0.35, fade=0.3, chalk=0.15, bleed=0.3, streaks=0.4, gloss=0.55, dirt=0.4)
     vk.register("blade_tip", "paint", color=(0.42, 0.3, 0.02), under=(0.2, 0.2, 0.19), primer=(0.3, 0.3, 0.29), chips=0.45, fade=0.45, chalk=0.25, bleed=0.3, gloss=0.55, dirt=0.4)
     vk.register("gauge", "glass", tint=(0.03, 0.03, 0.028), cracked=0.5)
+    vk.register("rope_old", "fabric", kind="hessian", tint=(0.4, 0.32, 0.21), weave=18.0, stains=0.75, mildew=0.35, dirt=0.75)
 
 
 def helix(start, end, coil, wire, turns, sides=5, steps=10):
@@ -174,30 +175,61 @@ def face_frame(origin, normal, up=Z):
     return matrix
 
 
-def offroad_tyre(radius, width, rim, lugs=20):
+def oriented_face(bm, verts, outward):
+    face = bm.faces.new(verts)
+    face.normal_update()
+    if face.normal.dot(outward) < 0.0:
+        face.normal_flip()
+    return face
+
+
+def tread_lug(path, widths, depths, mirror, sink=0.006, draft=0.007):
+    bm = bmesh.new()
+    rings = []
+    count = len(path)
+    for i, (x, r, angle) in enumerate(path):
+        before = path[max(i - 1, 0)]
+        after = path[min(i + 1, count - 1)]
+        dx = after[0] - before[0]
+        dr = after[1] - before[1]
+        length = math.hypot(dx, dr)
+        radial = v(0.0, math.cos(angle), math.sin(angle))
+        tangent = v(0.0, -math.sin(angle), math.cos(angle))
+        normal = (X * -dr + radial * dx) / length
+        point = X * x + radial * r
+        half = widths[i] * 0.5
+        ring = [point - normal * sink - tangent * half, point - normal * sink + tangent * half, point + normal * depths[i] + tangent * (half - draft), point + normal * depths[i] - tangent * (half - draft)]
+        if mirror:
+            ring = [v(-p.x, p.y, p.z) for p in ring]
+        rings.append([bm.verts.new(p) for p in ring])
+    centers = [sum((vert.co for vert in ring), Vector()) / 4.0 for ring in rings]
+    for i in range(count - 1):
+        a = rings[i]
+        b = rings[i + 1]
+        middle = (centers[i] + centers[i + 1]) * 0.5
+        for quad in ((a[3], a[2], b[2], b[3]), (a[1], b[1], b[2], a[2]), (a[0], a[3], b[3], b[0])):
+            oriented_face(bm, quad, sum((vert.co for vert in quad), Vector()) / 4.0 - middle)
+    oriented_face(bm, rings[0], centers[0] - centers[1])
+    oriented_face(bm, rings[-1], centers[-1] - centers[-2])
+    return bm
+
+
+def offroad_tyre(radius, width, rim, lugs=18):
     pieces = []
     base = radius - 0.021
+    half = width * 0.5
     profile = [(rim + 0.01, -width * 0.42), (rim + 0.03, -width * 0.47), (radius - 0.09, -width * 0.52), (radius - 0.045, -width * 0.5), (base - 0.004, -width * 0.44), (base, -width * 0.3), (base + 0.001, 0.0), (base, width * 0.3), (base - 0.004, width * 0.44), (radius - 0.045, width * 0.5), (radius - 0.09, width * 0.52), (rim + 0.03, width * 0.47), (rim + 0.01, width * 0.42)]
-    pieces.append(g.revolve(profile, 44))
+    pieces.append(g.revolve(profile, 48))
     pitch = tau / lugs
-    for index in range(lugs):
-        for row, (center_a, offset, skew) in enumerate(((-width * 0.25, 0.0, 0.28), (width * 0.25, 0.5, -0.28))):
-            angle = (index + offset) * pitch
-            normal = v(0.0, math.cos(angle), math.sin(angle))
-            tangent = v(0.0, -math.sin(angle), math.cos(angle))
-            lug = g.box(0.11, 0.085, 0.026)
-            frame = Matrix((X, tangent, normal)).transposed().to_4x4()
-            frame.translation = normal * (base + 0.009) + X * center_a
-            pieces.append(g.transformed(lug, frame @ Matrix.Rotation(skew, 4, 'Z')))
-        for side in (-1.0, 1.0):
-            angle = (index + (0.25 if side > 0 else 0.75)) * pitch
-            normal = v(0.0, math.cos(angle), math.sin(angle))
-            tangent = v(0.0, -math.sin(angle), math.cos(angle))
-            shoulder = (normal + X * side * 0.9).normalized()
-            lug = g.box(0.05, 0.07, 0.03)
-            frame = Matrix((shoulder.cross(tangent).normalized(), tangent, shoulder)).transposed().to_4x4()
-            frame.translation = normal * (radius - 0.04) + X * side * (width * 0.47)
-            pieces.append(g.transformed(lug, frame))
+    track = [(0.012, base), (0.06, base), (half * 0.74, base - 0.001), (half * 0.9, base - 0.007), (half * 0.99, radius - 0.047), (half * 1.035, radius - 0.075)]
+    widths = [0.06, 0.068, 0.074, 0.078, 0.08, 0.07]
+    depths = [0.019, 0.021, 0.021, 0.019, 0.015, 0.009]
+    for side in (1.0, -1.0):
+        for index in range(lugs):
+            count = 6 if index % 2 == 0 else 5
+            start = (index + (0.0 if side > 0 else 0.5)) * pitch
+            path = [(x, r, start + side * 0.1 * x / half) for x, r in track[:count]]
+            pieces.append(tread_lug(path, widths[:count], depths[:count], side < 0))
     return pieces
 
 
@@ -208,8 +240,8 @@ def steel_wheel(target, rim, width, look="rim_paint", hub_look="steel", holes=5,
     cutters = []
     for k in range(holes):
         angle = tau * (k + 0.5) / holes
-        cutters.append(g.transformed(vk.cylinder(0.026, 0.2, 10), Matrix.Translation((-0.1, math.cos(angle) * (rim * 0.66), math.sin(angle) * (rim * 0.66)))))
-    target.add(g.cut(disc, cutters), look)
+        cutters.append(g.transformed(vk.cylinder(0.026, 0.2, 10), Matrix.Translation((0.012, math.cos(angle) * (rim * 0.66), math.sin(angle) * (rim * 0.66)))))
+    target.add(vk.carve(disc, cutters), look)
     for k in range(studs):
         angle = tau * k / studs
         center = v(disc_offset + 0.045, math.cos(angle) * 0.072, math.sin(angle) * 0.072)
@@ -256,18 +288,58 @@ def jerrycan(target, center, yaw, look, rng):
     target.add(vk.cylinder(0.025, 0.05, 10), look, matrix @ vk.frame(v(0.0, 0.13, 0.42), v(0.0, 0.5, 1.0)))
 
 
+def shattered_glass(target, rng, corners, reach=(0.1, 0.24), look="glass_cracked"):
+    corners = [Vector(p) for p in corners]
+    center = sum(corners, Vector()) / len(corners)
+    for index in range(len(corners)):
+        a = corners[index]
+        b = corners[(index + 1) % len(corners)]
+        steps = max(int((b - a).length / 0.11), 2)
+        for k in range(steps):
+            t0 = k / steps
+            t1 = (k + 1) / steps
+            tip = a.lerp(b, (t0 + t1) * 0.5 + rng.uniform(-0.35, 0.35) / steps).lerp(center, rng.uniform(reach[0], reach[1]))
+            shard = bmesh.new()
+            shard.faces.new([shard.verts.new(p) for p in (a.lerp(b, t0), a.lerp(b, t1), tip)])
+            vk.thicken(shard, 0.004)
+            target.add(shard, look)
+
+
+def rope_coil(target, center, radius, wire, loops, rng, look="rope_old"):
+    center = Vector(center)
+    phase = rng.uniform(0.0, tau)
+    steps = 12
+    count = int(loops * steps)
+    points = []
+    for s in range(count + 1):
+        t = s / steps
+        angle = phase + tau * t
+        r = radius * (1.0 - 0.05 * t + 0.05 * math.sin(angle * 2.0 + phase))
+        drift = v(0.012 * math.sin(t * 2.1 + phase), 0.012 * math.cos(t * 1.7), 0.0)
+        points.append(center + drift + v(math.cos(angle) * r, math.sin(angle) * r, wire * (1.0 + 1.3 * t)))
+    end = points[-1]
+    outward = v(end.x - center.x, end.y - center.y, 0.0).normalized()
+    points.append(end + outward * 0.1 - v(0.0, 0.0, wire * 1.5))
+    points.append(v(end.x, end.y, center.z + wire) + outward * 0.2 + v(0.02, 0.03, 0.0))
+    vk.rope_line(target, points, wire, look, wire * 1.8)
+
+
 def caged_lamp(frame_part, kit_part, center, direction, radius=0.09):
     direction = Vector(direction).normalized()
     matrix = vk.frame(Vector(center), direction)
     kit_part.add(g.revolve([(0.0, -0.1), (radius * 0.7, -0.1), (radius + 0.012, -0.03), (radius + 0.012, 0.01), (radius + 0.004, 0.02)], 18), "chassis_black", matrix)
     kit_part.add(g.revolve([(0.0, 0.03), (radius * 0.6, 0.026), (radius, 0.016), (radius, 0.008), (0.0, 0.008)], 18), "lens", matrix)
-    for k in range(4):
-        angle = tau * k / 4 + 0.3
-        offset = v(0.0, math.cos(angle), math.sin(angle)) * (radius + 0.01)
-        path = [offset + v(-0.02, 0.0, 0.0), offset * 1.05 + v(0.06, 0.0, 0.0), offset * 0.35 + v(0.13, 0.0, 0.0), v(0.14, 0.0, 0.0)]
-        frame_part.add(vk.tube([matrix @ p for p in g.spline([Vector(p) for p in path], 3)], 0.005, 5), "mesh")
-    ring = [v(0.075, math.cos(tau * s / 16) * (radius + 0.012), math.sin(tau * s / 16) * (radius + 0.012)) for s in range(16)]
-    frame_part.add(g.sweep([matrix @ p for p in ring], g.circle(0.005, 5), closed=True, planar=direction), "mesh")
+    outer = radius + 0.016
+    inner = radius * 0.78
+    reach = radius * 1.1
+    for x, r in ((0.004, outer), (reach, inner)):
+        ring = [v(x, math.cos(tau * s / 16) * r, math.sin(tau * s / 16) * r) for s in range(16)]
+        frame_part.add(g.sweep([matrix @ p for p in ring], g.circle(0.0045, 5), closed=True, planar=direction), "mesh")
+    for k in range(6):
+        angle = tau * (k + 0.5) / 6
+        frame_part.add(vk.rod(matrix @ v(0.004, math.cos(angle) * outer, math.sin(angle) * outer), matrix @ v(reach, math.cos(angle) * inner, math.sin(angle) * inner), 0.004, 5), "mesh")
+    for a, b in ((v(reach, -inner, 0.0), v(reach, inner, 0.0)), (v(reach, 0.0, -inner), v(reach, 0.0, inner))):
+        frame_part.add(vk.rod(matrix @ a, matrix @ b, 0.0045, 5), "mesh")
 
 
 def arch_cutter(side, y, z, radius=0.49):
@@ -333,9 +405,8 @@ def rover():
         hull.add(vk.block(v(x - 0.03, -0.875, belt), v(x + 0.03, -0.825, roof - 0.02)), hull_looks["wing"], screen_frame, 0.006)
     for z in (belt + 0.01, roof - 0.05):
         hull.add(vk.block(v(-half, -0.875, z), v(half, -0.825, z + 0.05)), hull_looks["wing"], screen_frame, 0.006)
-    for x0, x1, state in ((-half + 0.06, -0.03, "cracked"), (0.03, half - 0.06, "broken")):
-        panel = vk.block(v(x0, -0.852, belt + 0.06), v(x1, -0.846, roof - 0.05))
-        hull.add(panel, "glass_cracked" if state else "glass", screen_frame)
+    for x0, x1, reach in ((-half + 0.06, -0.03, (0.08, 0.2)), (0.03, half - 0.06, (0.1, 0.3))):
+        shattered_glass(hull, rng, [screen_frame @ v(x0, -0.849, belt + 0.06), screen_frame @ v(x1, -0.849, belt + 0.06), screen_frame @ v(x1, -0.849, roof - 0.05), screen_frame @ v(x0, -0.849, roof - 0.05)], reach)
     vk.mesh_panel(frame, screen_frame @ face_frame(v(0.0, -0.9, (belt + roof) * 0.5 - 0.01), v(0.0, -1.0, 0.0)), 1.66, 0.64, 0.045, 0.007, "mesh", 0.025)
     for x in (-0.7, 0.7):
         for z in (belt + 0.04, roof - 0.06):
@@ -393,7 +464,7 @@ def rover():
     bar_y = -2.2
     for side in (-1.0, 1.0):
         tube_frame(frame, "tube_steel", [v(side * 0.42, -2.1, 0.5), v(side * 0.42, bar_y, 0.62), v(side * 0.42, bar_y - 0.02, 1.0), v(side * 0.4, bar_y + 0.02, 1.26)], 0.045, 10, True, 11 + int(side))
-        tube_frame(frame, "tube_steel", [v(side * 0.42, bar_y, 1.0), v(side * 0.68, bar_y + 0.06, 1.02), v(side * 0.8, -2.05, 1.0)], 0.035, 10, True, 21 + int(side))
+        tube_frame(frame, "tube_steel", [v(side * 0.42, bar_y - 0.012, 0.84), v(side * 0.68, bar_y + 0.05, 0.84), v(side * 0.82, -2.04, 0.84)], 0.035, 10, True, 21 + int(side))
         tube_frame(frame, "tube_steel", [v(side * 0.4, bar_y + 0.02, 1.26), v(side * 0.55, -2.04, 1.22), v(side * 0.62, -1.9, 1.21)], 0.035, 10, True, 31 + int(side))
     tube_frame(frame, "tube_steel", [v(-0.82, bar_y + 0.04, 0.62), v(0.82, bar_y + 0.04, 0.62)], 0.045, 10, False)
     tube_frame(frame, "tube_steel", [v(-0.42, bar_y, 1.0), v(0.42, bar_y, 1.0)], 0.04, 10, False)
@@ -413,7 +484,7 @@ def rover():
     vk.chain(kit, vk.sag(v(-0.5, bar_y - 0.05, 0.98), v(0.3, bar_y - 0.05, 0.98), 0.22, 12), 0.05, 0.008, "chain", 3)
     for side in (-1.0, 1.0):
         caged_lamp(frame, kit, v(side * 0.68, front - 0.02, 1.0), v(0.0, -1.0, 0.0), 0.085)
-        kit.add(vk.block(v(side * 0.62 - 0.04, front - 0.02, 0.82), v(side * 0.62 + 0.04, front + 0.01, 0.87)), "lens_amber", None, 0.005)
+        kit.add(vk.block(v(side * 0.68 - 0.045, front - 0.02, 1.115), v(side * 0.68 + 0.045, front + 0.01, 1.165)), "lens_amber", None, 0.005)
     cage = 0.03
     for y, z_base in ((-0.78, 1.22), (0.33, 0.85), (1.95, 0.85)):
         for side in (-1.0, 1.0):
@@ -443,9 +514,8 @@ def rover():
     for k, (x, y) in enumerate(((0.35, 1.6), (0.62, 1.55))):
         kit.add(vk.block(v(x - 0.14, y - 0.075, rack_z + 0.025), v(x + 0.14, y + 0.075, rack_z + 0.21)), "ammo_can", None, 0.01, 2)
         kit.add(vk.block(v(x - 0.06, y - 0.012, rack_z + 0.21), v(x + 0.06, y + 0.012, rack_z + 0.235)), "chassis_black", None, 0.004)
-    coil_center = v(0.45, 1.05, rack_z + 0.03)
-    kit.add(helix(coil_center, coil_center + v(0.0, 0.0, 0.12), 0.17, 0.014, 4.0, 6, 12), "rope")
-    vk.rope_line(kit, [v(-0.86, 1.25, rack_z + 0.2), v(-0.4, 1.3, rack_z + 0.5), v(0.2, 1.3, rack_z + 0.48), v(0.86, 1.25, rack_z + 0.2)], 0.01, "rope")
+    rope_coil(kit, v(0.45, 1.02, rack_z + 0.026), 0.15, 0.012, 3.5, rng)
+    vk.rope_line(kit, [v(-0.86, 1.25, rack_z + 0.2), v(-0.4, 1.3, rack_z + 0.5), v(0.2, 1.3, rack_z + 0.48), v(0.86, 1.25, rack_z + 0.2)], 0.01, "rope_old")
     vk.chain(kit, [v(0.86, -0.4, rack_z + 0.18), v(0.4, -0.1, rack_z + 0.42), v(-0.3, -0.05, rack_z + 0.42), v(-0.86, -0.4, rack_z + 0.18)], 0.05, 0.008, "chain", 9)
     stack_x = half + 0.11
     stack = [v(0.5, 0.42, 0.62), v(0.78, 0.42, 0.66), v(stack_x, 0.42, 0.8), v(stack_x, 0.42, 1.4), v(stack_x, 0.42, 2.45)]
@@ -486,8 +556,9 @@ def rover():
         cab.add(vk.block(v(x - 0.22, seat_y - 0.24, floor), v(x + 0.22, seat_y + 0.24, floor + 0.24)), "dash_paint", None, 0.01)
         cab.add(vk.pillow(0.48, 0.5, 0.12, rng, 0.35, 0.02, 0.1), "seat_canvas", Matrix.Translation((x, seat_y, floor + 0.3)))
         cab.add(vk.pillow(0.48, 0.13, 0.62, rng, 0.35, 0.0, 0.06), "seat_canvas", Matrix.Translation((x, seat_y + 0.28, floor + 0.66)) @ Matrix.Rotation(-0.18, 4, 'X'))
-    m.point("seat_driver", v(-0.42, seat_y - 0.05, 1.66))
-    m.point("seat_passenger", v(0.42, seat_y - 0.05, 1.66))
+    eye = 1.76
+    m.point("seat_driver", v(-0.42, seat_y - 0.05, eye))
+    m.point("seat_passenger", v(0.42, seat_y - 0.05, eye))
     cab.add(vk.block(v(-half + 0.04, -0.82, 1.0), v(half - 0.04, -0.62, 1.2)), "dash_paint", None, 0.012, 2)
     cab.add(vk.block(v(-0.62, -0.68, 1.12), v(-0.2, -0.6, 1.28)), "dash_paint", None, 0.01)
     for k, x in enumerate((-0.52, -0.42, -0.32)):
@@ -542,7 +613,7 @@ def rover():
         "centre_of_mass": [0.0, 0.05, 0.95],
         "lights": {"light_head_l": {"position": vk.triple(v(0.68, lamp_y, 1.0)), "direction": [0.0, -1.0, 0.0], "kind": "headlight"}, "light_head_r": {"position": vk.triple(v(-0.68, lamp_y, 1.0)), "direction": [0.0, -1.0, 0.0], "kind": "headlight"}},
         "exhaust": {"position": vk.triple(tip), "direction": [0.0, 0.0, 1.0]},
-        "seats": {"seat_driver": vk.triple(v(-0.42, seat_y - 0.05, 1.66)), "seat_passenger": vk.triple(v(0.42, seat_y - 0.05, 1.66))},
+        "seats": {"seat_driver": vk.triple(v(-0.42, seat_y - 0.05, eye)), "seat_passenger": vk.triple(v(0.42, seat_y - 0.05, eye))},
     })
     m.close(v(2.2, -4.4, 2.2), v(0.0, -1.6, 1.0), 40.0)
     m.close(v(1.3, -3.0, 1.3), v(0.4, -2.1, 0.85), 45.0)
@@ -640,16 +711,12 @@ def heli():
         normal = (corners[1] - corners[0]).cross(corners[3] - corners[0]).normalized()
         if normal.y > 0.0:
             normal = -normal
-        if half_index == 0:
+        if half_index == 1:
             panel_frame = face_frame(center, normal, (corners[3] - corners[0]).normalized())
             plate(hull, "plate_steel", panel_frame, (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.01, [(0.0, 0.05, 0.38, 0.05)], False, "zinc", rng)
             stitch_welds(hull, panel_frame, (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.01, ("top", "bottom", "left", "right"), 120)
         else:
-            glass = bmesh.new()
-            verts = [glass.verts.new(p - normal * 0.01) for p in corners]
-            glass.faces.new(verts)
-            vk.thicken(glass, 0.006)
-            hull.add(glass, "glass_cracked")
+            shattered_glass(hull, rng, [p - normal * 0.01 for p in corners], (0.08, 0.22))
             vk.mesh_panel(frame, face_frame(center + normal * 0.03, normal, (corners[3] - corners[0]).normalized()), (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.05, 0.006, "mesh", 0.02)
     for side in (-1.0, 1.0):
         y0, w0, b0, t0 = pod[2]
@@ -660,13 +727,14 @@ def heli():
     hull.add(vk.block(v(-0.66, -1.85, 2.0), v(0.66, 0.1, 2.04)), "olive", None, 0.006)
     hull.add(vk.block(v(-0.74, -1.85, floor - 0.02), v(0.74, 0.1, floor + 0.01)), "floor_plate")
     seat_y = -1.15
+    eye = 1.74
     for side, name in ((-1.0, "seat_pilot"), (1.0, "seat_passenger")):
         x = side * 0.35
         engine.add(vk.block(v(x - 0.2, seat_y - 0.22, floor), v(x + 0.2, seat_y + 0.22, floor + 0.26)), "dash_paint", None, 0.01)
         engine.add(vk.pillow(0.44, 0.46, 0.11, rng, 0.35, 0.02, 0.1), "seat_canvas", Matrix.Translation((x, seat_y, floor + 0.31)))
         engine.add(vk.pillow(0.44, 0.12, 0.6, rng, 0.35, 0.0, 0.06), "seat_canvas", Matrix.Translation((x, seat_y + 0.26, floor + 0.66)) @ Matrix.Rotation(-0.15, 4, 'X'))
         vk.strap(engine, [v(x - 0.15, seat_y + 0.3, floor + 0.95), v(x - 0.1, seat_y + 0.05, floor + 0.55), v(x, seat_y - 0.1, floor + 0.36)], 0.045, 0.004, "strap", v(0.0, 1.0, 0.0))
-        m.point(name, v(x, seat_y - 0.05, 1.68))
+        m.point(name, v(x, seat_y - 0.05, eye))
         engine.add(vk.rod(v(x, seat_y - 0.35, floor + 0.02), v(x, seat_y - 0.45, floor + 0.62), 0.014, 8), "dash_paint")
         engine.add(g.sphere(0.03, 10, 6), "engine_black", Matrix.Translation((x, seat_y - 0.45, floor + 0.63)))
         for dx in (-0.1, 0.1):
@@ -813,7 +881,7 @@ def heli():
         "skid_contacts": [vk.triple(v(side * 1.0, y, 0.0)) for side in (-1.0, 1.0) for y in (-1.5, 1.95)],
         "mass_kg": 1150, "mass_note": "welded steel tube airframe, armour plate cockpit, flat-six engine, 80 l drum tank; between a two-seat light helicopter (about 650 kg empty) and a small utility type",
         "centre_of_mass": [0.0, 0.1, 1.25],
-        "seats": {"seat_pilot": vk.triple(v(-0.35, seat_y - 0.05, 1.68)), "seat_passenger": vk.triple(v(0.35, seat_y - 0.05, 1.68))},
+        "seats": {"seat_pilot": vk.triple(v(-0.35, seat_y - 0.05, eye)), "seat_passenger": vk.triple(v(0.35, seat_y - 0.05, eye))},
         "lights": {"light_head": {"position": vk.triple(land + v(0.0, -0.1, -0.03)), "direction": vk.triple(v(0.0, -1.0, -0.35).normalized()), "kind": "landing"}, "light_nav_l": {"position": vk.triple(nav_l), "direction": [1.0, 0.0, 0.0], "kind": "navigation red (port)"}, "light_nav_r": {"position": vk.triple(nav_r), "direction": [-1.0, 0.0, 0.0], "kind": "navigation green (starboard)"}, "light_tail": {"position": vk.triple(tail_light), "direction": [0.0, 1.0, 0.0], "kind": "tail white"}},
         "exhausts": [vk.triple(block_center + v(side * 0.42, 0.7, 0.62)) for side in (-1.0, 1.0)],
     })

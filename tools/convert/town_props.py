@@ -361,9 +361,13 @@ def wall_shelves(b, part, clutter, a, c, inward, z_levels, rng, kinds=("can", "c
         block(part, board, lo, hi, 0.0, "board")
         lo, hi = kit.box_between(a + inward * (depth - 0.02) + V(0.0, 0.0, z), c + inward * depth + V(0.0, 0.0, z + 0.05))
         block(part, wood, lo, hi)
+    facing_ok = V(-direction.y, direction.x, 0.0).dot(inward) >= 0.0
     for z0, z1 in zip(z_levels[:-1], z_levels[1:]):
         if rng.random() < 0.9:
-            stock_row(clutter, a + V(0.0, 0.0, z0), direction, length, rng, kinds, z1 - z0 - 0.05, depth * 0.45)
+            if facing_ok:
+                stock_row(clutter, a + V(0.0, 0.0, z0), direction, length, rng, kinds, z1 - z0 - 0.05, depth * 0.45)
+            else:
+                stock_row(clutter, c + V(0.0, 0.0, z0), -direction, length, rng, kinds, z1 - z0 - 0.05, depth * 0.45)
     lo, hi = kit.box_between(a, c + inward * depth)
     b.col(surface, tag, V(lo.x, lo.y, a.z), V(hi.x, hi.y, a.z + top))
 
@@ -722,9 +726,8 @@ def birdcage(part, position, rng, name="town_brass"):
     rod(part, name, position + V(0.0, 0.0, h + 0.08), position + V(0.0, 0.0, h + 0.14), 0.006, 5)
 
 
-def bath(b, part, center, yaw, rng, length=1.6, width=0.72, height=0.62, feet="town_brass"):
+def bath(b, part, center, yaw, rng, length=1.6, width=0.72, height=0.62, feet="town_brass", segments=28):
     base = kit.turned(center, yaw)
-    segments = 28
 
     def ring(hx, hy, z, radius):
         points = []
@@ -766,31 +769,32 @@ def bath(b, part, center, yaw, rng, length=1.6, width=0.72, height=0.62, feet="t
     return base
 
 
-def toilet(b, part, center, yaw, rng, cistern_height=2.0, seat_up=False):
+def toilet(b, part, center, yaw, rng, cistern_height=2.0, seat_up=False, segments=14, chain=True):
     base = kit.turned(center, yaw)
     pan = base @ kit.Matrix.Scale(1.25, 4, V(0.0, 1.0, 0.0))
-    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.13, 0.0), (0.12, 0.05), (0.1, 0.18), (0.16, 0.34), (0.19, 0.4), (0.17, 0.41), (0.12, 0.3), (0.05, 0.24), (0.0, 0.24)], 14)), "ceramic", pan, "texture", True)
+    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.13, 0.0), (0.12, 0.05), (0.1, 0.18), (0.16, 0.34), (0.19, 0.4), (0.17, 0.41), (0.12, 0.3), (0.05, 0.24), (0.0, 0.24)], segments)), "ceramic", pan, "texture", True)
     seat = base @ kit.Matrix.Translation(V(0.0, 0.0, 0.41))
     if seat_up:
         seat = base @ kit.Matrix.Translation(V(0.0, 0.19, 0.42)) @ kit.Matrix.Rotation(-1.45, 4, 'X') @ kit.Matrix.Translation(V(0.0, -0.21, 0.0))
-    emit(part, kit.geo_lathe([(0.11, 0.0), (0.2, 0.0), (0.2, 0.025), (0.11, 0.025)], 14), "timber_beam", seat @ kit.Matrix.Scale(1.15, 4, V(0.0, 1.0, 0.0)), "given", True)
+    emit(part, kit.geo_lathe([(0.11, 0.0), (0.2, 0.0), (0.2, 0.025), (0.11, 0.025)], segments), "timber_beam", seat @ kit.Matrix.Scale(1.15, 4, V(0.0, 1.0, 0.0)), "given", True)
     cistern = base @ kit.Matrix.Translation(V(0.0, 0.3, cistern_height))
     local_block(part, "rusty_metal", cistern, -0.24, 0.24, -0.11, 0.11, 0.0, 0.26, 0.015)
     for sx in (-0.18, 0.18):
         local_block(part, "rusty_metal", cistern, sx - 0.015, sx + 0.015, -0.11, 0.13, -0.12, 0.0)
     rod(part, "rusty_metal", base @ V(0.0, 0.3, cistern_height), base @ V(0.0, 0.3, 0.45), 0.02, 8)
     rod(part, "rusty_metal", base @ V(0.0, 0.3, 0.45), base @ V(0.0, 0.18, 0.38), 0.02, 8)
-    chain = [base @ V(0.2, 0.2, cistern_height + 0.05)] + [base @ V(0.2 + 0.01 * math.sin(t), 0.2, cistern_height - 0.12 * t) for t in range(1, 8)]
-    emit(part, kit.geo_tube(chain, kit.circle(0.004, 4), True), "rusty_metal", None, "given", True)
-    emit(part, kit.geo_lathe([(0.0, 0.0), (0.015, 0.01), (0.012, 0.08), (0.0, 0.09)], 8), "ceramic", kit.Matrix.Translation(chain[-1] - V(0.0, 0.0, 0.09)), "given", True)
+    if chain:
+        links = [base @ V(0.2, 0.2, cistern_height + 0.05)] + [base @ V(0.2 + 0.01 * math.sin(t), 0.2, cistern_height - 0.12 * t) for t in range(1, 8)]
+        emit(part, kit.geo_tube(links, kit.circle(0.004, 4), True), "rusty_metal", None, "given", True)
+        emit(part, kit.geo_lathe([(0.0, 0.0), (0.015, 0.01), (0.012, 0.08), (0.0, 0.09)], 8), "ceramic", kit.Matrix.Translation(links[-1] - V(0.0, 0.0, 0.09)), "given", True)
     bd.footprint(b, "rock", "toilet", base @ kit.Matrix.Translation(V(0.0, 0.05, 0.0)), 0.22, 0.3, 0.0, 0.42)
 
 
-def basin(b, part, center, yaw, rng):
+def basin(b, part, center, yaw, rng, segments=16):
     base = kit.turned(center, yaw)
-    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.12, 0.0), (0.08, 0.06), (0.07, 0.6), (0.1, 0.66), (0.0, 0.66)], 12)), "ceramic", base, "texture", True)
+    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.12, 0.0), (0.08, 0.06), (0.07, 0.6), (0.1, 0.66), (0.0, 0.66)], max(6, segments * 3 // 4))), "ceramic", base, "texture", True)
     bowl = base @ kit.Matrix.Translation(V(0.0, 0.02, 0.66)) @ kit.Matrix.Scale(1.3, 4, V(1.0, 0.0, 0.0))
-    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.12, 0.0), (0.24, 0.13), (0.25, 0.16), (0.23, 0.16), (0.11, 0.04), (0.0, 0.04)], 16)), "ceramic", bowl, "texture", True)
+    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.12, 0.0), (0.24, 0.13), (0.25, 0.16), (0.23, 0.16), (0.11, 0.04), (0.0, 0.04)], segments)), "ceramic", bowl, "texture", True)
     for sx in (-0.12, 0.12):
         p = base @ V(sx, 0.2, 0.82)
         rod(part, "town_brass", p, p + V(0.0, 0.0, 0.08), 0.01, 6)
@@ -1058,6 +1062,314 @@ def tray_items(clutter, origin, direction, rng, count=4):
             bd.bottle(clutter, p, rng, rng.random() < 0.5)
         else:
             bd.jug(clutter, p, rng)
+
+
+def pub_counter(b, part, center, yaw, length, rng, depth=0.6, height=1.05, wood="timber_beam", panel="town_paint_green", ends=(True, True), tag="bar"):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    hd = depth * 0.5
+    local_block(part, wood, base, -hl - (0.04 if ends[0] else 0.0), hl + (0.04 if ends[1] else 0.0), -hd - 0.06, hd, height - 0.05, height, 0.006, "board")
+    local_block(part, panel, base, -hl, hl, -hd, -hd + 0.035, 0.1, height - 0.05, 0.0, "board")
+    local_block(part, wood, base, -hl, hl, -hd + 0.03, -hd + 0.07, 0.0, 0.1)
+    count = max(1, int(round(length / 0.62)))
+    for index in range(count + 1):
+        a = -hl + length * index / count
+        local_block(part, wood, base, max(a - 0.03, -hl), min(a + 0.03, hl), -hd - 0.025, -hd, 0.1, height - 0.05)
+    for index in range(count):
+        a = -hl + length * index / count
+        c = -hl + length * (index + 1) / count
+        local_block(part, panel, base, a + 0.09, c - 0.09, -hd - 0.014, -hd, 0.26, height - 0.2, 0.004, "board")
+    for side, flag in ((-1.0, ends[0]), (1.0, ends[1])):
+        if flag:
+            local_block(part, panel, base, side * hl - 0.02, side * hl + 0.02, -hd, hd, 0.1, height - 0.05, 0.0, "board")
+    for z in (0.12, 0.52):
+        local_block(part, "timber_planks_weathered", base, -hl + 0.02, hl - 0.02, -hd + 0.04, hd - 0.03, z, z + 0.025, 0.0, "board")
+    rail = -hd - 0.2
+    rod(part, "town_brass", base @ V(-hl + 0.06, rail, 0.2), base @ V(hl - 0.06, rail, 0.2), 0.022, 8)
+    for index in range(count + 1):
+        a = min(max(-hl + length * index / count, -hl + 0.12), hl - 0.12)
+        rod(part, "town_brass", base @ V(a, -hd - 0.025, 0.26), base @ V(a, rail, 0.2), 0.01, 5)
+    bd.footprint(b, "wood", tag, base, hl, hd, 0.0, height)
+    return base
+
+
+def beer_pump(part, position, yaw, rng, label="ale", lean=0.18):
+    base = kit.turned(position, yaw)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.045, 0.0), (0.042, 0.03), (0.03, 0.07), (0.0, 0.075)], 8), "town_brass", base, "given", True)
+    grip = base @ kit.Matrix.Translation(V(0.0, 0.0, 0.07)) @ kit.Matrix.Rotation(-lean, 4, 'X')
+    rod(part, "town_brass", grip @ V(0.0, 0.0, 0.0), grip @ V(0.0, 0.0, 0.1), 0.011, 6)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.016, 0.0), (0.024, 0.07), (0.027, 0.2), (0.019, 0.25), (0.0, 0.255)], 8), "ceramic", grip @ kit.Matrix.Translation(V(0.0, 0.0, 0.1)), "given", True)
+    facing = (grip.to_3x3() @ V(0.0, -1.0, 0.0)).normalized()
+    tk.atlas_panel(part, "town_print", grip @ V(0.0, -0.029, 0.27), facing, 0.075, 0.03, pr("label_" + label, 2.0), 0.0, 0.0)
+    rod(part, "town_brass", base @ V(0.0, 0.03, 0.05), base @ V(0.0, 0.1, 0.06), 0.008, 5)
+    rod(part, "town_brass", base @ V(0.0, 0.1, 0.06), base @ V(0.0, 0.12, 0.03), 0.007, 5)
+    local_block(part, "rusty_metal", base, -0.07, 0.07, 0.06, 0.19, 0.0, 0.015)
+
+
+def stool_light(part, position, rng, fallen=False, height=0.72, wood="timber_beam", seat="timber_planks_weathered"):
+    if fallen:
+        base = kit.Matrix.Translation(position + V(0.0, 0.0, 0.19)) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y')
+    else:
+        base = kit.turned(position, rng.uniform(0.0, tau))
+    emit(part, kit.geo_lathe([(0.0, height - 0.045), (0.175, height - 0.045), (0.17, height), (0.0, height)], 8), seat, base, "given", True)
+    for k in range(4):
+        angle = tau * k / 4 + math.pi * 0.25
+        rod(part, wood, base @ V(math.cos(angle) * 0.12, math.sin(angle) * 0.12, height - 0.045), base @ V(math.cos(angle) * 0.19, math.sin(angle) * 0.19, 0.0), 0.016, 4)
+        rod(part, wood, base @ V(math.cos(angle) * 0.17, math.sin(angle) * 0.17, 0.27), base @ V(math.cos(angle + tau / 4) * 0.17, math.sin(angle + tau / 4) * 0.17, 0.27), 0.009, 3)
+
+
+def pub_table(b, part, position, rng, radius=0.36, height=0.72, top="timber_beam", iron="town_paint_black"):
+    base = kit.turned(position, rng.uniform(0.0, tau))
+    emit(part, kit.geo_lathe([(0.0, height - 0.035), (radius, height - 0.035), (radius + 0.008, height - 0.015), (radius, height), (0.0, height)], 12), top, base, "given", True)
+    rod(part, iron, base @ V(0.0, 0.0, 0.1), base @ V(0.0, 0.0, height - 0.035), 0.03, 6)
+    for k in range(3):
+        angle = tau * k / 3
+        rod(part, iron, base @ V(0.0, 0.0, 0.16), base @ V(math.cos(angle) * 0.3, math.sin(angle) * 0.3, 0.0), 0.022, 4)
+    tk.col(b, "wood", "table", position.x - radius * 0.8, position.x + radius * 0.8, position.y - radius * 0.8, position.y + radius * 0.8, position.z, position.z + height)
+
+
+def settle_light(b, part, center, yaw, rng, length=1.4, wood="timber_beam", seat="timber_planks_weathered", cushion="fabric_worn"):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    local_block(part, seat, base, -hl + 0.03, hl - 0.03, -0.24, 0.2, 0.42, 0.46, 0.0, "board")
+    local_block(part, wood, base, -hl + 0.03, hl - 0.03, -0.22, -0.2, 0.05, 0.42, 0.0, "board")
+    count = max(3, int(length / 0.2))
+    for index in range(count):
+        a = -hl + 0.03 + (length - 0.06) * index / count
+        c = -hl + 0.03 + (length - 0.06) * (index + 1) / count
+        local_block(part, wood, base, a + 0.003, c - 0.003, 0.2, 0.235, 0.42, 1.4 - rng.uniform(0.0, 0.02), 0.0, "board")
+    local_block(part, wood, base, -hl, hl, 0.16, 0.25, 1.38, 1.44, 0.004, "board")
+    profile = [(-0.25, 0.0), (0.25, 0.0), (0.25, 1.44), (0.12, 1.44), (0.0, 0.72), (-0.25, 0.66)]
+    for sx in (-1.0, 1.0):
+        end = base @ kit.Matrix.Translation(V(sx * (hl - 0.015), 0.0, 0.0)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Z')
+        kit.prism(part, wood, end, profile, -0.015, 0.015)
+    if cushion and rng.random() < 0.7:
+        emit(part, bd.cushion_geo(length - 0.2, 0.4, 0.07, rng, 0.03), cushion, base @ kit.Matrix.Translation(V(rng.uniform(-0.05, 0.05), -0.02, 0.5)), "box", True)
+    bd.footprint(b, "wood", "settle", base, hl, 0.25, 0.0, 1.44)
+
+
+def pint_glass(part, position, rng, tipped=False, broken=False):
+    r = rng.uniform(0.034, 0.04)
+    h = rng.uniform(0.12, 0.15) * (0.55 if broken else 1.0)
+    profile = [(0.0, 0.0), (r * 0.82, 0.0), (r, h), (r * 0.92, h), (r * 0.76, 0.012), (0.0, 0.012)]
+    if tipped:
+        matrix = kit.Matrix.Translation(position + V(0.0, 0.0, r)) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y') @ kit.Matrix.Translation(V(0.0, 0.0, -h * 0.5))
+    else:
+        matrix = kit.Matrix.Translation(position)
+    emit(part, kit.geo_lathe(profile, 6), "glass_dirty", matrix, "given", True)
+
+
+def wall_matrix(center, normal):
+    n = normal.normalized()
+    upward = (up - n * up.dot(n)).normalized()
+    right = upward.cross(n).normalized()
+    return kit.Matrix(((right.x, -n.x, upward.x, center.x), (right.y, -n.y, upward.y, center.y), (right.z, -n.z, upward.z, center.z), (0.0, 0.0, 0.0, 1.0)))
+
+
+def dartboard(part, center, normal, rng, radius=0.23, cabinet="town_paint_black"):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    local_block(part, cabinet, matrix, -0.36, 0.36, -0.04, 0.0, -0.4, 0.4)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (radius + 0.012, 0.0), (radius + 0.012, 0.035), (0.0, 0.035)], 16), "soot", kit.place(center + n * 0.04, n.orthogonal(), n), "given", True)
+    disc(part, "town_print", center + n * 0.076, n, radius, pr("dartboard", 2.0), 20)
+    for sx, swing in ((-1.0, 2.6), (1.0, 2.9)):
+        door = matrix @ kit.Matrix.Translation(V(sx * 0.36, -0.045, 0.0)) @ kit.Matrix.Rotation(sx * swing, 4, 'Z')
+        local_block(part, cabinet, door, min(0.0, -sx * 0.36), max(0.0, -sx * 0.36), -0.02, 0.0, -0.4, 0.4, 0.0, "board")
+    for index in range(3):
+        angle = rng.uniform(0.0, tau)
+        reach = rng.uniform(0.02, 0.17)
+        tip = center + n * 0.076 + (matrix.to_3x3() @ V(math.cos(angle) * reach, 0.0, math.sin(angle) * reach))
+        tail = tip + (n + V(rng.uniform(-0.15, 0.15), rng.uniform(-0.15, 0.15), rng.uniform(-0.1, 0.2))).normalized() * 0.13
+        rod(part, "rusty_metal", tip, tail, 0.004, 3)
+        rod(part, "town_paint_red", tail - (tail - tip).normalized() * 0.035, tail, 0.011, 3)
+
+
+def hanging_sign(part, anchor, normal, rng, region, width=0.8, height=1.0, reach=1.15, iron="town_paint_black", frame="town_paint_green"):
+    n = normal.normalized()
+    side = up.cross(n).normalized()
+    rod(part, iron, anchor, anchor + n * reach, 0.022, 6)
+    rod(part, iron, anchor - V(0.0, 0.0, 0.62), anchor + n * (reach * 0.55), 0.016, 5)
+    lo, hi = kit.box_between(anchor - side * 0.06 - V(0.0, 0.0, 0.7), anchor + n * 0.015 + side * 0.06 + V(0.0, 0.0, 0.06))
+    block(part, iron, lo, hi)
+    curl = [anchor + n * (0.32 + 0.12 * math.cos(t * 0.5)) - V(0.0, 0.0, 0.2 + 0.12 * math.sin(t * 0.5)) for t in range(11)]
+    emit(part, kit.geo_tube(curl, kit.circle(0.008, 4), True, side), iron, None, "given", True)
+    for k in (0.18, 0.12 + width - 0.06):
+        rod(part, iron, anchor + n * k, anchor + n * k - V(0.0, 0.0, 0.16), 0.007, 3)
+    center = anchor + n * (0.12 + width * 0.5) - V(0.0, 0.0, 0.16 + height * 0.5)
+    matrix = kit.place(center, n, up)
+    local_block(part, frame, matrix, -width * 0.5 - 0.035, width * 0.5 + 0.035, -0.025, 0.025, -height * 0.5 - 0.035, height * 0.5 + 0.035, 0.004, "board")
+    for sign in (-1.0, 1.0):
+        tk.atlas_panel(part, "town_signs", center + side * (sign * 0.026), side * sign, width, height, region, 0.0, 0.0)
+    return center
+
+
+def lantern(b, part, anchor, normal, rng, iron="town_paint_black", kind="warm"):
+    n = normal.normalized()
+    arm = anchor + n * 0.42
+    rod(part, iron, anchor, arm, 0.014, 5)
+    rod(part, iron, anchor - V(0.0, 0.0, 0.28), anchor + n * 0.28, 0.01, 4)
+    body = arm - V(0.0, 0.0, 0.42)
+    rod(part, iron, arm, body + V(0.0, 0.0, 0.33), 0.006, 3)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.07, 0.0), (0.1, 0.22), (0.0, 0.225)], 4, math.pi * 0.25), "glass_dirty", kit.Matrix.Translation(body), "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.22), (0.13, 0.22), (0.02, 0.33), (0.0, 0.34)], 4, math.pi * 0.25), iron, kit.Matrix.Translation(body), "given", True)
+    emit(part, kit.geo_lathe([(0.0, -0.03), (0.08, -0.03), (0.08, 0.0), (0.0, 0.0)], 4, math.pi * 0.25), iron, kit.Matrix.Translation(body), "given", True)
+    b.light(kind, body + V(0.0, 0.0, 0.12))
+
+
+def cask_light(part, center, rng, radius=0.28, length=0.72, yaw=0.0, lying=True, wood="timber_planks_weathered", iron="rusty_metal", segments=10):
+    profile = [(0.0, 0.0), (radius * 0.86, 0.0), (radius * 0.97, length * 0.2), (radius, length * 0.5), (radius * 0.97, length * 0.8), (radius * 0.86, length), (0.0, length)]
+    if lying:
+        matrix = kit.Matrix.Translation(center + V(0.0, 0.0, radius)) @ kit.Matrix.Rotation(yaw, 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y') @ kit.Matrix.Translation(V(0.0, 0.0, -length * 0.5))
+    else:
+        matrix = kit.Matrix.Translation(center) @ kit.Matrix.Rotation(yaw, 4, 'Z')
+    emit(part, kit.geo_lathe(profile, segments), wood, matrix, "given", True)
+    for z in (length * 0.15, length * 0.85):
+        r = radius * (0.86 + 0.14 * math.sin(math.pi * z / length)) + 0.004
+        emit(part, kit.geo_lathe([(r, z - 0.025), (r + 0.004, z), (r, z + 0.025)], segments), iron, matrix, "given", True)
+    return matrix
+
+
+def crate_light(part, center, size3, yaw, rng, name="timber_planks_weathered"):
+    base = kit.turned(center, yaw)
+    sx, sy, sz = size3
+    local_block(part, name, base, -sx * 0.5, sx * 0.5, -sy * 0.5, sy * 0.5, 0.0, 0.015, 0.0, "board")
+    for side in (-1.0, 1.0):
+        local_block(part, name, base, -sx * 0.5, sx * 0.5, side * sy * 0.5 - 0.009, side * sy * 0.5 + 0.009, 0.0, sz - rng.uniform(0.0, 0.01), 0.0, "board")
+        local_block(part, name, base, side * sx * 0.5 - 0.009, side * sx * 0.5 + 0.009, -sy * 0.5 + 0.009, sy * 0.5 - 0.009, 0.0, sz, 0.0, "board")
+    return base
+
+
+def bottle_crate(part, center, yaw, rng, label="ale", rows=2, cols=3, full=0.75):
+    sx = cols * 0.09 + 0.03
+    sy = rows * 0.09 + 0.03
+    base = crate_light(part, center, (sx, sy, 0.2), yaw, rng)
+    for r in range(rows):
+        for c in range(cols):
+            if rng.random() < full:
+                p = base @ V(-sx * 0.5 + 0.06 + c * 0.09, -sy * 0.5 + 0.06 + r * 0.09, 0.0)
+                emit(part, kit.geo_lathe([(0.034, 0.12), (0.034, 0.16), (0.011, 0.22), (0.012, 0.27), (0.0, 0.27)], 4, math.pi * 0.25), "glass_dirty", kit.Matrix.Translation(p), "given", True)
+    return base
+
+
+def stillage(b, part, x0, x1, y0, y1, rng, height=0.3, wood="timber_beam"):
+    middle = (x0 + x1) * 0.5
+    for x in (middle - 0.22, middle + 0.22):
+        block(part, wood, V(x - 0.05, y0, height - 0.08), V(x + 0.05, y1, height), 0.004)
+        for y in (y0 + 0.05, (y0 + y1) * 0.5, y1 - 0.05):
+            block(part, wood, V(x - 0.05, y - 0.05, 0.0), V(x + 0.05, y + 0.05, height - 0.08), 0.004)
+
+
+def urinal_trough(b, part, x0, x1, y_wall, inward, rng, name="ceramic"):
+    def span(d0, d1):
+        ya = y_wall + inward * d0
+        yb = y_wall + inward * d1
+        return min(ya, yb), max(ya, yb)
+    s0, s1 = span(0.0, 0.035)
+    block(part, name, V(x0, s0, 0.25), V(x1, s1, 1.3), 0.004)
+    t0, t1 = span(0.0, 0.32)
+    block(part, name, V(x0, t0, 0.0), V(x1, t1, 0.12), 0.006)
+    g0, g1 = span(0.06, 0.27)
+    block(part, "soot", V(x0 + 0.04, g0, 0.12), V(x1 - 0.04, g1, 0.125))
+    count = max(2, int((x1 - x0) / 0.6))
+    for index in range(1, count):
+        x = x0 + (x1 - x0) * index / count
+        d0, d1 = span(0.035, 0.4)
+        block(part, name, V(x - 0.02, d0, 0.5), V(x + 0.02, d1, 1.25), 0.008)
+    c0, c1 = span(0.0, 0.24)
+    block(part, "rusty_metal", V(x0 + 0.1, c0, 2.05), V(x0 + 0.6, c1, 2.3), 0.01)
+    p0, p1 = span(0.06, 0.06)
+    rod(part, "rusty_metal", V(x0 + 0.35, p0, 2.05), V(x0 + 0.35, p0, 1.3), 0.02, 6)
+    rod(part, "rusty_metal", V(x0 + 0.1, p0, 1.27), V(x1 - 0.1, p0, 1.27), 0.012, 6)
+    tk.col(b, "rock", "urinal", x0, x1, t0, t1, 0.0, 1.3)
+
+
+def bench_light(b, part, center, yaw, rng, length=1.4, wood="timber_planks_weathered", legs="timber_beam"):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    for y0, y1 in ((-0.18, -0.02), (0.02, 0.18)):
+        local_block(part, wood, base, -hl, hl, y0, y1, 0.42, 0.45, 0.0, "board")
+    for sx in (-1.0, 1.0):
+        local_block(part, legs, base, sx * (hl - 0.15) - 0.03, sx * (hl - 0.15) + 0.03, -0.17, 0.17, 0.0, 0.42)
+    bd.footprint(b, "wood", "bench", base, hl, 0.2, 0.0, 0.45)
+
+
+def drape_light(part, center, width, depth, drop, yaw, rng, name="fabric_worn", folds=5, hang_sides=(True, False), nx=8, ny=6):
+    points = []
+    faces = []
+    total_y = depth + (drop if hang_sides[0] else 0.0) + (drop if hang_sides[1] else 0.0)
+    phase = rng.uniform(0, tau)
+    for j in range(ny + 1):
+        for i in range(nx + 1):
+            u = i / nx
+            s = j / ny * total_y - (drop if hang_sides[0] else 0.0)
+            x = (u - 0.5) * width
+            ripple = math.sin(u * folds * math.pi + phase + s * 3.0) * 0.02 + rng.uniform(-0.004, 0.004)
+            if s < 0.0:
+                y = -depth * 0.5 - 0.01 * abs(s) - ripple * 0.5
+                z = s * 0.95
+            elif s > depth:
+                y = depth * 0.5 + 0.01 * (s - depth) + ripple * 0.5
+                z = -(s - depth) * 0.95
+            else:
+                y = s - depth * 0.5
+                z = ripple * 0.6 + 0.01
+            points.append(V(x, y, z))
+    for j in range(ny):
+        for i in range(nx):
+            a = j * (nx + 1) + i
+            faces.append((a, a + 1, a + nx + 2, a + nx + 1))
+    emit(part, kit.Geo(points, faces), name, kit.turned(center, yaw), "box", True)
+
+
+def iron_bed_light(build, part, clutter, center, yaw, rng, length=1.95, width=1.25, frame="rusty_metal", bedding=True, blanket="fabric_tartan"):
+    base = kit.turned(center, yaw)
+    hx = length * 0.5
+    hy = width * 0.5
+    for sx in (-1.0, 1.0):
+        top = 1.15 if sx < 0 else 0.85
+        for sy in (-1.0, 1.0):
+            rod(part, frame, base @ V(sx * hx, sy * hy, 0.0), base @ V(sx * hx, sy * hy, top), 0.022, 6)
+            emit(part, kit.geo_lathe([(0.0, 0.0), (0.03, 0.0), (0.035, 0.03), (0.0, 0.06)], 6), frame, base @ kit.Matrix.Translation(V(sx * hx, sy * hy, top)), "given", True)
+        for z in (0.36, top - 0.05):
+            rod(part, frame, base @ V(sx * hx, -hy, z), base @ V(sx * hx, hy, z), 0.013, 4)
+        bars = 5
+        for index in range(1, bars):
+            y = -hy + width * index / bars
+            rod(part, frame, base @ V(sx * hx, y, 0.36), base @ V(sx * hx, y, top - 0.05), 0.007, 3)
+    for sy in (-1.0, 1.0):
+        local_block(part, frame, base, -hx, hx, sy * hy - 0.004, sy * hy + 0.004, 0.33, 0.37)
+    local_block(part, frame, base, -hx + 0.05, hx - 0.05, -hy + 0.02, hy - 0.02, 0.362, 0.367)
+    emit(clutter, bd.cushion_geo(length - 0.08, width - 0.06, 0.2, rng, 0.015, 0.06, 5, 3), "mattress", base @ kit.Matrix.Translation(V(0.0, 0.0, 0.47)), "box", True)
+    if bedding:
+        drape_light(clutter, base @ V(0.2, 0.0, 0.575), length * 0.7, width - 0.02, 0.3, yaw, rng, blanket, 6, (True, True))
+        emit(clutter, bd.cushion_geo(0.36, 0.6, 0.12, rng, 0.04, 0.0, 3, 2), "mattress", base @ kit.turned(V(-hx + 0.28, 0.0, 0.63), 0.1), "box", True)
+    bd.footprint(build, "metal", "bed", base, hx, hy, 0.33, 0.62)
+    return base
+
+
+def sink_light(b, part, clutter, center, yaw, rng, width=0.76, depth=0.48, drainer=0.5):
+    base = kit.turned(center, yaw)
+    hw = width * 0.5
+    hd = depth * 0.5
+    for sx in (-1.0, 1.0):
+        local_block(part, "brick_red", base, sx * (hw - 0.08) - 0.07, sx * (hw - 0.08) + 0.07, -hd + 0.06, hd, 0.0, 0.62, 0.0, "box")
+    local_block(part, "ceramic", base, -hw, hw, -hd, hd, 0.62, 0.67, 0.006)
+    for x0, x1, y0, y1 in ((-hw, hw, -hd, -hd + 0.05), (-hw, hw, hd - 0.05, hd), (-hw, -hw + 0.05, -hd + 0.05, hd - 0.05), (hw - 0.05, hw, -hd + 0.05, hd - 0.05)):
+        local_block(part, "ceramic", base, x0, x1, y0, y1, 0.67, 0.86, 0.004)
+    local_block(part, "timber_planks_weathered", base, hw, hw + drainer, -hd + 0.03, hd, 0.84, 0.865, 0.0, "board")
+    local_block(part, "timber_beam", base, hw + drainer - 0.05, hw + drainer, -hd + 0.03, hd, 0.0, 0.84)
+    for sx in (-0.12, 0.12):
+        rod(part, "town_brass", base @ V(sx, hd + 0.02, 1.05), base @ V(sx, hd - 0.1, 1.05), 0.012, 5)
+        rod(part, "town_brass", base @ V(sx, hd - 0.1, 1.05), base @ V(sx, hd - 0.12, 0.95), 0.01, 5)
+    bd.footprint(b, "rock", "sink", base @ kit.Matrix.Translation(V(drainer * 0.5, 0.0, 0.0)), hw + drainer * 0.5, hd, 0.0, 0.87)
+
+
+def cellar_flap(part, x0, x1, y0, y1, z, rng, name="rusty_metal"):
+    block(part, "granite_ashlar", V(x0 - 0.08, y0 - 0.08, z - 0.1), V(x1 + 0.08, y1 + 0.08, z + 0.01), 0.01)
+    middle = (x0 + x1) * 0.5
+    for a, c in ((x0, middle - 0.005), (middle + 0.005, x1)):
+        block(part, name, V(a, y0, z + 0.01), V(c, y1, z + 0.028), 0.004)
+        emit(part, kit.geo_lathe([(0.03, -0.004), (0.04, 0.0), (0.03, 0.004)], 6), name, kit.Matrix.Translation(V((a + c) * 0.5, (y0 + y1) * 0.5, z + 0.032)), "given", True)
 
 
 def debris_field(parts, x0, x1, y0, y1, z, rng, plaster=20, glass=0, papers_count=3, leaves=0, slate=0):

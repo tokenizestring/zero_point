@@ -212,7 +212,20 @@ def grid_sheet(width, height, nx, ny, lift=None):
     return bm
 
 
+def sealed(bm):
+    loose = [edge for edge in bm.edges if not edge.link_faces]
+    if loose:
+        bmesh.ops.delete(bm, geom=loose, context='EDGES')
+    stray = [vert for vert in bm.verts if not vert.link_edges]
+    if stray:
+        bmesh.ops.delete(bm, geom=stray, context='VERTS')
+    return bm
+
+
 def carve(target, cutters, operation='DIFFERENCE'):
+    sealed(target)
+    for cutter in cutters:
+        sealed(cutter)
     target_mesh = bpy.data.meshes.new("carve_target")
     target.to_mesh(target_mesh)
     target.free()

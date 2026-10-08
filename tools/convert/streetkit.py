@@ -1070,7 +1070,9 @@ def railing():
     body.add(vk.block(post + v(-0.05, -0.05, 0.1), post + v(0.05, 0.05, 0.16)), "iron_black", None, 0.005)
     leaf_litter(body, rng, v(0.4, 0.0, 0.142), 0.12, 10, 0.0)
     far = m.far("prop_railing_far")
-    far.add(vk.block(v(-half, -0.13, -0.04), v(half, 0.13, 0.14)), "steel")
+    far_kerb = m.far("prop_railing_far_kerb", 30.0)
+    m.library_parts.append("prop_railing_far_kerb")
+    far_kerb.add(vk.block(v(-half, -0.13, -0.04), v(half, 0.13, 0.14)), "lib_granite_ashlar")
     for z, h in ((rail_low, 0.04), (rail_high, 0.05)):
         far.add(vk.block(v(-half, -0.014, z - h * 0.5), v(half, 0.014, z + h * 0.5)), "steel")
     for index in range(25):
@@ -1373,7 +1375,7 @@ def car_wheel(target, spec, center, side, rng, cap=True):
     for k in range(6):
         angle = tau * k / 6
         holes.append(g.transformed(g.box(0.2, 0.026, 0.05), Matrix.Translation((width * 0.2, math.cos(angle) * (rim * 0.62), math.sin(angle) * (rim * 0.62))) @ Matrix.Rotation(angle, 4, 'X')))
-    target.add(g.cut(disc, holes), "wheel_steel", place @ spin)
+    target.add(vk.carve(disc, holes), "wheel_steel", place @ spin)
     for k in range(4):
         angle = tau * k / 4
         target.add(g.hexagon(0.022, 0.014, "x"), "steel", place @ spin @ Matrix.Translation((width * 0.3 + 0.007, math.cos(angle) * 0.05, math.sin(angle) * 0.05)))
@@ -1757,7 +1759,7 @@ def car_wreck(kind):
         door_cut = door_box
     cutters = [vk.block(cavity_low, cavity_high)]
     if kind == "van":
-        cutters[0] = vk.block(v(-inner, spec["dash"], floor), v(inner, half + 0.3, roof - 0.07))
+        cutters[0] = vk.block(v(-inner, spec["dash"], floor), v(inner, half + 0.3, roof - 0.14))
     wells = []
     for axle in spec["axles"]:
         for side in (-1.0, 1.0):
@@ -1780,6 +1782,8 @@ def car_wreck(kind):
 
     def chooser(face):
         c = face.calc_center_median()
+        if kind == "van" and face.normal.z > 0.5 and c.z > roof - 0.12:
+            return None
         if abs(c.x) < cabin_x and cavity_low.y - 0.002 < c.y < (cavity_high.y + 0.002 if kind != "van" else half + 0.4) and c.z > floor - 0.002:
             return "trim_dark"
         for axle, side, radius in wells:
@@ -1922,16 +1926,18 @@ def bake(name):
     m = builders[name]()
     built = {key: p.build() for key, p in m.parts.items()}
     objects = list(built.values())
-    far_objects = [p.build() for p in m.far_parts.values()]
+    far_built = {key: p.build() for key, p in m.far_parts.items()}
+    far_objects = list(far_built.values())
+    far_baked = [obj for key, obj in far_built.items() if key not in m.library_parts]
     bake_keys = [key for key in built if key not in m.library_parts]
     sets = m.sets if m.sets else ([(name, bake_keys)] if bake_keys else [])
     texture_sets = []
     for index, (key, members) in enumerate(sets):
         tset = vk.texture_set(key, name, band=m.band, boost=m.boost)
-        tset.bake_near([built[member] for member in members], with_far=(index == 0 and bool(far_objects)))
+        tset.bake_near([built[member] for member in members], with_far=(index == 0 and bool(far_baked)))
         texture_sets.append(tset)
-    if far_objects and texture_sets:
-        texture_sets[0].bake_far(far_objects, objects)
+    if far_baked and texture_sets:
+        texture_sets[0].bake_far(far_baked, objects)
     for obj in objects + far_objects:
         vk.clean(obj)
     marker_look = texture_sets[0].material if texture_sets else objects[0].data.materials[0]
