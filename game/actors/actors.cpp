@@ -341,6 +341,7 @@ namespace zp
 				actor.attack = 0.0f;
 				actor.looted = false;
 				actor.fall_roll = (random(actor) - 0.5f) * 0.5f;
+				actor.shove = structures::vec3_s{ direction.x, 0.25f, direction.z } * ragdoll_shot_shove;
 				actor.velocity = {};
 			}
 		}
@@ -454,6 +455,21 @@ namespace zp
 	*/
 	void actors_c::animate(structures::actor_s& actor, std::float_t delta)
 	{
+		actor.ragdoll.active = actor.ragdoll.active && actor.dead;
+
+		if (actor.ragdoll.active && actor.frames > 0u)
+		{
+			ragdolls.step(actor, delta);
+
+			ragdolls.pose(actor);
+
+			actor.world = actor.ragdoll.frame;
+			actor.holding = false;
+			actor.frames++;
+
+			return;
+		}
+
 		const auto& character{ *actor.character };
 		const structures::vec3_s horizontal{ actor.seated ? 0.0f : actor.velocity.x, 0.0f, actor.seated ? 0.0f : actor.velocity.z };
 		const auto speed{ mathematics.length(horizontal) };
@@ -604,6 +620,13 @@ namespace zp
 		if (actor.frames == 0u || was_holding == false)
 		{
 			actor.previous_held_world = actor.held_world;
+		}
+
+		if (actor.dead)
+		{
+			ragdolls.start(actor, mathematics.length(actor.shove) > 0.01f ? actor.shove : mathematics.flat_forward(actor.body_yaw + (random(actor) - 0.5f) * 1.4f + (random(actor) < 0.65f ? pi : 0.0f)) * ragdoll_shove);
+
+			actor.shove = {};
 		}
 
 		actor.frames++;
