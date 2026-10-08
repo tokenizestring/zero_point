@@ -82,6 +82,7 @@
 #include "game/movement/movement.hpp"
 #include "game/player/player.hpp"
 #include "game/actors/actors.hpp"
+#include "game/ragdolls/ragdolls.hpp"
 #include "game/fauna/fauna.hpp"
 #include "game/wildlife/wildlife.hpp"
 #include "game/survival/survival.hpp"
