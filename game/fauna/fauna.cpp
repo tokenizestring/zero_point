@@ -712,9 +712,9 @@ namespace zp
 			writer.u16(animal.id);
 			writer.u8(static_cast<std::uint8_t>(animal.species));
 			writer.u8(static_cast<std::uint8_t>(animal.state));
-			writer.i16(static_cast<std::int16_t>(std::clamp(animal.position.x * net_position_scale, -32767.0f, 32767.0f)));
+			writer.i32(static_cast<std::int32_t>(std::round(animal.position.x * net_position_scale)));
 			writer.i16(static_cast<std::int16_t>(std::clamp(animal.position.y * net_position_scale, -32767.0f, 32767.0f)));
-			writer.i16(static_cast<std::int16_t>(std::clamp(animal.position.z * net_position_scale, -32767.0f, 32767.0f)));
+			writer.i32(static_cast<std::int32_t>(std::round(animal.position.z * net_position_scale)));
 			writer.u8(static_cast<std::uint8_t>(static_cast<std::int32_t>(std::round(animal.yaw / two_pi * 256.0f)) & 255));
 			writer.u8(static_cast<std::uint8_t>(std::clamp(animal.speed * 10.0f, 0.0f, 255.0f)));
 			writer.u8(static_cast<std::uint8_t>(animal.alive ? std::clamp(animal.health / species_table[animal.species].health * 255.0f, 1.0f, 255.0f) : 0.0f));
@@ -732,9 +732,9 @@ namespace zp
 			const auto id{ reader.u16() };
 			const auto species{ static_cast<std::uint32_t>(reader.u8()) };
 			const auto state{ static_cast<std::uint32_t>(reader.u8()) };
-			const auto x{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+			const auto x{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 			const auto y{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
-			const auto z{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+			const auto z{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 			const auto yaw{ static_cast<std::float_t>(reader.u8()) / 256.0f * two_pi };
 			const auto speed{ static_cast<std::float_t>(reader.u8()) / 10.0f };
 			const auto health{ static_cast<std::float_t>(reader.u8()) / 255.0f };

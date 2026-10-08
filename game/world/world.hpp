@@ -15,11 +15,12 @@ namespace zp
 
 		std::vector<structures::plane_s> planes;
 		std::vector<structures::brush_s> brushes;
-		std::vector<std::vector<std::uint32_t>> cells;
+		std::vector<std::uint32_t> cell_starts;
+		std::vector<std::uint32_t> cell_items;
+		std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> cell_extras;
 		std::vector<structures::mover_s> movers;
 		structures::vec3_s grid_min{};
 		std::int32_t grid_x = 0;
-		std::int32_t grid_y = 0;
 		std::int32_t grid_z = 0;
 		std::float_t kill_height = -30.0f;
 		std::uint32_t ignored = UINT32_MAX;

@@ -913,9 +913,9 @@ namespace zp
 			for (auto entry{ 0u }; entry < count && reader.overflow == false; entry++)
 			{
 				const auto remote_id{ reader.u16() };
-				const auto px{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+				const auto px{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 				const auto py{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
-				const auto pz{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+				const auto pz{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 				const auto vx{ static_cast<std::float_t>(reader.i8()) / net_velocity_scale };
 				const auto vy{ static_cast<std::float_t>(reader.i8()) / net_velocity_scale };
 				const auto vz{ static_cast<std::float_t>(reader.i8()) / net_velocity_scale };
@@ -967,12 +967,12 @@ namespace zp
 				const auto shooter{ reader.u16() };
 				const auto weapon_id{ reader.u8() };
 				const auto result{ reader.u8() };
-				const auto ox{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+				const auto ox{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 				const auto oy{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
-				const auto oz{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
-				const auto ex{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+				const auto oz{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
+				const auto ex{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 				const auto ey{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
-				const auto ez{ static_cast<std::float_t>(reader.i16()) / net_position_scale };
+				const auto ez{ static_cast<std::float_t>(reader.i32()) / net_position_scale };
 
 				if (reader.overflow == false && shooter != id && weapon_id > structures::weapon_none && weapon_id < structures::weapon_count)
 				{

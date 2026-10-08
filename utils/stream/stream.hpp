@@ -66,6 +66,11 @@ namespace zp
 			bytes(&value, 2u);
 		}
 
+		void i32(std::int32_t value)
+		{
+			bytes(&value, 4u);
+		}
+
 		void f32(std::float_t value)
 		{
 			bytes(&value, 4u);
@@ -168,6 +173,15 @@ namespace zp
 			std::int16_t value{};
 
 			bytes(&value, 2u);
+
+			return value;
+		}
+
+		std::int32_t i32()
+		{
+			std::int32_t value{};
+
+			bytes(&value, 4u);
 
 			return value;
 		}

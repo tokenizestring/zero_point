@@ -110,7 +110,7 @@ namespace zp
 	void autotest_c::raid(std::uint64_t frame)
 	{
 		auto best{ -1 };
-		auto nearest{ 5000.0f };
+		auto nearest{ FLT_MAX };
 
 		for (auto index{ 0 }; index < static_cast<std::int32_t>(loot.bags.size()); index++)
 		{

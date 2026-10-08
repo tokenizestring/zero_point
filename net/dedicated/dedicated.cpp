@@ -618,7 +618,7 @@ namespace zp
 
 		for (auto attempt{ 0u }; attempt < 200000u && (idle_runs < 40u || steep_runs < 40u); attempt++)
 		{
-			const auto size{ static_cast<std::float_t>(terrain.header.resolution - 1u) };
+			const auto size{ terrain.header.world_size };
 			const auto x{ terrain.header.origin + random() * size };
 			const auto z{ terrain.header.origin + random() * size };
 			const auto ground{ terrain.height(x, z) };
@@ -931,7 +931,7 @@ namespace zp
 	*/
 	bool dedicated_c::find_ground(std::float_t flatness, structures::vec3_s& position)
 	{
-		const auto size{ static_cast<std::float_t>(terrain.header.resolution - 1u) };
+		const auto size{ terrain.header.world_size };
 		const auto x{ terrain.header.origin + random() * size };
 		const auto z{ terrain.header.origin + random() * size };
 		const auto ground{ terrain.height(x, z) };

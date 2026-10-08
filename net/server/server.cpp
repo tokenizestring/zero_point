@@ -1985,12 +1985,12 @@ namespace zp
 					writer.u16(event.shooter);
 					writer.u8(event.weapon);
 					writer.u8(event.result);
-					writer.i16(static_cast<std::int16_t>(std::clamp(event.origin.x * net_position_scale, -32767.0f, 32767.0f)));
+					writer.i32(static_cast<std::int32_t>(std::round(event.origin.x * net_position_scale)));
 					writer.i16(static_cast<std::int16_t>(std::clamp(event.origin.y * net_position_scale, -32767.0f, 32767.0f)));
-					writer.i16(static_cast<std::int16_t>(std::clamp(event.origin.z * net_position_scale, -32767.0f, 32767.0f)));
-					writer.i16(static_cast<std::int16_t>(std::clamp(event.end.x * net_position_scale, -32767.0f, 32767.0f)));
+					writer.i32(static_cast<std::int32_t>(std::round(event.origin.z * net_position_scale)));
+					writer.i32(static_cast<std::int32_t>(std::round(event.end.x * net_position_scale)));
 					writer.i16(static_cast<std::int16_t>(std::clamp(event.end.y * net_position_scale, -32767.0f, 32767.0f)));
-					writer.i16(static_cast<std::int16_t>(std::clamp(event.end.z * net_position_scale, -32767.0f, 32767.0f)));
+					writer.i32(static_cast<std::int32_t>(std::round(event.end.z * net_position_scale)));
 				}
 
 				fauna.write(writer, peer.state.position);
@@ -2216,9 +2216,9 @@ namespace zp
 		const auto position{ present(state) };
 
 		writer.u16(static_cast<std::uint16_t>(index));
-		writer.i16(static_cast<std::int16_t>(std::clamp(position.x * net_position_scale, -32767.0f, 32767.0f)));
+		writer.i32(static_cast<std::int32_t>(std::round(position.x * net_position_scale)));
 		writer.i16(static_cast<std::int16_t>(std::clamp(position.y * net_position_scale, -32767.0f, 32767.0f)));
-		writer.i16(static_cast<std::int16_t>(std::clamp(position.z * net_position_scale, -32767.0f, 32767.0f)));
+		writer.i32(static_cast<std::int32_t>(std::round(position.z * net_position_scale)));
 		writer.i8(static_cast<std::int8_t>(std::clamp(state.velocity.x * net_velocity_scale, -127.0f, 127.0f)));
 		writer.i8(static_cast<std::int8_t>(std::clamp(state.velocity.y * net_velocity_scale, -127.0f, 127.0f)));
 		writer.i8(static_cast<std::int8_t>(std::clamp(state.velocity.z * net_velocity_scale, -127.0f, 127.0f)));

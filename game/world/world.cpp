@@ -13,10 +13,12 @@ namespace zp
 	{
 		planes.clear();
 		brushes.clear();
-		cells.clear();
+		cell_starts.clear();
+		cell_items.clear();
+		cell_extras.clear();
 		movers.clear();
 
-		grid_x = grid_y = grid_z = 0;
+		grid_x = grid_z = 0;
 		carrying = false;
 	}
 	/*
@@ -151,41 +153,54 @@ namespace zp
 		grid_min = minimum - structures::vec3_s{ 1.0f, 1.0f, 1.0f };
 
 		grid_x = static_cast<std::int32_t>(std::ceil((maximum.x - grid_min.x + 1.0f) / collision_cell_size));
-		grid_y = 1;
 		grid_z = static_cast<std::int32_t>(std::ceil((maximum.z - grid_min.z + 1.0f) / collision_cell_size));
 
-		cells.assign(static_cast<std::size_t>(grid_x) * grid_y * grid_z, {});
+		cell_starts.assign(static_cast<std::size_t>(grid_x) * grid_z + 1u, 0u);
+		cell_extras.clear();
 
-		for (auto index{ 0u }; index < brushes.size(); index++)
-		{
-			const auto& brush{ brushes[index] };
-			const auto x0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
-			const auto y0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.y - grid_min.y) / collision_cell_size), 0, grid_y - 1) };
-			const auto z0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
-			const auto x1{ std::clamp(static_cast<std::int32_t>((brush.bounds_max.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
-			const auto y1{ std::clamp(static_cast<std::int32_t>((brush.bounds_max.y - grid_min.y) / collision_cell_size), 0, grid_y - 1) };
-			const auto z1{ std::clamp(static_cast<std::int32_t>((brush.bounds_max.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
-
-			for (auto z{ z0 }; z <= z1; z++)
+		const auto visit = [&](const structures::brush_s& brush, const auto& action)
 			{
-				for (auto y{ y0 }; y <= y1; y++)
+				const auto x0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
+				const auto z0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
+				const auto x1{ std::clamp(static_cast<std::int32_t>((brush.bounds_max.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
+				const auto z1{ std::clamp(static_cast<std::int32_t>((brush.bounds_max.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
+
+				for (auto z{ z0 }; z <= z1; z++)
 				{
 					for (auto x{ x0 }; x <= x1; x++)
 					{
-						cells[(static_cast<std::size_t>(z) * grid_y + y) * grid_x + x].push_back(index);
+						action(static_cast<std::size_t>(z) * grid_x + x);
 					}
 				}
-			}
+			};
+
+		for (const auto& brush : brushes)
+		{
+			visit(brush, [&](std::size_t cell) { cell_starts[cell + 1u]++; });
 		}
 
-		logger.write("world: %zu brushes, %zu planes, grid %dx%dx%d", brushes.size(), planes.size(), grid_x, grid_y, grid_z);
+		for (auto cell{ 1u }; cell < cell_starts.size(); cell++)
+		{
+			cell_starts[cell] += cell_starts[cell - 1u];
+		}
+
+		cell_items.assign(cell_starts.back(), 0u);
+
+		std::vector<std::uint32_t> cursor(cell_starts.begin(), cell_starts.end() - 1);
+
+		for (auto index{ 0u }; index < brushes.size(); index++)
+		{
+			visit(brushes[index], [&](std::size_t cell) { cell_items[cursor[cell]++] = index; });
+		}
+
+		logger.write("world: %zu brushes, %zu planes, grid %dx%d, %zu entries", brushes.size(), planes.size(), grid_x, grid_z, cell_items.size());
 	}
 	/*
 	//=====================================================================================
 	*/
 	void world_c::insert(std::uint32_t index)
 	{
-		if (index < brushes.size() && cells.size())
+		if (index < brushes.size() && cell_starts.size())
 		{
 			const auto& brush{ brushes[index] };
 			const auto x0{ std::clamp(static_cast<std::int32_t>((brush.bounds_min.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
@@ -197,7 +212,7 @@ namespace zp
 			{
 				for (auto x{ x0 }; x <= x1; x++)
 				{
-					cells[static_cast<std::size_t>(z) * grid_x + x].push_back(index);
+					cell_extras[static_cast<std::uint32_t>(z * grid_x + x)].push_back(index);
 				}
 			}
 		}
@@ -212,21 +227,21 @@ namespace zp
 		if (grid_x > 0)
 		{
 			const auto x0{ std::clamp(static_cast<std::int32_t>((minimum.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
-			const auto y0{ std::clamp(static_cast<std::int32_t>((minimum.y - grid_min.y) / collision_cell_size), 0, grid_y - 1) };
 			const auto z0{ std::clamp(static_cast<std::int32_t>((minimum.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
 			const auto x1{ std::clamp(static_cast<std::int32_t>((maximum.x - grid_min.x) / collision_cell_size), 0, grid_x - 1) };
-			const auto y1{ std::clamp(static_cast<std::int32_t>((maximum.y - grid_min.y) / collision_cell_size), 0, grid_y - 1) };
 			const auto z1{ std::clamp(static_cast<std::int32_t>((maximum.z - grid_min.z) / collision_cell_size), 0, grid_z - 1) };
 
 			for (auto z{ z0 }; z <= z1; z++)
 			{
-				for (auto y{ y0 }; y <= y1; y++)
+				for (auto x{ x0 }; x <= x1; x++)
 				{
-					for (auto x{ x0 }; x <= x1; x++)
-					{
-						const auto& cell{ cells[(static_cast<std::size_t>(z) * grid_y + y) * grid_x + x] };
+					const auto cell{ static_cast<std::size_t>(z) * grid_x + x };
 
-						out.insert(out.end(), cell.begin(), cell.end());
+					out.insert(out.end(), cell_items.begin() + cell_starts[cell], cell_items.begin() + cell_starts[cell + 1u]);
+
+					if (const auto extra{ cell_extras.size() ? cell_extras.find(static_cast<std::uint32_t>(cell)) : cell_extras.end() }; extra != cell_extras.end())
+					{
+						out.insert(out.end(), extra->second.begin(), extra->second.end());
 					}
 				}
 			}
