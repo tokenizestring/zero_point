@@ -141,14 +141,31 @@ def stitch_welds(target, frame_matrix, width, height, thickness, edges, seed=0, 
                 vk.weld(target, [a, b], normal, 0.006, seed + 31 + k, "weld")
 
 
-def plate(target, look, frame_matrix, width, height, thickness=0.008, slits=(), bolts=True, bolt_look="zinc", rng=None, bevel=0.003, label=None, tint=None):
-    outline = [(-width * 0.5, -height * 0.5), (width * 0.5, -height * 0.5), (width * 0.5, height * 0.5), (-width * 0.5, height * 0.5)]
+def plate(target, look, frame_matrix, width, height, thickness=0.008, slits=(), bolts=True, bolt_look="zinc", rng=None, bevel=0.003, label=None, tint=None, outline=None):
+    shaped = outline is not None
+    if not shaped:
+        outline = [(-width * 0.5, -height * 0.5), (width * 0.5, -height * 0.5), (width * 0.5, height * 0.5), (-width * 0.5, height * 0.5)]
     holes = []
     for cx, cz, sw, sh in slits:
         holes.append([(cx - sw * 0.5, cz - sh * 0.5), (cx - sw * 0.5, cz + sh * 0.5), (cx + sw * 0.5, cz + sh * 0.5), (cx + sw * 0.5, cz - sh * 0.5)])
     piece = vk.slab(outline, thickness, holes)
     matrix = frame_matrix @ Matrix.Rotation(math.pi * 0.5, 4, 'X')
     target.add(piece, look, matrix, bevel, 1, label=label, tint=tint)
+    outward = frame_matrix.to_3x3() @ v(0.0, -1.0, 0.0)
+    if bolts and shaped:
+        middle = (sum(p[0] for p in outline) / len(outline), sum(p[1] for p in outline) / len(outline))
+        for index in range(len(outline)):
+            a = Vector((outline[index][0], outline[index][1]))
+            b = Vector((outline[(index + 1) % len(outline)][0], outline[(index + 1) % len(outline)][1]))
+            along = (b - a).normalized()
+            inward = Vector((-along.y, along.x))
+            if inward.dot(Vector(middle) - a) < 0.0:
+                inward = -inward
+            count = max(int((b - a).length / 0.16), 1)
+            for k in range(count):
+                p = a + (b - a) * (k / count) + inward * 0.025 + along * (0.025 if k == 0 else 0.0)
+                vk.bolt(target, frame_matrix @ v(p.x, -thickness * 0.5, p.y), outward, 0.02, bolt_look, False)
+        return
     if bolts:
         spacing = 0.16
         for edge in range(4):
@@ -173,6 +190,45 @@ def face_frame(origin, normal, up=Z):
     matrix = Matrix((u, -normal, w)).transposed().to_4x4()
     matrix.translation = origin
     return matrix
+
+
+def local_outline(frame_matrix, corners):
+    inverse = frame_matrix.inverted()
+    return [((inverse @ Vector(p)).x, (inverse @ Vector(p)).z) for p in corners]
+
+
+def span(outline, value, axis):
+    hits = []
+    for index in range(len(outline)):
+        a = outline[index]
+        b = outline[(index + 1) % len(outline)]
+        low, high = (a, b) if a[axis] <= b[axis] else (b, a)
+        if high[axis] - low[axis] > 1e-9 and low[axis] <= value <= high[axis]:
+            t = (value - low[axis]) / (high[axis] - low[axis])
+            hits.append(low[1 - axis] + (high[1 - axis] - low[1 - axis]) * t)
+    return (min(hits), max(hits)) if len(hits) >= 2 else None
+
+
+def mesh_quad(target, frame_matrix, outline, pitch, wire, look="mesh", border=0.02):
+    xs = [p[0] for p in outline]
+    zs = [p[1] for p in outline]
+    x = min(xs) + pitch * 0.5
+    while x < max(xs):
+        hit = span(outline, x, 0)
+        if hit is not None and hit[1] - hit[0] > wire:
+            target.add(g.transformed(g.box(wire, wire, hit[1] - hit[0]), Matrix.Translation((x, wire * 0.5, (hit[0] + hit[1]) * 0.5))), look, frame_matrix)
+        x += pitch
+    z = min(zs) + pitch * 0.5
+    while z < max(zs):
+        hit = span(outline, z, 1)
+        if hit is not None and hit[1] - hit[0] > wire:
+            target.add(g.transformed(g.box(hit[1] - hit[0], wire, wire), Matrix.Translation(((hit[0] + hit[1]) * 0.5, -wire * 0.5, z))), look, frame_matrix)
+        z += pitch
+    if border > 0.0:
+        for index in range(len(outline)):
+            a = outline[index]
+            b = outline[(index + 1) % len(outline)]
+            target.add(vk.bar(frame_matrix @ v(a[0], 0.0, a[1]), frame_matrix @ v(b[0], 0.0, b[1]), border, border, frame_matrix.to_3x3() @ v(0.0, -1.0, 0.0)), look, None, 0.002)
 
 
 def oriented_face(bm, verts, outward):
@@ -219,7 +275,7 @@ def offroad_tyre(radius, width, rim, lugs=18):
     base = radius - 0.021
     half = width * 0.5
     profile = [(rim + 0.01, -width * 0.42), (rim + 0.03, -width * 0.47), (radius - 0.09, -width * 0.52), (radius - 0.045, -width * 0.5), (base - 0.004, -width * 0.44), (base, -width * 0.3), (base + 0.001, 0.0), (base, width * 0.3), (base - 0.004, width * 0.44), (radius - 0.045, width * 0.5), (radius - 0.09, width * 0.52), (rim + 0.03, width * 0.47), (rim + 0.01, width * 0.42)]
-    pieces.append(g.revolve(profile, 48))
+    pieces.append(g.revolve(profile, 40))
     pitch = tau / lugs
     track = [(0.012, base), (0.06, base), (half * 0.74, base - 0.001), (half * 0.9, base - 0.007), (half * 0.99, radius - 0.047), (half * 1.035, radius - 0.075)]
     widths = [0.06, 0.068, 0.074, 0.078, 0.08, 0.07]
@@ -236,7 +292,7 @@ def offroad_tyre(radius, width, rim, lugs=18):
 def steel_wheel(target, rim, width, look="rim_paint", hub_look="steel", holes=5, studs=5, disc_offset=0.035):
     w = width * 0.44
     profile = [(0.0, disc_offset + 0.045), (0.06, disc_offset + 0.045), (0.075, disc_offset + 0.03), (0.095, disc_offset + 0.022), (0.16, disc_offset), (rim - 0.025, disc_offset - 0.012), (rim - 0.008, disc_offset + 0.01), (rim - 0.004, w - 0.01), (rim + 0.014, w + 0.002), (rim + 0.014, w + 0.012), (rim - 0.006, w + 0.012), (rim - 0.014, w - 0.006), (rim - 0.014, -w + 0.006), (rim - 0.006, -w - 0.012), (rim + 0.014, -w - 0.012), (rim + 0.014, -w - 0.002), (rim - 0.004, -w + 0.01), (rim - 0.025, -w * 0.5), (0.0, -w * 0.5)]
-    disc = g.revolve(profile, 32)
+    disc = g.revolve(profile, 24)
     cutters = []
     for k in range(holes):
         angle = tau * (k + 0.5) / holes
@@ -321,7 +377,7 @@ def rope_coil(target, center, radius, wire, loops, rng, look="rope_old"):
     outward = v(end.x - center.x, end.y - center.y, 0.0).normalized()
     points.append(end + outward * 0.1 - v(0.0, 0.0, wire * 1.5))
     points.append(v(end.x, end.y, center.z + wire) + outward * 0.2 + v(0.02, 0.03, 0.0))
-    vk.rope_line(target, points, wire, look, wire * 1.8)
+    vk.rope_line(target, points, wire, look, wire * 2.2)
 
 
 def caged_lamp(frame_part, kit_part, center, direction, radius=0.09):
@@ -516,7 +572,6 @@ def rover():
         kit.add(vk.block(v(x - 0.06, y - 0.012, rack_z + 0.21), v(x + 0.06, y + 0.012, rack_z + 0.235)), "chassis_black", None, 0.004)
     rope_coil(kit, v(0.45, 1.02, rack_z + 0.026), 0.15, 0.012, 3.5, rng)
     vk.rope_line(kit, [v(-0.86, 1.25, rack_z + 0.2), v(-0.4, 1.3, rack_z + 0.5), v(0.2, 1.3, rack_z + 0.48), v(0.86, 1.25, rack_z + 0.2)], 0.01, "rope_old")
-    vk.chain(kit, [v(0.86, -0.4, rack_z + 0.18), v(0.4, -0.1, rack_z + 0.42), v(-0.3, -0.05, rack_z + 0.42), v(-0.86, -0.4, rack_z + 0.18)], 0.05, 0.008, "chain", 9)
     stack_x = half + 0.11
     stack = [v(0.5, 0.42, 0.62), v(0.78, 0.42, 0.66), v(stack_x, 0.42, 0.8), v(stack_x, 0.42, 1.4), v(stack_x, 0.42, 2.45)]
     frame.add(vk.tube(g.spline(stack, 6), 0.045, 12, False), "heat_blue")
@@ -661,7 +716,7 @@ def heli():
             frame.add(vk.block(v(side * 1.0 - 0.025, y - 0.04, 0.0), v(side * 1.0 + 0.025, y + 0.04, 0.012)), "plate_steel", None, 0.003)
     for y in (-0.9, 1.15):
         frame.add(vk.rod(v(-0.56, y, floor - 0.02), v(0.56, y, floor - 0.02), 0.045, 10), "tube_steel")
-    pod = [(-2.55, 0.42, 0.95, 1.45), (-2.3, 0.6, 0.78, 1.75), (-1.8, 0.74, 0.68, 2.0), (-1.0, 0.76, 0.66, 2.05), (0.1, 0.74, 0.66, 2.0)]
+    pod = [(-2.55, 0.42, 0.95, 1.45), (-2.3, 0.6, 0.78, 1.633), (-1.8, 0.74, 0.68, 2.0), (-1.0, 0.76, 0.66, 2.05), (0.1, 0.74, 0.66, 2.0)]
     for side in (-1.0, 1.0):
         rail_low = [v(side * w, y, z0) for y, w, z0, z1 in pod]
         rail_mid = [v(side * w, y, z0 + (z1 - z0) * 0.45) for y, w, z0, z1 in pod]
@@ -700,24 +755,27 @@ def heli():
     hull.add(belly, "plate_dark", None, 0.002)
     nose = pod[0]
     vk.text_mask("heli_nose", 1.6, [("ZP-07", 0.5, 0.5, "STENCIL.TTF", 0.8, 1.45)])
-    vk.register("nose_paint", "paint", color=(0.045, 0.055, 0.028), under=(0.25, 0.19, 0.11), primer=(0.14, 0.05, 0.03), chips=0.55, fade=0.45, chalk=0.25, bleed=0.55, streaks=0.65, gloss=0.65, dirt=0.7, dents=0.9, text=("heli_nose", (0.38, 0.37, 0.33), 0.0))
-    nose_frame = face_frame(v(0.0, nose[0] - 0.012, (nose[2] + nose[3]) * 0.5 - 0.15), v(0.0, -1.0, 0.25))
-    plate(hull, "nose_paint", nose_frame, 0.78, 0.42, 0.01, [(-0.18, 0.12, 0.26, 0.04), (0.18, 0.12, 0.26, 0.04)], True, "zinc", rng, label=vk.label(nose_frame @ v(0.0, -0.006, -0.05), X, (nose_frame.to_3x3() @ Z), 0.5, 0.31, 0.7))
-    front_y, front_w, front_z0, front_z1 = pod[1]
-    screen = [v(-0.66, -2.3, 1.35), v(0.66, -2.3, 1.35), v(0.6, -1.85, 1.98), v(-0.6, -1.85, 1.98)]
-    for half_index, (x0, x1) in enumerate(((-0.66, 0.0), (0.0, 0.66))):
-        corners = [screen[0].lerp(screen[1], (x0 + 0.66) / 1.32), screen[0].lerp(screen[1], (x1 + 0.66) / 1.32), screen[3].lerp(screen[2], (x1 + 0.66) / 1.32), screen[3].lerp(screen[2], (x0 + 0.66) / 1.32)]
+    vk.register("nose_paint", "paint", color=(0.045, 0.055, 0.028), under=(0.25, 0.19, 0.11), primer=(0.14, 0.05, 0.03), chips=0.28, fade=0.45, chalk=0.25, bleed=0.35, streaks=0.65, gloss=0.65, dirt=0.7, dents=0.9, text=("heli_nose", (0.38, 0.37, 0.33), 0.0))
+    nose_frame = face_frame(v(0.0, nose[0] - 0.012, (nose[2] + nose[3]) * 0.5 - 0.02), v(0.0, -1.0, 0.25))
+    plate(hull, "nose_paint", nose_frame, 0.78, 0.5, 0.01, [(-0.18, 0.13, 0.26, 0.04), (0.18, 0.13, 0.26, 0.04)], True, "zinc", rng, label=vk.label(nose_frame @ v(0.0, -0.006, -0.07), X, (nose_frame.to_3x3() @ Z), 0.5, 0.31, 0.7))
+    rail_slope = (pod[2][3] - pod[0][3]) / (pod[2][0] - pod[0][0])
+    screen_low = pod[0][3] + (-2.53 - pod[0][0]) * rail_slope + 0.01
+    screen_high = pod[0][3] + (-1.81 - pod[0][0]) * rail_slope - 0.015
+    screen = [v(-0.35, -2.53, screen_low), v(0.35, -2.53, screen_low), v(0.62, -1.81, screen_high), v(-0.62, -1.81, screen_high)]
+    for half_index, (f0, f1) in enumerate(((0.0, 0.5), (0.5, 1.0))):
+        corners = [screen[0].lerp(screen[1], f0), screen[0].lerp(screen[1], f1), screen[3].lerp(screen[2], f1), screen[3].lerp(screen[2], f0)]
         center = sum(corners, Vector()) / 4.0
         normal = (corners[1] - corners[0]).cross(corners[3] - corners[0]).normalized()
         if normal.y > 0.0:
             normal = -normal
+        slope = (screen[3] - screen[0]).normalized()
+        panel_frame = face_frame(center, normal, slope)
+        outline = local_outline(panel_frame, corners)
         if half_index == 1:
-            panel_frame = face_frame(center, normal, (corners[3] - corners[0]).normalized())
-            plate(hull, "plate_steel", panel_frame, (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.01, [(0.0, 0.05, 0.38, 0.05)], False, "zinc", rng)
-            stitch_welds(hull, panel_frame, (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.01, ("top", "bottom", "left", "right"), 120)
+            plate(hull, "plate_steel", panel_frame, 0.0, 0.0, 0.01, [(0.0, 0.07, 0.3, 0.045)], True, "zinc", rng, outline=outline)
         else:
             shattered_glass(hull, rng, [p - normal * 0.01 for p in corners], (0.08, 0.22))
-            vk.mesh_panel(frame, face_frame(center + normal * 0.03, normal, (corners[3] - corners[0]).normalized()), (corners[1] - corners[0]).length, (corners[3] - corners[0]).length, 0.05, 0.006, "mesh", 0.02)
+            mesh_quad(frame, face_frame(center + normal * 0.03, normal, slope), outline, 0.05, 0.006, "mesh", 0.02)
     for side in (-1.0, 1.0):
         y0, w0, b0, t0 = pod[2]
         y1, w1, b1, t1 = pod[3]
@@ -781,6 +839,10 @@ def heli():
     for y in (0.25, 0.7):
         vk.strap(engine, [v(-0.33, 0.55 + y, floor + 0.07), v(-0.33, 0.55 + y, floor + 0.66), v(-0.92, 0.55 + y, floor + 0.66), v(-0.92, 0.55 + y, floor + 0.07)], 0.04, 0.004, "strap", v(0.0, 1.0, 0.0))
     engine.add(vk.tube([v(-0.62, 0.55, floor + 0.62), v(-0.4, 0.8, floor + 0.7), block_center + v(-0.15, -0.2, 0.15)], 0.01, 6), "rubber")
+    jerrycan(engine, v(0.52, 0.28, floor + 0.1), 0.0, "can_olive", rng)
+    vk.strap(engine, [v(0.432, 0.28, floor + 0.1), v(0.432, 0.28, floor + 0.56), v(0.608, 0.28, floor + 0.56), v(0.608, 0.28, floor + 0.1)], 0.035, 0.004, "strap", v(0.0, 1.0, 0.0))
+    for side in (-1.0, 1.0):
+        frame.add(vk.block(v(side * 0.9, -1.0, 0.3), v(side * 1.06, -0.8, 0.32)), "floor_plate", None, 0.004)
     boom_start = 1.6
     boom_end = 6.3
     nodes = 7
@@ -973,7 +1035,7 @@ def bake(name):
     for point_name, position, size in m.points:
         markers.append(vk.point_marker(point_name, position, size, first.material))
     path, document = vk.export(name, near_objects + markers)
-    near = vk.audit(path, document, 64000)
+    near = vk.audit(path, document, 60000)
     for obj in near_objects + markers:
         rename(obj, "done_" + obj.name)
     far_objects = []
@@ -981,7 +1043,7 @@ def bake(name):
         rename(obj, key)
         far_objects.append(obj)
     path, document = vk.export(name + "_far", far_objects)
-    far = vk.audit(path, document, 4500)
+    far = vk.audit(path, document, 4000)
     write_manifest(name, m, near, far, near_objects)
     vk.log("BAKE DONE", name, round(time.time() - started, 1), "s", "problems", near["problems"] + far["problems"])
 

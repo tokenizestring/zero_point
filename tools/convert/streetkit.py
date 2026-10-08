@@ -1782,7 +1782,7 @@ def car_wreck(kind):
 
     def chooser(face):
         c = face.calc_center_median()
-        if kind == "van" and face.normal.z > 0.5 and c.z > roof - 0.12:
+        if kind == "van" and face.normal.z > 0.45 and c.z > roof - 0.2:
             return None
         if abs(c.x) < cabin_x and cavity_low.y - 0.002 < c.y < (cavity_high.y + 0.002 if kind != "van" else half + 0.4) and c.z > floor - 0.002:
             return "trim_dark"

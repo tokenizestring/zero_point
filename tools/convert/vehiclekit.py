@@ -242,6 +242,7 @@ def carve(target, cutters, operation='DIFFERENCE'):
         modifier = subject.modifiers.new("carve%d" % index, 'BOOLEAN')
         modifier.operation = operation
         modifier.solver = 'EXACT'
+        modifier.use_self = True
         modifier.object = tool
     bpy.context.view_layer.update()
     result = bpy.data.meshes.new_from_object(subject.evaluated_get(bpy.context.evaluated_depsgraph_get()))

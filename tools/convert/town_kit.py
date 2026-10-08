@@ -868,6 +868,147 @@ def terrace_roof(b, parts, x0, x1, gable, rng, moss=0.3, missing=0.01, holes=(),
             b.ramp("ny", surface, "roof", V(x0, gable.origin_y, gable.eave_top), V(x1, gable.origin_y + gable.edge, gable.ridge_top))
 
 
+class YGable(kit.Gable):
+    def __init__(self, y0, y1, half, overhang, eave_top, pitch_degrees, origin_x=0.0):
+        kit.Gable.__init__(self, y0, y1, half, overhang, eave_top, pitch_degrees, 0.0)
+        self.origin_x = origin_x
+
+    def point(self, side, x, d, lift=0.0):
+        native = V(x, side * (self.edge - d * self.cos), self.eave_top + d * self.sin) + V(0.0, side * self.sin, self.cos) * lift
+        return V(self.origin_x - native.y, native.x, native.z)
+
+    def normal(self, side):
+        return V(-side * self.sin, 0.0, self.cos)
+
+    def upslope(self, side):
+        return V(side * self.cos, 0.0, self.sin)
+
+    def height(self, x, depth=0.0):
+        return self.ridge_top - abs(x - self.origin_x) * self.tan - depth / self.cos
+
+
+def roof_slab_y(part, gable, side, x0, x1, name, depth=0.2, d0=0.0, d1=None):
+    d1 = gable.run if d1 is None else d1
+    tile = kit.tile_of(name)
+    top = [gable.point(side, x0, d0), gable.point(side, x1, d0), gable.point(side, x1, d1), gable.point(side, x0, d1)]
+    points = top + [p - gable.normal(side) * depth for p in top]
+    flat_uv = [(x0 / tile, d0 / tile), (x1 / tile, d0 / tile), (x1 / tile, d1 / tile), (x0 / tile, d1 / tile)]
+    along = V(0.0, 1.0, 0.0)
+    faces = []
+    uvs = []
+    for face, face_uv, expected in (((0, 1, 2, 3), flat_uv, gable.normal(side)), ((4, 5, 6, 7), flat_uv, -gable.normal(side)), ((0, 1, 5, 4), [flat_uv[0], flat_uv[1], (flat_uv[1][0], flat_uv[1][1] - depth / tile), (flat_uv[0][0], flat_uv[0][1] - depth / tile)], -gable.upslope(side)), ((3, 2, 6, 7), [flat_uv[3], flat_uv[2], (flat_uv[2][0], flat_uv[2][1] + depth / tile), (flat_uv[3][0], flat_uv[3][1] + depth / tile)], gable.upslope(side)), ((0, 3, 7, 4), [flat_uv[0], flat_uv[3], (flat_uv[3][0] - depth / tile, flat_uv[3][1]), (flat_uv[0][0] - depth / tile, flat_uv[0][1])], -along), ((1, 2, 6, 5), [flat_uv[1], flat_uv[2], (flat_uv[2][0] + depth / tile, flat_uv[2][1]), (flat_uv[1][0] + depth / tile, flat_uv[1][1])], along)):
+        oriented, oriented_uv = kit.oriented_face(face, face_uv, points, expected)
+        faces.append(oriented)
+        uvs.append(oriented_uv)
+    emit(part, kit.Geo(points, faces, uvs), name, None, "texture")
+
+
+def sarking_y(part, gable, side, x0, x1, holes=(), name="timber_planks_weathered", depth=0.025):
+    spans = [(x0, x1, 0.0, gable.run)]
+    for hx0, hx1, hd0, hd1, hs in holes:
+        if hs != side:
+            continue
+        cut = []
+        for sx0, sx1, sd0, sd1 in spans:
+            if hx1 <= sx0 or hx0 >= sx1 or hd1 <= sd0 or hd0 >= sd1:
+                cut.append((sx0, sx1, sd0, sd1))
+                continue
+            if hd0 > sd0:
+                cut.append((sx0, sx1, sd0, hd0))
+            if hd1 < sd1:
+                cut.append((sx0, sx1, hd1, sd1))
+            if hx0 > sx0:
+                cut.append((sx0, hx0, max(sd0, hd0), min(sd1, hd1)))
+            if hx1 < sx1:
+                cut.append((hx1, sx1, max(sd0, hd0), min(sd1, hd1)))
+        spans = cut
+    for sx0, sx1, sd0, sd1 in spans:
+        roof_slab_y(part, gable, side, sx0, sx1, name, depth, sd0, sd1)
+
+
+def ygable_roof(b, parts, gable, rng, sides=(-1.0, 1.0), moss=0.35, missing=0.012, holes=(), slipped=0.03, gauge=0.33, length=0.7, width=0.48, ridge=True, verges=(True, True), surface="rock", gutters=True):
+    roof = parts["roof"]
+    moss_field = kit.smooth_noise(random.Random(int(rng.random() * 1000)), 5, 1.2)
+    threshold = 0.55 - moss
+    for side in sides:
+        def lost(x, d, side=side):
+            for hx0, hx1, hd0, hd1, hs in holes:
+                if hs == side and hx0 < x < hx1 and hd0 < d < hd1:
+                    return True
+            return rng.random() < missing
+        slate_roof_light(roof, gable, side, rng, lambda x, d, side=side: moss_field(V(x * 0.5, d * 0.7, 2.0 * side)) > threshold or (d < 0.5 and rng.random() < moss), lost, lambda x, d: rng.uniform(0.05, 0.15) if rng.random() < slipped else 0.0, gauge=gauge, length=length, width=width, x0=gable.x0 + 0.03, x1=gable.x1 - 0.03)
+        sarking_y(roof, gable, side, gable.x0, gable.x1, holes)
+        for hx0, hx1, hd0, hd1, hs in holes:
+            if hs == side:
+                kit.roof_rafters(roof, gable, side, [hx0 + (hx1 - hx0) * t for t in (0.25, 0.8)], max(hd0 - 0.5, 0.0), min(hd1 + 0.5, gable.run), -0.03)
+        if gutters:
+            radius = 0.06
+            x = gable.origin_x - side * (gable.edge - 0.02 + radius)
+            z = gable.eave_top - 0.05 - radius
+            profile = [(radius * math.cos(math.pi + math.pi * step / 4), radius * math.sin(math.pi + math.pi * step / 4)) for step in range(5)]
+            profile += [((radius - 0.005) * math.cos(math.pi + math.pi * step / 4), (radius - 0.005) * math.sin(math.pi + math.pi * step / 4)) for step in range(4, -1, -1)]
+            path = [V(x, gable.x0 + (gable.x1 - gable.x0) * t, z - 0.02 * math.sin(math.pi * t)) for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
+            emit(roof, kit.geo_tube(path, profile, True, up), "rusty_metal", None, "given", True)
+            y = gable.x0 + 0.3
+            while y < gable.x1 - 0.2:
+                block(roof, "rusty_metal", V(x - radius - 0.012, y - 0.015, z - radius - 0.008), V(x + radius + 0.012, y + 0.015, z - radius))
+                y += rng.uniform(0.9, 1.2)
+    if ridge:
+        radius = 0.13
+        profile = [(radius * math.cos(math.pi * step / 4), radius * math.sin(math.pi * step / 4)) for step in range(5)]
+        profile += [((radius - 0.018) * math.cos(math.pi * step / 4), (radius - 0.018) * math.sin(math.pi * step / 4)) for step in range(4, -1, -1)]
+        y = gable.x0
+        while y < gable.x1 - 0.05:
+            end = min(y + 0.6, gable.x1)
+            z = gable.ridge_top - 0.035 + rng.uniform(-0.004, 0.006)
+            emit(roof, kit.geo_tube([V(gable.origin_x, y, z), V(gable.origin_x, min(end + 0.02, gable.x1), z)], profile, True, up), "terracotta", None, "given", True)
+            y = end
+    for flag, x_edge, sign in ((verges[0], gable.x0, 1.0), (verges[1], gable.x1, -1.0)):
+        if flag:
+            for side in sides:
+                kit.member(roof, "concrete", gable.point(side, x_edge + sign * 0.03, -0.02, 0.012), gable.point(side, x_edge + sign * 0.03, gable.run, 0.012), 0.06, 0.03, gable.normal(side), 0.0, "box")
+    for side in sides:
+        if side > 0:
+            b.ramp("px", surface, "roof", V(gable.origin_x - gable.edge, gable.x0, gable.eave_top), V(gable.origin_x, gable.x1, gable.ridge_top))
+        else:
+            b.ramp("nx", surface, "roof", V(gable.origin_x, gable.x0, gable.eave_top), V(gable.origin_x + gable.edge, gable.x1, gable.ridge_top))
+
+
+def lancet(a0, a1, z0, spring, apex, steps=4):
+    middle = (a0 + a1) * 0.5
+    width = a1 - a0
+    rise = apex - spring
+    points = [(a0, z0), (a1, z0), (a1, spring)]
+    for k in range(1, steps):
+        theta = math.radians(60.0) * k / steps
+        points.append((a0 + width * math.cos(theta), spring + rise * math.sin(theta) / math.sin(math.radians(60.0))))
+    points.append((middle, apex))
+    for k in range(steps - 1, 0, -1):
+        theta = math.radians(60.0) * k / steps
+        points.append((a1 - width * math.cos(theta), spring + rise * math.sin(theta) / math.sin(math.radians(60.0))))
+    points.append((a0, spring))
+    return points
+
+
+def offset_lancet(a0, a1, z0, spring, apex, pad, steps=4):
+    return lancet(a0 - pad, a1 + pad, z0 - pad, spring, apex + pad * 1.6, steps)
+
+
+def inner_skin(part, frame, wall_t, outline, holes, rng, patches=2, name="plaster_interior", thickness=0.015, region=None):
+    origin = frame[0] - frame[3] * wall_t
+    inner = kit.plane(origin, -frame[3])
+    flip = lambda polygon: [(-a, z) for a, z in reversed(polygon)]
+    inner_outline = flip(outline)
+    inner_holes = [flip(h) for h in holes]
+    blobs = []
+    if patches:
+        bounds = kit.polygon_bounds(inner_outline)
+        area = region or (bounds[0] + 0.1, bounds[1] - 0.1, bounds[2] + 0.3, bounds[3] - 0.3)
+        blobs = scatter_light(area, inner_holes, patches, (0.2, 0.55), rng, (0.6, 1.3), None, 10)
+    kit.skin(part, name, inner, inner_outline, inner_holes + blobs, thickness)
+    return inner
+
+
 def stack(b, part, cx, cy, sx, sy, z0, z1, rng, pots=2, name="granite_ashlar"):
     top = chimney_light(part, name, cx, cy, sx, sy, z0, z1, rng, pots)
     b.col("rock", "chimney", V(cx - sx * 0.5, cy - sy * 0.5, z0), V(cx + sx * 0.5, cy + sy * 0.5, z1 + 0.12))
