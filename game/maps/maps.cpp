@@ -38,6 +38,8 @@ namespace zp
 		landmarks.clear();
 		roads.clear();
 		footprints.clear();
+		stains.clear();
+		facades.clear();
 		stations.clear();
 		crossings.clear();
 		building_species.clear();
@@ -46,6 +48,7 @@ namespace zp
 
 		info = {};
 		radio_ready = false;
+		stain_seed = street_seed;
 	}
 	/*
 	//=====================================================================================
@@ -81,6 +84,8 @@ namespace zp
 		world.kill_height = info.kill_height;
 
 		world.build();
+
+		deface();
 
 		materials.upload();
 
@@ -1607,6 +1612,107 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	std::float_t maps_c::speckle()
+	{
+		stain_seed ^= stain_seed << 13u;
+		stain_seed ^= stain_seed >> 17u;
+		stain_seed ^= stain_seed << 5u;
+
+		return static_cast<std::float_t>(stain_seed & 0xFFFFFFu) / 16777216.0f;
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::stain(std::uint32_t kind, structures::vec3_s position, structures::vec3_s normal, structures::vec3_s axis)
+	{
+		const auto& definition{ street_mark_definitions[kind] };
+		const auto variant{ std::min(static_cast<std::uint32_t>(speckle() * static_cast<std::float_t>(definition.variants)), definition.variants - 1u) };
+		const auto size{ definition.size * (1.0f + (speckle() * 2.0f - 1.0f) * definition.vary) };
+
+		stains.push_back({ { { position.x, position.y, position.z, size }, { normal.x, normal.y, normal.z, definition.depth }, { axis.x, axis.y, axis.z, static_cast<std::float_t>(definition.cell + variant) }, { 1.0f, 1.0f, 1.0f, 1.0f } }, definition.wet });
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::weather_strip(structures::vec2_s from, structures::vec2_s to, std::float_t width, std::float_t top, std::uint32_t row)
+	{
+		const structures::vec2_s span{ to.x - from.x, to.y - from.y };
+		const auto length{ mathematics.length(span) };
+		const structures::vec2_s along{ span.x / std::max(length, 0.001f), span.y / std::max(length, 0.001f) };
+		const structures::vec2_s side{ -along.y, along.x };
+		const auto half{ width * 0.5f };
+
+		for (auto travelled{ street_mark_step * speckle() }; travelled < length; travelled += street_mark_step)
+		{
+			for (auto kind{ 0u }; kind < street_ground_kinds; kind++)
+			{
+				if (speckle() < street_wear[row][kind])
+				{
+					const auto& definition{ street_mark_definitions[kind] };
+					const auto edge{ speckle() < 0.5f ? -1.0f : 1.0f };
+					const auto lateral{ definition.place == structures::street_place_kerb ? edge * std::max(half - 0.3f, 0.0f) : (definition.place == structures::street_place_edge ? edge * std::max(half - definition.size * 0.6f, 0.0f) : (definition.place == structures::street_place_middle ? (speckle() - 0.5f) * width * 0.25f : (speckle() - 0.5f) * width * 0.8f)) };
+					const structures::vec2_s spot{ from.x + along.x * travelled + side.x * lateral, from.y + along.y * travelled + side.y * lateral };
+					const auto angle{ speckle() * two_pi };
+					const auto turned{ definition.orient == structures::street_orient_either && speckle() < 0.35f };
+					const auto axis{ definition.orient == structures::street_orient_outward ? structures::vec3_s{ -side.x * edge, 0.0f, -side.y * edge } : (definition.orient == structures::street_orient_random ? structures::vec3_s{ std::cos(angle), 0.0f, std::sin(angle) } : (turned ? structures::vec3_s{ side.x, 0.0f, side.y } : structures::vec3_s{ along.x, 0.0f, along.y })) };
+
+					stain(kind, { spot.x, terrain.height(spot.x, spot.y) + top, spot.y }, { 0.0f, 1.0f, 0.0f }, axis);
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::weather_area(structures::vec2_s low, structures::vec2_s high, std::float_t top, std::uint32_t row)
+	{
+		for (auto z{ low.y + street_mark_step * 0.5f }; z < high.y; z += street_mark_step)
+		{
+			for (auto x{ low.x + street_mark_step * 0.5f }; x < high.x; x += street_mark_step)
+			{
+				for (auto kind{ 0u }; kind < street_ground_kinds; kind++)
+				{
+					if (speckle() < street_wear[row][kind])
+					{
+						const auto angle{ speckle() * two_pi };
+						const structures::vec2_s spot{ x + (speckle() - 0.5f) * street_mark_step, z + (speckle() - 0.5f) * street_mark_step };
+
+						stain(kind, { spot.x, terrain.height(spot.x, spot.y) + top, spot.y }, { 0.0f, 1.0f, 0.0f }, { std::cos(angle), 0.0f, std::sin(angle) });
+					}
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::deface()
+	{
+		for (const auto& facade : facades)
+		{
+			const auto roll{ speckle() };
+			const auto pick{ static_cast<std::uint32_t>(std::count_if(std::begin(facade_odds), std::end(facade_odds), [&](std::float_t odds) { return roll >= odds; })) };
+			const structures::vec3_s across{ facade.toward.z, 0.0f, -facade.toward.x };
+
+			if (pick < std::size(facade_marks))
+			{
+				const auto start{ facade.front + across * ((speckle() - 0.5f) * facade_spread) + structures::vec3_s{ 0.0f, facade_heights[pick] + speckle() * 0.3f, 0.0f } };
+
+				if (const auto hit{ world.trace(start, start + facade.toward * facade_probe, { 0.02f, 0.02f, 0.02f }, structures::contents_solid) }; hit.hit && hit.start_solid == false && std::fabs(hit.normal.y) < 0.3f)
+				{
+					stain(facade_marks[pick], hit.end, hit.normal, { 0.0f, -1.0f, 0.0f });
+				}
+			}
+		}
+
+		if (stains.size())
+		{
+			logger.write("maps: %zu street marks", stains.size());
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void maps_c::build_hamlet(const structures::world_site_s& site)
 	{
 		const structures::vec3_s center{ site.position.x, 0.0f, site.position.y };
@@ -1781,6 +1887,16 @@ namespace zp
 		if (patch.paving == structures::town_road)
 		{
 			mark_centre(center, patch);
+		}
+
+		if (patch.paving == structures::town_square || patch.paving == structures::town_yard)
+		{
+			weather_area(low, high, paving.top, patch.paving);
+		}
+
+		else
+		{
+			weather_strip(lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, low.y } : structures::vec2_s{ low.x, (low.y + high.y) * 0.5f }, lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, high.y } : structures::vec2_s{ high.x, (low.y + high.y) * 0.5f }, lengthwise ? high.x - low.x : high.y - low.y, paving.top, patch.paving);
 		}
 
 		terrain.mask_rectangle({ (low.x + high.x) * 0.5f, 0.0f, (low.y + high.y) * 0.5f }, (high.x - low.x) * 0.5f + 0.3f, (high.y - low.y) * 0.5f + 0.3f, 0.0f);
@@ -2766,6 +2882,7 @@ namespace zp
 			const auto middle{ mathematics.transform_point((low + high) * 0.5f, placement) };
 
 			footprints.push_back({ { middle.x, middle.z }, { (high.x - low.x) * 0.5f, (high.z - low.z) * 0.5f }, yaw });
+			facades.push_back({ mathematics.transform_point({ 0.0f, 0.0f, model->bounds_min.z - facade_standoff }, placement), mathematics.transform_vector({ 0.0f, 0.0f, 1.0f }, placement) });
 
 			return true;
 		}
@@ -2915,8 +3032,8 @@ namespace zp
 	*/
 	void maps_c::build_routes()
 	{
-		track_materials[structures::track_material_asphalt] = models.variant(structures::material_asphalt, { 0.52f, 0.5f, 0.48f }, 0.0f);
-		track_materials[structures::track_material_dirt] = models.variant(structures::material_terrain_dirt, { 0.9f, 0.85f, 0.8f }, 0.0f);
+		track_materials[structures::track_material_asphalt] = models.variant(structures::material_road_cracked, { 0.9f, 0.88f, 0.86f }, 0.0f);
+		track_materials[structures::track_material_dirt] = models.variant(structures::material_road_crumbled, { 0.82f, 0.8f, 0.78f }, 0.0f);
 		track_materials[structures::track_material_ballast] = models.variant(structures::material_terrain_gravel, { 0.62f, 0.58f, 0.54f }, 0.0f);
 		track_materials[structures::track_material_sleeper] = models.variant(structures::material_plywood, { 0.36f, 0.29f, 0.23f }, 0.0f);
 		track_materials[structures::track_material_rail] = models.variant(structures::material_metal_rust, { 0.46f, 0.4f, 0.37f }, 0.35f);
@@ -2972,6 +3089,11 @@ namespace zp
 			std::uint32_t ring[4]{};
 
 			travelled += mathematics.length(structures::vec3_s{ point.x - previous.x, 0.0f, point.z - previous.z });
+
+			if (index)
+			{
+				weather_strip({ previous.x, previous.z }, { point.x, point.z }, path.width, lift, street_wear_route);
+			}
 
 			for (auto corner{ 0u }; corner < 4u; corner++)
 			{

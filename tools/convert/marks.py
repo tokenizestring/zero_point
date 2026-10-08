@@ -2,11 +2,14 @@ import concurrent.futures
 import math
 import os
 import numpy
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 root = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "assets")
 output = os.path.join(root, "raw", "marks")
 sheets = os.path.join(root, "previews", "marks")
+textures = os.path.join(root, "raw", "textures")
+faces = ["segoeprb.ttf", "impact.ttf", "arialbd.ttf"]
+photos = {}
 
 grid = 8
 cell = 256
@@ -1224,6 +1227,492 @@ def cut(rng, variant):
 	return paint, alpha, -depth, weight, edge
 
 
+def photo(name, kind):
+	if (name, kind) not in photos:
+		image = Image.open(os.path.join(textures, name, "%s_%s_2k.jpg" % (name, kind)))
+		photos[(name, kind)] = numpy.asarray(image.convert("RGB" if kind == "diff" else "L"), dtype=real) / 255.0
+
+	return photos[(name, kind)]
+
+
+def swatch(rng, name, edge, size):
+	color = photo(name, "diff")
+	relief = photo(name, "disp")
+	span = min(int(round(color.shape[0] * edge / size)), color.shape[0])
+	top = int(rng.integers(0, color.shape[0] - span + 1))
+	left = int(rng.integers(0, color.shape[1] - span + 1))
+	picture = Image.fromarray(numpy.clip(numpy.round(color[top:top + span, left:left + span] * 255.0), 0, 255).astype(numpy.uint8)).resize((side, side), Image.BICUBIC)
+
+	return numpy.asarray(picture, dtype=real) / 255.0, grow(relief[top:top + span, left:left + span], side)
+
+
+def typeface(size):
+	for name in faces:
+		try:
+			return ImageFont.truetype(name, size)
+		except OSError:
+			continue
+
+	return ImageFont.load_default()
+
+
+def lettering(rng, step, lines, tall, lean):
+	board = Image.new("L", (side * 2, side * 2), 0)
+	draw = ImageDraw.Draw(board)
+	font = typeface(max(8, int(tall / step)))
+	pitch = tall * 1.15 / step
+
+	for index, (text, shift) in enumerate(lines):
+		draw.text((side + shift / step, side + (index - (len(lines) - 1) * 0.5) * pitch), text, fill=255, font=font, anchor="mm")
+
+	turned = board.rotate(math.degrees(lean), resample=Image.BICUBIC, center=(side, side))
+
+	return taken(turned.crop((side // 2, side // 2, side // 2 + side, side // 2 + side)))
+
+
+def sprayed(rng, step, mask, width, color, drips):
+	core = smooth(0.25, 0.75, blur(mask, width * 0.18 / step))
+	mist = blur(mask, width * 0.9 / step) * 0.28
+	grain = smooth(1.2, 2.2, cloud(rng, 150.0, 380.0, 0.2)) * blur(mask, width * 1.6 / step) * 0.9
+	runs, draw = pad()
+	heavy = numpy.argwhere(core > 0.9)
+
+	for drip in range(min(drips, len(heavy))):
+		row, column = heavy[int(rng.integers(len(heavy)))]
+		length = rng.uniform(20.0, 160.0) / step
+		thick = max(1, int(rng.uniform(3.0, 7.0) / step))
+		draw.line([(column, row), (column + rng.normal(0.0, 1.0), row + length)], fill=int(rng.uniform(150, 240)), width=thick)
+		draw.ellipse([column - thick, row + length - thick, column + thick, row + length + thick * 1.6], fill=220)
+
+	density = numpy.clip(core * (0.82 + 0.18 * cloud(rng, 4.0, 30.0, 1.0)) + mist + grain + blur(taken(runs), 0.7) * 0.85, 0.0, 1.0)
+	paint, alpha = blank()
+	coat(paint, alpha, color, density)
+
+	return paint[:, ::-1].copy(), alpha[:, ::-1].copy()
+
+
+def crackline(rng, draw, step, x, y, heading, length, width, level=0):
+	stride = 12.0
+	drift = 0.0
+	steps = max(int(length / stride), 2)
+
+	for index in range(steps):
+		along = index / steps
+		drift = drift * 0.7 + rng.normal(0.0, 0.22)
+		next_x = x + math.cos(heading + drift) * stride
+		next_y = y + math.sin(heading + drift) * stride
+		draw.line([pin(x, y, step), pin(next_x, next_y, step)], fill=int(255 * (1.0 - 0.6 * along ** 2)), width=max(1, int(round(width * (1.0 - 0.6 * along) / step))))
+		x = next_x
+		y = next_y
+
+		if level < 1 and index > 4 and rng.uniform() < 0.012:
+			crackline(rng, draw, step, x, y, heading + drift + rng.choice([-1.0, 1.0]) * rng.uniform(0.5, 1.1), length * (1.0 - along) * rng.uniform(0.2, 0.5), width * 0.6, level + 1)
+
+
+def pothole(rng, variant):
+	edge = 1.6
+	x, y, step = plane(edge)
+	u = x + cloud(rng, 2.0, 10.0, 1.5) * 22.0
+	v = y + cloud(rng, 2.0, 10.0, 1.5) * 22.0
+	sides, spans = facets(rng, int(rng.integers(7, 11)), (330.0, 420.0)[variant], 0.3, 0.3, rng.uniform(0.0, turn))
+	level = gauge(u, v, sides, spans) * (1.0 + 0.05 * cloud(rng, 4.0, 18.0, 1.3))
+	hole = smooth(1.0, 0.9, level)
+	crumble = smooth(1.45, 1.0, level) * smooth(0.0, 0.8, cloud(rng, 5.0, 26.0, 1.2) + 0.45) * (1.0 - hole)
+	stones, relief = swatch(rng, "ganges_river_pebbles", edge, 1.5)
+	base, rough = swatch(rng, "road_damaged_2", edge, 2.2)
+	cracks, draw = pad()
+
+	for crack in range(int(rng.integers(3, 6))):
+		heading = rng.uniform(0.0, turn)
+		reach = rim(sides, spans, heading)
+		crackline(rng, draw, step, reach * math.cos(heading), reach * math.sin(heading), heading + rng.normal(0.0, 0.25), rng.uniform(140.0, 320.0), rng.uniform(9.0, 15.0))
+
+	crack = blur(taken(cracks), 0.6 / step) * (1.0 - hole)
+	bowl = numpy.clip(1.0 - level * level, 0.0, 1.0) ** 0.45
+	water = smooth(0.35, 0.15, level) * (0.4 + 0.6 * smooth(-0.2, 0.6, cloud(rng, 6.0, 30.0, 1.0)))
+	height = -(48.0, 62.0)[variant] * bowl * hole + relief * 14.0 * hole + 2.2 * numpy.exp(-((level - 1.02) / 0.05) ** 2) - 3.0 * crumble * rough[:, :] - 5.0 * crack
+	grey = base.mean(axis=2)[:, :, None]
+	floor = mix(mix(grey, base, 0.45), stones, smooth(0.3, 0.8, relief)[:, :, None]) * (0.72 - 0.25 * water)[:, :, None]
+	paint, alpha = blank()
+	coat(paint, alpha, mix(tint(30, 29, 27), tint(58, 55, 50), rough[:, :, None]), numpy.clip(crumble * 0.75, 0.0, 1.0))
+	coat(paint, alpha, floor, hole)
+	coat(paint, alpha, tint(16, 15, 14), crack * 0.92)
+	weight = numpy.maximum(smooth(1.5, 1.05, level), crack)
+
+	return paint, alpha, height, weight, edge
+
+
+def repair(rng, variant):
+	edge = 2.4
+	x, y, step = plane(edge)
+	lean = rng.normal(0.0, 0.06)
+	across = x * real(math.cos(lean)) + y * real(math.sin(lean))
+	along = y * real(math.cos(lean)) - x * real(math.sin(lean))
+	half = ((820.0, 560.0), (1040.0, 190.0))[variant]
+	box = numpy.maximum(numpy.abs(across) - half[0], numpy.abs(along) - half[1]) + cloud(rng, 3.0, 24.0, 1.3) * 9.0
+	inside = smooth(5.0, -5.0, box)
+	seal = numpy.exp(-(box / 16.0) ** 2) * numpy.clip(0.65 + 0.5 * cloud(rng, 4.0, 20.0, 1.2), 0.0, 1.0)
+	tar, relief = swatch(rng, "asphalt_03", edge, 3.0)
+	worn = smooth(-0.5, 1.5, cloud(rng, 8.0, 40.0, 1.0))
+	color = mix(tar.mean(axis=2)[:, :, None], tar, 0.35) * (0.55 + 0.12 * worn)[:, :, None]
+	paint, alpha = blank()
+	coat(paint, alpha, color, inside * 0.94)
+	coat(paint, alpha, tint(12, 12, 13), seal * 0.9)
+	height = inside * (2.0 + relief * 2.5) + seal * 1.4
+	weight = numpy.maximum(inside * 0.85, seal)
+
+	return paint, alpha, height, weight, edge
+
+
+def crazing(rng, x, y, reach, pitch):
+	first = numpy.full(x.shape, 1e9, dtype=real)
+	second = numpy.full(x.shape, 1e9, dtype=real)
+
+	for gx in numpy.arange(-reach[0] - pitch, reach[0] + pitch + 1.0, pitch):
+		for gy in numpy.arange(-reach[1] - pitch, reach[1] + pitch + 1.0, pitch):
+			distance = numpy.hypot(x - real(gx + rng.uniform(-0.4, 0.4) * pitch), y - real(gy + rng.uniform(-0.4, 0.4) * pitch))
+			second = numpy.minimum(second, numpy.maximum(first, distance))
+			first = numpy.minimum(first, distance)
+
+	return second - first
+
+
+def crack(rng, variant):
+	edge = 2.4
+	x, y, step = plane(edge)
+	lines, draw = pad()
+	area = flat()
+
+	if variant == 0:
+		heading = rng.uniform(-0.3, 0.3)
+		crackline(rng, draw, step, -1050.0 * math.cos(heading), -1050.0 * math.sin(heading), heading, 2000.0, rng.uniform(20.0, 28.0))
+
+		for branch in range(int(rng.integers(1, 3))):
+			start = rng.uniform(-700.0, 700.0)
+			crackline(rng, draw, step, start * math.cos(heading), start * math.sin(heading), heading + rng.choice([-1.0, 1.0]) * rng.uniform(0.6, 1.3), rng.uniform(250.0, 600.0), rng.uniform(7.0, 11.0))
+
+		net = flat()
+	else:
+		zone = smooth(1.0, 0.8, numpy.sqrt((x / 820.0) ** 2 + (y / 560.0) ** 2) * (1.0 + 0.12 * cloud(rng, 3.0, 12.0, 1.2)))
+		net = smooth(16.0, 5.0, crazing(rng, x + cloud(rng, 3.0, 20.0, 1.3) * 12.0, y + cloud(rng, 3.0, 20.0, 1.3) * 12.0, (820.0, 560.0), 150.0)) * zone
+		area = zone
+
+	line = numpy.maximum(blur(taken(lines), 0.5 / step), net)
+	weeds = blur(line, 6.0 / step) * smooth(0.9, 1.6, cloud(rng, 2.0, 8.0, 1.0))
+	paint, alpha = blank()
+	coat(paint, alpha, tint(52, 46, 38), area * 0.3)
+	coat(paint, alpha, tint(14, 13, 12), line * 0.95)
+	coat(paint, alpha, tint(66, 84, 32), numpy.clip(weeds * 1.4, 0.0, 0.85))
+	height = -6.0 * line - 1.5 * area + 1.5 * weeds
+	weight = numpy.maximum(numpy.maximum(line, area * 0.4), weeds)
+
+	return paint, alpha, height, weight, edge
+
+
+def oil(rng, variant):
+	edge = 1.6
+	x, y, step = plane(edge)
+	u = x + cloud(rng, 2.0, 10.0, 1.4) * 60.0
+	v = y + cloud(rng, 2.0, 10.0, 1.4) * 60.0
+	level = numpy.sqrt((u / 1.25) ** 2 + v * v) / 420.0 + 0.18 * cloud(rng, 6.0, 30.0, 1.1)
+	body = smooth(1.0, 0.55, level)
+	ring = numpy.exp(-((level - 0.92) / 0.08) ** 2) * 0.5
+	spots, draw = pad()
+
+	for drop in range(int(rng.integers(5, 12))):
+		angle = rng.uniform(0.0, turn)
+		away = rng.uniform(450.0, 650.0)
+		size = rng.uniform(12.0, 40.0)
+		draw.ellipse([pin(away * math.cos(angle) - size, away * math.sin(angle) - size, step), pin(away * math.cos(angle) + size, away * math.sin(angle) + size, step)], fill=200)
+
+	density = numpy.clip(body * (0.5 + 0.25 * cloud(rng, 4.0, 20.0, 1.0)) + ring * body + blur(taken(spots), 1.0) * 0.5, 0.0, 0.8)
+	paint, alpha = blank()
+	coat(paint, alpha, tint(18, 15, 12), density)
+
+	return paint, alpha, flat(), body * 0.45, edge
+
+
+def skid(rng, variant):
+	edge = 3.6
+	x, y, step = plane(edge)
+	bend = rng.uniform(-0.00012, 0.00012)
+	shift = bend * y * y
+	marks = flat()
+
+	for track in (-760.0, 760.0):
+		lateral = x - shift - track
+		marks = numpy.maximum(marks, smooth(100.0, 80.0, numpy.abs(lateral)) * (0.7 + 0.3 * numpy.sin(lateral * 0.25) ** 2))
+
+	along = smooth(1600.0, 900.0, numpy.abs(y + rng.uniform(-200.0, 200.0)))
+	braking = 0.35 + 0.65 * smooth(-1600.0, 600.0, y)
+	density = marks * along * braking * (0.55 + 0.3 * cloud(rng, 4.0, 30.0, 1.0, 1.0, 6.0))
+	paint, alpha = blank()
+	coat(paint, alpha, tint(14, 14, 14), numpy.clip(density, 0.0, 0.65))
+
+	return paint, alpha, flat(), flat(), edge
+
+
+def ironwork(rng, cover, raised, keyholes, frame, gap, seal):
+	wear = smooth(0.4, 1.0, raised) * (0.6 + 0.4 * cloud(rng, 6.0, 40.0, 1.0))
+	rust = smooth(0.2, 1.2, cloud(rng, 4.0, 30.0, 1.1)) * (1.0 - wear)
+	iron = mix(mix(tint(56, 53, 50), tint(104, 60, 32), (rust * 0.75)[:, :, None]), tint(98, 94, 88), (wear * 0.7)[:, :, None])
+	paint, alpha = blank()
+	coat(paint, alpha, tint(30, 29, 28), numpy.clip(seal * 0.55, 0.0, 1.0))
+	coat(paint, alpha, iron, numpy.clip(numpy.maximum(cover, frame), 0.0, 1.0))
+	coat(paint, alpha, tint(24, 22, 20), numpy.clip(gap + keyholes, 0.0, 1.0))
+
+	return paint, alpha
+
+
+def manhole(rng, variant):
+	edge = 0.95
+	x, y, step = plane(edge)
+	r = numpy.sqrt(x * x + y * y)
+	angle = numpy.arctan2(y, x)
+	cover = smooth(302.0, 298.0, r)
+	gap = numpy.exp(-((r - 304.0) / 3.0) ** 2)
+	frame = smooth(352.0, 348.0, r) * smooth(305.0, 309.0, r)
+	seal = smooth(420.0, 380.0, r + 25.0 * cloud(rng, 3.0, 14.0, 1.3)) * smooth(345.0, 352.0, r)
+	studs = smooth(0.55, 0.75, numpy.abs(numpy.sin(x * real(math.pi / 22.0)) * numpy.sin(y * real(math.pi / 22.0)))) * smooth(255.0, 250.0, r) * smooth(95.0, 100.0, r)
+	rings = numpy.exp(-((r - 262.0) / 5.0) ** 2) + numpy.exp(-((r - 90.0) / 5.0) ** 2) + numpy.exp(-((r - 288.0) / 4.0) ** 2)
+	ribs = smooth(0.14, 0.08, numpy.abs(numpy.sin(angle * 6.0))) * smooth(88.0, 84.0, r)
+	keyholes = flat()
+
+	for side_sign in (-1.0, 1.0):
+		keyholes = numpy.maximum(keyholes, smooth(24.0, 20.0, numpy.abs(x - side_sign * 205.0)) * smooth(8.0, 5.0, numpy.abs(y)))
+
+	raised = cover * numpy.clip(studs + rings + ribs, 0.0, 1.0)
+	paint, alpha = ironwork(rng, cover, raised, keyholes, frame, gap, seal)
+	height = cover * (1.0 + 3.0 * studs + 2.0 * rings + 2.0 * ribs) + frame * 2.5 - gap * 8.0 - keyholes * 12.0
+	weight = numpy.maximum(numpy.maximum(cover, frame), gap)
+
+	return paint, alpha, height, weight, edge
+
+
+def inspection(rng, variant):
+	edge = 0.95
+	x, y, step = plane(edge)
+	box = numpy.maximum(numpy.abs(x) - 300.0, numpy.abs(y) - 225.0)
+	cover = smooth(1.5, -1.5, box)
+	gap = numpy.exp(-((box - 4.0) / 2.5) ** 2)
+	frame = smooth(42.0, 38.0, box) * smooth(4.0, 8.0, box)
+	seal = smooth(110.0, 70.0, box + 22.0 * cloud(rng, 3.0, 14.0, 1.3)) * smooth(38.0, 45.0, box)
+	tread = smooth(0.55, 0.8, numpy.abs(numpy.sin((x + y) * real(math.pi / 30.0)) * numpy.sin((x - y) * real(math.pi / 30.0)))) * cover * smooth(-14.0, -20.0, box)
+	keyholes = flat()
+
+	for side_sign in (-1.0, 1.0):
+		keyholes = numpy.maximum(keyholes, smooth(22.0, 18.0, numpy.abs(x - side_sign * 220.0)) * smooth(7.0, 4.0, numpy.abs(y)))
+
+	paint, alpha = ironwork(rng, cover, tread, keyholes, frame, gap, seal)
+	height = cover * (1.0 + 2.5 * tread) + frame * 2.5 - gap * 8.0 - keyholes * 12.0
+	weight = numpy.maximum(numpy.maximum(cover, frame), gap)
+
+	return paint, alpha, height, weight, edge
+
+
+def drain(rng, variant):
+	edge = 0.7
+	x, y, step = plane(edge)
+	box = numpy.maximum(numpy.abs(x) - 220.0, numpy.abs(y) - 150.0)
+	grate = smooth(1.5, -1.5, box)
+	frame = smooth(30.0, 26.0, box) * smooth(-2.0, 2.0, box)
+	seal = smooth(80.0, 50.0, box + 16.0 * cloud(rng, 3.0, 14.0, 1.3)) * smooth(26.0, 32.0, box)
+	slots = grate * smooth(0.3, 0.18, numpy.abs(numpy.mod((x + 220.0) / 27.5, 1.0) - 0.5)) * smooth(128.0, 118.0, numpy.abs(y))
+	bars = grate * (1.0 - slots)
+	paint, alpha = ironwork(rng, bars, bars * 0.6, slots, frame, flat(), seal)
+	litter, draw = pad()
+
+	for leaf in range(int(rng.integers(3, 8))):
+		teardrop(rng, draw, step, rng.uniform(-190.0, 190.0), rng.uniform(-120.0, 120.0), rng.uniform(0.0, turn), rng.uniform(20.0, 34.0), 1.6, 0.3, int(rng.uniform(160, 255)))
+
+	leaves = taken(litter)
+	coat(paint, alpha, tint(92, 60, 30), leaves * 0.95)
+	height = bars * 1.5 + frame * 2.0 - slots * 45.0 + leaves * 1.2
+	weight = numpy.maximum(numpy.maximum(grate, frame), leaves)
+
+	return paint, alpha, height, weight, edge
+
+
+def markings(rng, variant):
+	edge = 3.2
+	x, y, step = plane(edge)
+	paint_mask = flat()
+
+	for offset in (-120.0, 120.0):
+		band = smooth(52.0, 46.0, numpy.abs(x - offset))
+		phase = numpy.mod(y + 1500.0 + (0.0 if offset < 0.0 else 120.0), 900.0)
+		paint_mask = numpy.maximum(paint_mask, band * smooth(0.0, 6.0, phase) * smooth(606.0, 600.0, phase))
+
+	fade = smooth(1500.0, 1300.0, numpy.abs(y))
+	tracks = 1.0 - 0.45 * (numpy.exp(-((x + 600.0) / 220.0) ** 2) + numpy.exp(-((x - 600.0) / 220.0) ** 2))
+	worn = smooth(-1.4, 0.1, cloud(rng, 4.0, 30.0, 1.1)) * tracks
+	cracks, draw = pad()
+
+	for crack in range(int(rng.integers(2, 5))):
+		crackline(rng, draw, step, rng.uniform(-900.0, 900.0), rng.uniform(-1300.0, 1300.0), rng.uniform(0.0, turn), rng.uniform(300.0, 900.0), rng.uniform(6.0, 10.0))
+
+	broken = 1.0 - blur(taken(cracks), 2.0 / step)
+	density = numpy.clip(paint_mask * fade * worn * broken, 0.0, 0.9)
+	paint, alpha = blank()
+	coat(paint, alpha, tint(206, 204, 192), density)
+
+	return paint, alpha, density * 0.6, density * 0.5, edge
+
+
+def leaves(rng, variant):
+	edge = 1.6
+	x, y, step = plane(edge)
+	palette = [tint(96, 62, 30), tint(128, 86, 38), tint(160, 120, 48), tint(70, 48, 28), tint(104, 92, 40), tint(52, 36, 24)]
+	layers = [pad() for color in palette]
+	count = (420, 170)[variant]
+
+	for leaf in range(count):
+		if variant == 0:
+			spot = (rng.uniform(-680.0, 680.0), -500.0 + abs(rng.normal(0.0, 210.0)) * (1.0 if rng.uniform() < 0.85 else 2.5))
+		else:
+			spot = (rng.uniform(-680.0, 680.0), rng.uniform(-680.0, 680.0))
+
+		image, draw = layers[int(rng.integers(len(palette)))]
+		teardrop(rng, draw, step, spot[0], spot[1], rng.uniform(0.0, turn), rng.uniform(26.0, 48.0), rng.uniform(1.5, 2.1), 0.35, 255)
+
+	paint, alpha = blank()
+	cover = flat()
+
+	for color, (image, draw) in zip(palette, layers):
+		mask = taken(image)
+		coat(paint, alpha, color * (0.85 + 0.3 * rng.uniform()), mask * 0.95)
+		cover = numpy.maximum(cover, mask)
+
+	height = cover * (1.2 + 0.6 * cloud(rng, 8.0, 40.0, 1.0))
+
+	return paint, alpha, height, cover, edge
+
+
+def moss(rng, variant):
+	edge = 1.4
+	x, y, step = plane(edge)
+	field = cloud(rng, 2.0, 12.0, 1.2) + 0.6 * cloud(rng, 12.0, 60.0, 1.0)
+	zone = smooth(1.0, 0.7, numpy.sqrt(x * x + y * y) / 560.0)
+	cushion = smooth(0.2, 0.9, field + 0.8 * (zone - 0.5)) * zone
+	fine = cloud(rng, 60.0, 250.0, 0.5)
+	color = mix(tint(48, 62, 24), tint(96, 110, 44), smooth(-1.0, 1.5, fine + 0.5 * field)[:, :, None])
+	color = mix(color, tint(34, 38, 20), (0.4 * smooth(0.4, 0.0, cushion))[:, :, None])
+	paint, alpha = blank()
+	coat(paint, alpha, color, cushion * 0.92)
+	blades, draw = pad()
+
+	for blade in range(int(rng.integers(40, 80))):
+		root_x, root_y = rng.normal(0.0, 230.0, 2)
+		length = rng.uniform(40.0, 110.0)
+		heading = rng.uniform(0.0, turn)
+		draw.line([pin(root_x, root_y, step), pin(root_x + length * math.cos(heading), root_y + length * math.sin(heading), step)], fill=255, width=max(1, int(3.0 / step)))
+
+	grass = taken(blades) * zone
+	coat(paint, alpha, tint(86, 104, 40), grass * 0.85)
+	height = cushion * (2.5 + 1.5 * fine) + grass * 2.0
+
+	return paint, alpha, height, numpy.maximum(cushion, grass) * 0.9, edge
+
+
+def wash(rng, variant):
+	edge = 2.6
+	x, y, step = plane(edge)
+	soil, relief = swatch(rng, "road_damaged_2", edge, 2.2)
+	fan = smooth(900.0, -500.0, y + 160.0 * cloud(rng, 2.0, 10.0, 1.3, 3.0, 1.0)) * smooth(1250.0, 700.0, numpy.abs(x))
+	streaks = smooth(-0.4, 0.8, cloud(rng, 3.0, 30.0, 1.0, 1.0, 5.0))
+	density = numpy.clip(fan * (0.45 + 0.4 * streaks), 0.0, 0.85)
+	paint, alpha = blank()
+	coat(paint, alpha, soil * 0.85, density)
+
+	return paint, alpha, density * (0.8 + relief * 1.2), density * 0.5, edge
+
+
+def puddle(rng, variant):
+	edge = 2.4
+	x, y, step = plane(edge)
+	u = x + cloud(rng, 2.0, 8.0, 1.5) * 90.0
+	v = y + cloud(rng, 2.0, 8.0, 1.5) * 90.0
+	level = numpy.sqrt((u / (1.5, 1.1)[variant]) ** 2 + v * v) / (520.0, 650.0)[variant]
+	pool = smooth(1.0, 0.75, level)
+	rim_damp = smooth(1.25, 0.95, level) * 0.5
+	paint, alpha = blank()
+	coat(paint, alpha, tint(18, 19, 20), numpy.clip(rim_damp * 0.6 + pool * 0.35, 0.0, 0.5))
+
+	return paint, alpha, flat(), pool, edge
+
+
+def streaks(rng, variant):
+	edge = 2.0
+	x, y, step = plane(edge)
+	stain = flat()
+
+	for source in range(int(rng.integers(4, 7))):
+		start = rng.uniform(-700.0, 700.0)
+		width = rng.uniform(70.0, 230.0)
+		length = rng.uniform(700.0, 1600.0)
+		top = -800.0 + rng.uniform(0.0, 200.0)
+		lateral = numpy.abs(x - start - 20.0 * cloud(rng, 2.0, 8.0, 1.2))
+		band = smooth(width, width * 0.3, lateral) * smooth(top - 20.0, top + 60.0, y) * smooth(top + length, top + length * 0.3, y)
+		stain = numpy.maximum(stain, band * (0.6 + 0.4 * cloud(rng, 3.0, 30.0, 1.0, 1.0, 8.0)))
+
+	paint, alpha = blank()
+	coat(paint, alpha, mix(tint(126, 70, 32), tint(70, 44, 26), smooth(-0.5, 1.0, cloud(rng, 4.0, 20.0, 1.0))[:, :, None]), numpy.clip(stain * 0.95, 0.0, 0.85))
+
+	return paint, alpha, flat(), flat(), edge
+
+
+def graffiti(rng, variant):
+	edge = 2.4
+	x, y, step = plane(edge)
+	words = ([("NO WATER", 0.0)], [("THEY LEFT", 0.0), ("US", 260.0)])[variant]
+	color = (tint(168, 30, 24), tint(24, 24, 26))[variant]
+	mask = lettering(rng, step, words, (330.0, 300.0)[variant], rng.uniform(-0.08, 0.06))
+	paint, alpha = sprayed(rng, step, mask, 60.0, color, 18)
+
+	return paint, alpha, flat(), flat(), edge
+
+
+def search(rng, variant):
+	edge = 1.6
+	x, y, step = plane(edge)
+	cross, draw = pad()
+	width = max(1, int(45.0 / step))
+	draw.line([pin(-520.0, -520.0, step), pin(520.0, 520.0, step)], fill=255, width=width)
+	draw.line([pin(520.0, -520.0, step), pin(-520.0, 520.0, step)], fill=255, width=width)
+	board = Image.fromarray(numpy.clip(numpy.round(taken(cross) * 255.0), 0, 255).astype(numpy.uint8))
+	draw = ImageDraw.Draw(board)
+	font = typeface(max(8, int(120.0 / step)))
+
+	for text, place in (("14/3", (0.0, -440.0)), ("J7", (-440.0, 0.0)), ("GAS OFF", (400.0, 0.0)), ("0", (0.0, 440.0))):
+		draw.text(pin(place[0], place[1], step), text, fill=255, font=font, anchor="mm")
+
+	paint, alpha = sprayed(rng, step, taken(board), 40.0, tint(214, 104, 30), 12)
+
+	return paint, alpha, flat(), flat(), edge
+
+
+def soot(rng, variant):
+	edge = 2.6
+	x, y, step = plane(edge)
+	rise = numpy.clip((600.0 - y) / 1500.0, 0.0, 1.0)
+	width = 420.0 + 600.0 * rise
+	plume = smooth(width, width * 0.4, numpy.abs(x + 80.0 * cloud(rng, 2.0, 8.0, 1.3) * rise)) * smooth(700.0, 560.0, y) * (1.0 - 0.8 * rise ** 1.5)
+	density = numpy.clip(plume * (0.75 + 0.3 * cloud(rng, 4.0, 30.0, 1.0, 1.0, 3.0)), 0.0, 0.92)
+	paint, alpha = blank()
+	coat(paint, alpha, tint(20, 18, 17), density)
+
+	return paint, alpha, density * 0.3, flat(), edge
+
+
+def stencil(rng, variant):
+	edge = 2.0
+	x, y, step = plane(edge)
+	mask = lettering(rng, step, [("UNSAFE", 0.0), ("KEEP OUT", 0.0)], 230.0, rng.uniform(-0.03, 0.03))
+	paint, alpha = sprayed(rng, step, mask, 18.0, tint(222, 222, 214), 6)
+
+	return paint, alpha, flat(), flat(), edge
+
+
 def frame():
 	reach = (numpy.minimum(numpy.arange(side), side - 1 - numpy.arange(side)) + 0.5) / over
 	fade = smooth(guard, guard + ramp, reach).astype(real)
@@ -1319,6 +1808,30 @@ plan = {
 	37: (scorch, 1, "concrete"),
 	38: (cut, 0, "wood"),
 	39: (cut, 1, "wood"),
+	40: (pothole, 0, "road"),
+	41: (pothole, 1, "road"),
+	42: (repair, 0, "road"),
+	43: (repair, 1, "road"),
+	44: (crack, 0, "road"),
+	45: (crack, 1, "road"),
+	46: (oil, 0, "road"),
+	47: (skid, 0, "road"),
+	48: (manhole, 0, "road"),
+	49: (inspection, 0, "road"),
+	50: (drain, 0, "road"),
+	51: (markings, 0, "road"),
+	52: (leaves, 0, "road"),
+	53: (leaves, 1, "road"),
+	54: (moss, 0, "paving"),
+	55: (wash, 0, "road"),
+	56: (puddle, 0, "road"),
+	57: (puddle, 1, "road"),
+	58: (streaks, 0, "wall"),
+	59: (graffiti, 0, "wall"),
+	60: (graffiti, 1, "wall"),
+	61: (search, 0, "wall"),
+	62: (soot, 0, "wall"),
+	63: (stencil, 0, "wall"),
 }
 
 grounds = {
@@ -1331,6 +1844,9 @@ grounds = {
 	"floor": tint(132, 124, 112),
 	"glass": tint(46, 60, 64),
 	"cloth": tint(86, 90, 72),
+	"road": tint(78, 77, 74),
+	"paving": tint(128, 122, 112),
+	"wall": tint(168, 158, 140),
 }
 
 groups = [
@@ -1343,6 +1859,9 @@ groups = [
 	("lit_28_drips_pools", [28, 29, 30, 31]),
 	("lit_32_glass_fabric", [32, 33, 34, 35]),
 	("lit_36_scorch_cuts", [36, 37, 38, 39]),
+	("lit_40_road_damage", [40, 41, 42, 43, 44, 45, 46, 47]),
+	("lit_48_street", [48, 49, 50, 51, 52, 53, 54, 55]),
+	("lit_56_walls", [56, 57, 58, 59, 60, 61, 62, 63]),
 ]
 
 

@@ -106,6 +106,22 @@ namespace zp
 		rough.clear();
 		gloss.clear();
 
+		for (const auto& stain : maps.stains)
+		{
+			const structures::vec3_s spot{ stain.decal.center.x, stain.decal.center.y, stain.decal.center.z };
+			const auto distance{ mathematics.distance(spot, renderer.camera.position) };
+			const auto reach{ stain.decal.center.w + stain.decal.normal.w };
+
+			if (distance < street_mark_reach && rough.size() + gloss.size() < maximum_decals && mathematics.box_visible(renderer.view_planes, 6u, spot - structures::vec3_s{ reach, reach, reach }, spot + structures::vec3_s{ reach, reach, reach }))
+			{
+				auto instance{ stain.decal };
+
+				instance.tint.w = mathematics.saturate((street_mark_reach - distance) / (street_mark_reach * decal_distance_fade));
+
+				(stain.wet ? gloss : rough).push_back(instance);
+			}
+		}
+
 		if (marks.count && marks.heads.size())
 		{
 			const auto clock{ marks.now() };

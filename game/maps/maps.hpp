@@ -23,6 +23,9 @@ namespace zp
 		std::vector<structures::landmark_s> landmarks;
 		std::vector<structures::road_s> roads;
 		std::vector<structures::footprint_s> footprints;
+		std::vector<structures::stain_s> stains;
+		std::vector<structures::facade_s> facades;
+		std::uint32_t stain_seed = street_seed;
 		std::unordered_map<std::string, std::uint32_t> building_species;
 		std::vector<structures::route_path_s> paths;
 		std::vector<structures::station_s> stations;
@@ -61,6 +64,11 @@ namespace zp
 		void scatter_roadside();
 		void raise_rig();
 		void glow(const char* kind, structures::vec3_s position, bool powered);
+		void stain(std::uint32_t kind, structures::vec3_s position, structures::vec3_s normal, structures::vec3_s axis);
+		void weather_strip(structures::vec2_s from, structures::vec2_s to, std::float_t width, std::float_t top, std::uint32_t row);
+		void weather_area(structures::vec2_s low, structures::vec2_s high, std::float_t top, std::uint32_t row);
+		void deface();
+		std::float_t speckle();
 		void dress_square(structures::vec3_s center);
 		std::float_t paving_top(structures::vec2_s spot);
 		void build_memorial(structures::vec3_s spot);

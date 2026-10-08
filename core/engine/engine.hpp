@@ -494,7 +494,7 @@ namespace zp
 	constexpr auto bullet_range = 500.0f;
 	constexpr auto sprint_to_fire_time = 0.2f;
 	constexpr auto maximum_particles = 4096u;
-	constexpr auto maximum_decals = 1536u;
+	constexpr auto maximum_decals = 3072u;
 	constexpr auto decal_atlas_columns = 8u;
 	constexpr auto decal_rough = 0.92f;
 	constexpr auto decal_gloss = 0.16f;
@@ -1013,7 +1013,8 @@ namespace zp
 			material_flag_glass = 8u,
 			material_flag_unlit = 16u,
 			material_flag_alpha_test = 32u,
-			material_flag_emissive_map = 64u
+			material_flag_emissive_map = 64u,
+			material_flag_detile = 128u
 		};
 		/*
 		//=====================================================================================
@@ -3792,6 +3793,81 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		enum street_mark_e : std::uint32_t
+		{
+			street_pothole,
+			street_repair,
+			street_crack,
+			street_oil,
+			street_skid,
+			street_manhole,
+			street_inspection,
+			street_drain,
+			street_paint,
+			street_leaves,
+			street_moss,
+			street_mud,
+			street_puddle,
+			street_rust,
+			street_graffiti,
+			street_search,
+			street_soot,
+			street_stencil,
+			street_mark_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum street_place_e : std::uint32_t
+		{
+			street_place_anywhere,
+			street_place_middle,
+			street_place_edge,
+			street_place_kerb
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum street_orient_e : std::uint32_t
+		{
+			street_orient_random,
+			street_orient_along,
+			street_orient_either,
+			street_orient_outward
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct street_mark_definition_s
+		{
+			std::uint32_t cell;
+			std::uint32_t variants;
+			std::float_t size;
+			std::float_t vary;
+			std::float_t depth;
+			std::uint32_t place;
+			std::uint32_t orient;
+			bool wet;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct stain_s
+		{
+			decal_gpu_s decal;
+			bool wet;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct facade_s
+		{
+			vec3_s front;
+			vec3_s toward;
+		};
+		/*
+		//=====================================================================================
+		*/
 		enum contents_e : std::uint32_t
 		{
 			contents_solid = 1u,
@@ -4589,6 +4665,12 @@ namespace zp
 			material_terrain_soil,
 			material_berry,
 			material_pond,
+			material_cobbles,
+			material_setts,
+			material_road_cracked,
+			material_road_broken,
+			material_road_crumbled,
+			material_flags,
 			material_count
 		};
 	}
@@ -4673,7 +4755,13 @@ namespace zp
 		{ "terrain_turf", "ground_turf", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
 		{ "terrain_soil", "ground_soil", { 1.0f, 1.0f, 1.0f }, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0u, {} },
 		{ "berry", "painted_steel", { 0.9f, 0.04f, 0.08f }, 3.0f, 0.4f, 0.0f, 0.0f, 0.0f, 0.3f, 0u, {} },
-		{ "pond", "brown_mud_02", { 0.05f, 0.06f, 0.055f }, 0.9f, 0.0f, 0.13f, 0.0f, 0.0f, 0.22f, 0u, {} }
+		{ "pond", "brown_mud_02", { 0.05f, 0.06f, 0.055f }, 0.9f, 0.0f, 0.13f, 0.0f, 0.0f, 0.22f, 0u, {} },
+		{ "cobbles", "cobblestone_floor_08", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} },
+		{ "setts", "cobblestone_large_01", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} },
+		{ "road_cracked", "asphalt_02", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} },
+		{ "road_broken", "road_damaged", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} },
+		{ "road_crumbled", "road_damaged_2", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} },
+		{ "flags", "concrete_pavement_02", { 1.0f, 1.0f, 1.0f }, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, structures::material_flag_parallax | structures::material_flag_detile, {} }
 	};
 
 	constexpr structures::item_definition_s item_definitions[structures::item_count] =
@@ -4990,6 +5078,47 @@ namespace zp
 		{ 36u, 2u, 0.4f, 0.3f, 0.15f, 0.0f, 0.0f, 80.0f, 0.0f, 0.0f, false },
 		{ 38u, 2u, 0.12f, 0.15f, 0.05f, 0.0f, 0.0f, 40.0f, 0.0f, 0.0f, false }
 	};
+	constexpr structures::street_mark_definition_s street_mark_definitions[structures::street_mark_count] =
+	{
+		{ 40u, 2u, 0.8f, 0.25f, 0.14f, structures::street_place_anywhere, structures::street_orient_random, false },
+		{ 42u, 2u, 1.2f, 0.2f, 0.1f, structures::street_place_anywhere, structures::street_orient_either, false },
+		{ 44u, 2u, 1.2f, 0.25f, 0.1f, structures::street_place_anywhere, structures::street_orient_either, false },
+		{ 46u, 1u, 0.8f, 0.35f, 0.08f, structures::street_place_anywhere, structures::street_orient_random, true },
+		{ 47u, 1u, 1.8f, 0.1f, 0.08f, structures::street_place_middle, structures::street_orient_along, false },
+		{ 48u, 1u, 0.475f, 0.0f, 0.12f, structures::street_place_middle, structures::street_orient_random, false },
+		{ 49u, 1u, 0.475f, 0.0f, 0.12f, structures::street_place_anywhere, structures::street_orient_either, false },
+		{ 50u, 1u, 0.35f, 0.0f, 0.12f, structures::street_place_kerb, structures::street_orient_along, false },
+		{ 51u, 1u, 1.6f, 0.0f, 0.08f, structures::street_place_middle, structures::street_orient_along, false },
+		{ 52u, 2u, 0.8f, 0.3f, 0.1f, structures::street_place_edge, structures::street_orient_outward, false },
+		{ 54u, 1u, 0.7f, 0.35f, 0.1f, structures::street_place_edge, structures::street_orient_random, false },
+		{ 55u, 1u, 1.3f, 0.25f, 0.1f, structures::street_place_edge, structures::street_orient_outward, false },
+		{ 56u, 2u, 1.2f, 0.35f, 0.06f, structures::street_place_anywhere, structures::street_orient_random, true },
+		{ 58u, 1u, 1.0f, 0.2f, 0.3f, structures::street_place_anywhere, structures::street_orient_random, false },
+		{ 59u, 2u, 1.2f, 0.1f, 0.3f, structures::street_place_anywhere, structures::street_orient_random, false },
+		{ 61u, 1u, 0.8f, 0.0f, 0.3f, structures::street_place_anywhere, structures::street_orient_random, false },
+		{ 62u, 1u, 1.3f, 0.1f, 0.3f, structures::street_place_anywhere, structures::street_orient_random, false },
+		{ 63u, 1u, 1.0f, 0.0f, 0.3f, structures::street_place_anywhere, structures::street_orient_random, false }
+	};
+	constexpr auto street_ground_kinds = 13u;
+	constexpr auto street_wear_route = 5u;
+	constexpr std::float_t street_wear[6][street_ground_kinds] =
+	{
+		{ 0.06f, 0.08f, 0.16f, 0.05f, 0.015f, 0.06f, 0.0f, 0.12f, 0.0f, 0.14f, 0.03f, 0.05f, 0.06f },
+		{ 0.03f, 0.0f, 0.06f, 0.02f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.16f, 0.14f, 0.12f, 0.08f },
+		{ 0.0f, 0.0f, 0.08f, 0.0f, 0.0f, 0.0f, 0.05f, 0.0f, 0.0f, 0.12f, 0.12f, 0.04f, 0.04f },
+		{ 0.0f, 0.0f, 0.05f, 0.02f, 0.0f, 0.0f, 0.02f, 0.0f, 0.0f, 0.1f, 0.08f, 0.04f, 0.05f },
+		{ 0.02f, 0.0f, 0.06f, 0.04f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1f, 0.12f, 0.1f, 0.08f },
+		{ 0.04f, 0.06f, 0.12f, 0.01f, 0.006f, 0.0f, 0.0f, 0.0f, 0.0f, 0.04f, 0.02f, 0.08f, 0.04f }
+	};
+	constexpr auto street_mark_step = 3.0f;
+	constexpr auto street_mark_reach = 80.0f;
+	constexpr auto street_seed = 0x9E3779B9u;
+	constexpr auto facade_standoff = 2.0f;
+	constexpr auto facade_probe = 4.5f;
+	constexpr auto facade_spread = 4.0f;
+	constexpr std::float_t facade_odds[5] = { 0.22f, 0.36f, 0.42f, 0.62f, 0.7f };
+	constexpr std::uint32_t facade_marks[5] = { structures::street_graffiti, structures::street_search, structures::street_stencil, structures::street_rust, structures::street_soot };
+	constexpr std::float_t facade_heights[5] = { 1.6f, 1.4f, 1.7f, 2.6f, 3.4f };
 	constexpr std::uint32_t surface_marks[structures::surface_count] = { structures::mark_stone, structures::mark_metal, structures::mark_metal, structures::mark_wood, structures::mark_glass, structures::mark_fabric, structures::mark_earth, structures::mark_count, structures::mark_count, structures::mark_earth, structures::mark_sand, structures::mark_stone, structures::mark_earth };
 	constexpr bool surface_hard[structures::surface_count] = { true, true, true, true, true, false, false, false, false, false, false, true, false };
 	constexpr std::uint32_t layer_surfaces[terrain_layer_count] = { structures::surface_grass, structures::surface_grass, structures::surface_dirt, structures::surface_dirt, structures::surface_rock, structures::surface_rock, structures::surface_sand, structures::surface_gravel, structures::surface_dirt, structures::surface_grass, structures::surface_grass, structures::surface_dirt, structures::surface_sand, structures::surface_gravel, structures::surface_grass, structures::surface_dirt };
@@ -5944,11 +6073,11 @@ namespace zp
 	};
 	constexpr structures::town_paving_s town_pavings[structures::town_surface_count] =
 	{
-		{ structures::material_asphalt, { 0.52f, 0.5f, 0.48f }, 0.035f, 3.0f, false },
-		{ structures::material_asphalt, { 0.64f, 0.62f, 0.58f }, 0.03f, 3.0f, false },
-		{ structures::material_floor_worn, { 0.82f, 0.8f, 0.76f }, 0.15f, 2.0f, true },
-		{ structures::material_floor_worn, { 0.92f, 0.88f, 0.82f }, 0.15f, 3.4f, true },
-		{ structures::material_concrete_rough, { 0.78f, 0.77f, 0.75f }, 0.06f, 3.0f, false }
+		{ structures::material_road_cracked, { 0.92f, 0.9f, 0.88f }, 0.035f, 3.0f, false },
+		{ structures::material_setts, { 0.95f, 0.93f, 0.9f }, 0.03f, 3.0f, false },
+		{ structures::material_flags, { 0.9f, 0.89f, 0.87f }, 0.15f, 3.6f, true },
+		{ structures::material_cobbles, { 0.95f, 0.94f, 0.92f }, 0.15f, 2.0f, true },
+		{ structures::material_setts, { 0.85f, 0.84f, 0.82f }, 0.06f, 3.0f, false }
 	};
 	constexpr structures::town_patch_s town_patches[] =
 	{
