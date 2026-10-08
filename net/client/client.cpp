@@ -1377,6 +1377,7 @@ namespace zp
 						actor.death = actor.dead ? actor.death + delta : 0.0f;
 						actor.hidden = actor.dead && loot.nearest(actor.position) >= 0;
 						actor.seated = (newer.flags & structures::movement_seated) != 0u && actor.dead == false;
+						actor.mounted = false;
 
 						for (const auto& vehicle : vehicles.list)
 						{
@@ -1385,6 +1386,7 @@ namespace zp
 								const auto ahead{ mathematics.quat_rotate(vehicle.shown_orientation, { 0.0f, 0.0f, 1.0f }) };
 
 								actor.body_yaw = std::atan2(ahead.x, ahead.z);
+								actor.mounted = vehicle_kinds[vehicle.kind].mode == structures::vehicle_mode_hooves;
 							}
 						}
 						actor.held = remote.item < structures::item_count ? remote.item : 0u;
