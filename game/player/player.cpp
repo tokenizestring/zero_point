@@ -73,7 +73,7 @@ namespace zp
 	void player_c::turn_with_ride()
 	{
 		const auto car{ (state.flags & structures::movement_seated) ? vehicles.find(state.vehicle) : nullptr };
-		const auto driving{ car && vehicle_kinds[car->kind].wheel_count ? vehicle_ride_base + car->id : 0u };
+		const auto driving{ car && vehicle_kinds[car->kind].mode != structures::vehicle_mode_rotor ? vehicle_ride_base + car->id : 0u };
 		const auto riding{ driving ? driving : (train.ready && state.platform && state.platform <= std::size(train_consist) ? state.platform : 0u) };
 
 		if (riding)
@@ -141,7 +141,7 @@ namespace zp
 		{
 			const auto seated{ (state.flags & structures::movement_seated) != 0u };
 
-			if (seated || vehicles.board(state, 0, eye, mathematics.forward_from_angles(yaw, pitch)))
+			if (seated || vehicles.board(state, 0, eye, mathematics.forward_from_angles(yaw, pitch)) || vehicles.tame(state, 0, eye, mathematics.forward_from_angles(yaw, pitch)))
 			{
 				if (seated)
 				{

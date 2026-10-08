@@ -1636,7 +1636,7 @@ namespace zp
 			{
 				const auto seated{ (peer.state.flags & structures::movement_seated) != 0u };
 
-				if (seated || vehicles.board(peer.state, index, peer.state.position + structures::vec3_s{ 0.0f, peer.state.eye_height, 0.0f }, mathematics.forward_from_angles(command.yaw, command.pitch)))
+				if (seated || vehicles.board(peer.state, index, peer.state.position + structures::vec3_s{ 0.0f, peer.state.eye_height, 0.0f }, mathematics.forward_from_angles(command.yaw, command.pitch)) || vehicles.tame(peer.state, index, peer.state.position + structures::vec3_s{ 0.0f, peer.state.eye_height, 0.0f }, mathematics.forward_from_angles(command.yaw, command.pitch)))
 				{
 					if (seated)
 					{
