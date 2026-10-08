@@ -68,6 +68,7 @@
 #include "render/builder/builder.hpp"
 #include "render/sky/sky.hpp"
 #include "render/atmosphere/atmosphere.hpp"
+#include "render/clouds/clouds.hpp"
 #include "render/shadows/shadows.hpp"
 #include "render/tracer/tracer.hpp"
 #include "render/probes/probes.hpp"

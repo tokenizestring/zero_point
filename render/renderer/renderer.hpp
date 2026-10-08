@@ -58,6 +58,7 @@ namespace zp
 		ID3D11Buffer* light_buffer = nullptr;
 		ID3D11ShaderResourceView* light_view = nullptr;
 		ID3D11ShaderResourceView* occlusion_view = nullptr;
+		ID3D11ShaderResourceView* cloud_view = nullptr;
 
 		std::uint64_t frame_index = 0u;
 		std::float_t exposure = 1.0f;

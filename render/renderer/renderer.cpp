@@ -69,6 +69,8 @@ namespace zp
 
 		profiler.create();
 
+		clouds.create();
+
 		return gbuffer_vs && gbuffer_ps && gbuffer_layout && gbuffer_skinned_vs && skinned_layout && palette_view && lighting_cs && fullscreen_vs && tonemap_ps && frame_buffer && object_buffer && post_buffer && shadows.create() && post_process.create() && ssao.create();
 	}
 	/*
@@ -106,6 +108,8 @@ namespace zp
 
 		ssao.destroy();
 
+		clouds.destroy();
+
 		profiler.report();
 
 		profiler.destroy();
@@ -124,6 +128,7 @@ namespace zp
 		settings.ambient_occlusion = level >= structures::quality_medium ? level : 0u;
 		settings.reflections = level >= structures::quality_high ? level : 0u;
 		settings.volumetrics = level >= structures::quality_high ? level : 0u;
+		settings.clouds = level >= structures::quality_medium ? level : 0u;
 		settings.textures = level >= structures::quality_medium ? 2u : 1u;
 		settings.anisotropy = level >= structures::quality_high ? 16u : 4u;
 		settings.effects = level;
@@ -189,6 +194,7 @@ namespace zp
 			result = gpu.create_target(hdr, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, structures::target_rtv | structures::target_srv | structures::target_uav) && result;
 			result = post_process.resize(width, height) && result;
 			result = ssao.resize(width, height) && result;
+			result = clouds.resize(width, height) && result;
 			result = water.resize(width, height) && result;
 
 			camera_valid = false;
@@ -464,6 +470,10 @@ namespace zp
 
 		profiler.mark(structures::profile_ssao);
 
+		cloud_view = clouds.compute(settings.clouds, frame_index);
+
+		profiler.mark(structures::profile_clouds);
+
 		render_lighting();
 
 		profiler.mark(structures::profile_lighting);
@@ -512,7 +522,7 @@ namespace zp
 
 		if (facing > 0.1f && sky.sun_direction.y > -0.05f && mathematics.project(camera.position + sky.sun_direction * 1000.0f, camera.view_projection, { 1.0f, 1.0f }, sun))
 		{
-			post_process.light_shafts(hdr.rtv, depth.srv, fullscreen_vs, sun, shaft_strength * mathematics.saturate((facing - 0.1f) * 2.5f) * (1.0f - weather.cloud_now * 0.85f));
+			post_process.light_shafts(hdr.rtv, depth.srv, cloud_view, fullscreen_vs, sun, shaft_strength * mathematics.saturate((facing - 0.1f) * 2.5f) * (1.0f - weather.cloud_now * 0.85f));
 		}
 	}
 	/*
@@ -754,22 +764,24 @@ namespace zp
 	*/
 	void renderer_c::render_lighting()
 	{
-		ID3D11ShaderResourceView* resources[18] = { gbuffer[0].srv, gbuffer[1].srv, gbuffer[2].srv, gbuffer[3].srv, depth.srv, shadows.resource ? shadows.resource : white.srv, sky.prefiltered, sky.lut, sky.equirect, occlusion_view ? occlusion_view : white.srv, black.srv, light_view, probes.views[0], probes.views[1], probes.views[2], probes.views[3], water.normal_view ? water.normal_view : black.srv, weather.roof_view ? weather.roof_view : black.srv };
+		ID3D11ShaderResourceView* resources[20] = { gbuffer[0].srv, gbuffer[1].srv, gbuffer[2].srv, gbuffer[3].srv, depth.srv, shadows.resource ? shadows.resource : white.srv, sky.prefiltered, sky.lut, cloud_view && atmosphere.clear_view ? atmosphere.clear_view : sky.equirect, occlusion_view ? occlusion_view : white.srv, black.srv, light_view, probes.views[0], probes.views[1], probes.views[2], probes.views[3], water.normal_view ? water.normal_view : black.srv, weather.roof_view ? weather.roof_view : black.srv, cloud_view ? cloud_view : black.srv, clouds.shadow_map.srv ? clouds.shadow_map.srv : white.srv };
 		ID3D11SamplerState* samplers[4] = { gpu.sampler_linear_clamp, gpu.sampler_shadow, gpu.sampler_linear_wrap, gpu.sampler_point_clamp };
-		ID3D11ShaderResourceView* unbound[18]{};
+		ID3D11ShaderResourceView* unbound[20]{};
 		ID3D11UnorderedAccessView* none{ nullptr };
 
 		shadows.bind(2u);
 
+		clouds.bind();
+
 		gpu.context->CSSetShader(lighting_cs, nullptr, 0u);
-		gpu.context->CSSetShaderResources(0u, 18u, resources);
+		gpu.context->CSSetShaderResources(0u, 20u, resources);
 		gpu.context->CSSetSamplers(0u, 4u, samplers);
 		gpu.context->CSSetUnorderedAccessViews(0u, 1u, &hdr.uav, nullptr);
 
 		gpu.context->Dispatch((width + light_tile_size - 1u) / light_tile_size, (height + light_tile_size - 1u) / light_tile_size, 1u);
 
 		gpu.context->CSSetUnorderedAccessViews(0u, 1u, &none, nullptr);
-		gpu.context->CSSetShaderResources(0u, 18u, unbound);
+		gpu.context->CSSetShaderResources(0u, 20u, unbound);
 	}
 	/*
 	//=====================================================================================

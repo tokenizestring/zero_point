@@ -2,6 +2,7 @@
 //=====================================================================================
 
 #include "common.hlsli"
+#include "clouds.hlsli"
 
 struct light_data
 {
@@ -31,6 +32,8 @@ Texture3D<float4> probe_blue : register(t14);
 Texture3D<float2> probe_state : register(t15);
 Texture2D<float4> water_normal_map : register(t16);
 Texture2D<float> roof_map : register(t17);
+Texture2D<float4> cloud_texture : register(t18);
+Texture2D<float> cloud_shadows : register(t19);
 RWTexture2D<float4> output : register(u0);
 SamplerState linear_clamp : register(s0);
 SamplerComparisonState shadow_sampler : register(s1);
@@ -219,6 +222,15 @@ float3 sky_radiance(float3 direction)
 /*
 //=====================================================================================
 */
+float3 cloud_blend(float3 color, float2 uv)
+{
+	float4 cloud = cloud_texture.SampleLevel(linear_clamp, uv, 0.0);
+
+	return color * cloud.a + cloud.rgb;
+}
+/*
+//=====================================================================================
+*/
 float slope_divergence(float2 uv, float tile)
 {
 	float texel = 1.0 / 256.0;
@@ -376,6 +388,11 @@ void cs_main(uint3 id : SV_DispatchThreadID, uint3 group : SV_GroupID, uint thre
 			float3 direction = normalize(far_point - camera_position.xyz);
 			float3 radiance = overcast(sky_radiance(direction), 0.55 + 0.25 * saturate(direction.y * 2.0)) + weather_params.z * float3(1.6, 1.7, 2.0) * saturate(direction.y + 0.3);
 
+			[branch] if (cloud_state.x > 0.5)
+			{
+				radiance = cloud_blend(radiance, uv);
+			}
+
 			color = apply_fog(radiance, camera_position.xyz + direction * 6000.0);
 		}
 
@@ -416,7 +433,7 @@ void cs_main(uint3 id : SV_DispatchThreadID, uint3 group : SV_GroupID, uint thre
 
 			[branch] if ((flags & 2u) == 0u)
 			{
-				float shadow = sun_shadow(world_position, n, view_depth, float2(id.xy));
+				float shadow = sun_shadow(world_position, n, view_depth, float2(id.xy)) * cloud_sunlight(cloud_shadows, linear_clamp, world_position);
 				float sky_visibility = 1.0;
 				float3 irradiance = probe_counts.w > 0.5 ? probe_irradiance(world_position, n, sky_visibility) : sh_irradiance(n);
 
@@ -491,6 +508,15 @@ void cs_main(uint3 id : SV_DispatchThreadID, uint3 group : SV_GroupID, uint thre
 
 			[branch] if (viewmodel == false)
 			{
+				float3 offset = world_position - camera_position.xyz;
+				float range = length(offset);
+				float2 span = cloud_state.x > 0.5 ? cloud_interval(camera_position.y, offset.y / max(range, 0.0001)) : float2(1.0, 0.0);
+
+				[branch] if (span.y > span.x && range > span.x)
+				{
+					color = cloud_blend(color, uv);
+				}
+
 				color = apply_fog(color, world_position);
 			}
 		}
