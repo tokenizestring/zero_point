@@ -58,6 +58,7 @@ namespace zp
 		void fixture(const char* model_name, structures::vec3_s position, std::float_t yaw, std::uint32_t surface);
 		void light_streets(structures::vec3_s center);
 		void litter_town(structures::vec3_s center);
+		void scatter_roadside();
 		void dress_square(structures::vec3_s center);
 		std::float_t paving_top(structures::vec2_s spot);
 		void build_memorial(structures::vec3_s spot);

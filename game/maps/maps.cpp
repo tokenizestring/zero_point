@@ -1243,6 +1243,8 @@ namespace zp
 
 		logger.write("maps: %zu fresh springs", farming.springs.size());
 
+		scatter_roadside();
+
 		auto seed{ 0x9E3779B9u };
 
 		const auto random = [&]()
@@ -2022,6 +2024,75 @@ namespace zp
 				}
 			}
 		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::scatter_roadside()
+	{
+		auto placed{ 0u };
+
+		for (const auto& path : paths)
+		{
+			auto travelled{ 0.0f };
+			auto next{ mathematics.lerp(roadside_gap_min, roadside_gap_max, chance()) };
+
+			for (auto index{ 1u }; path.kind == structures::route_road && index < path.points.size(); index++)
+			{
+				const auto& from{ path.points[index - 1u] };
+				const auto& to{ path.points[index] };
+				const structures::vec3_s span{ to.x - from.x, 0.0f, to.z - from.z };
+
+				travelled += mathematics.length(span);
+
+				if (travelled >= next)
+				{
+					const auto along{ mathematics.normalize(span) };
+					const auto side{ chance() < 0.5f ? 1.0f : -1.0f };
+					const auto offset{ (path.width * 0.5f + roadside_shoulder + chance() * roadside_spread) * side };
+					const structures::vec3_s spot{ to.x + along.z * offset, 0.0f, to.z - along.x * offset };
+					const auto open{ std::none_of(clearings.begin(), clearings.end(), [&](const structures::vec4_s& clearing) { return mathematics.length(structures::vec2_s{ spot.x - clearing.x, spot.z - clearing.z }) < clearing.w + roadside_clearance; }) && std::none_of(crossings.begin(), crossings.end(), [&](const structures::crossing_s& crossing) { return mathematics.length(structures::vec2_s{ spot.x - crossing.position.x, spot.z - crossing.position.z }) < roadside_clearance; }) };
+
+					travelled = 0.0f;
+					next = mathematics.lerp(roadside_gap_min, roadside_gap_max, chance());
+
+					if (open && terrain.height(spot.x, spot.z) > sea_level + 1.0f && terrain.normal(spot.x, spot.z).y > roadside_steep)
+					{
+						const auto yaw{ std::atan2(along.x, along.z) + (chance() - 0.5f) * 0.8f + (chance() < 0.5f ? pi : 0.0f) };
+						const auto pick{ std::min(static_cast<std::size_t>(chance() * static_cast<std::float_t>(std::size(roadside_wrecks))), std::size(roadside_wrecks) - 1u) };
+
+						fixture(roadside_wrecks[pick], { spot.x, terrain.height(spot.x, spot.z), spot.z }, yaw, structures::surface_metal);
+
+						clearings.push_back({ spot.x, 0.0f, spot.z, roadside_room });
+
+						terrain.mask_rectangle({ spot.x, terrain.height(spot.x, spot.z), spot.z }, 1.3f, 2.4f, yaw);
+
+						if (placed < 3u)
+						{
+							logger.write("maps: roadside %s at %.1f %.1f %.1f facing %.2f", roadside_wrecks[pick], spot.x, terrain.height(spot.x, spot.z), spot.z, yaw);
+						}
+
+						if (chance() < roadside_barrel_chance)
+						{
+							const auto drum{ spot + mathematics.flat_forward(yaw + half_pi) * (2.4f + chance()) };
+
+							barrel_node({ drum.x, terrain.height(drum.x, drum.z), drum.z });
+						}
+
+						if (chance() < roadside_crate_chance)
+						{
+							const auto crate{ spot - mathematics.flat_forward(yaw) * (3.0f + chance()) };
+
+							container_node(chance() < 0.7f ? structures::node_box : structures::node_toolbox, { crate.x, terrain.height(crate.x, crate.z), crate.z }, yaw + chance());
+						}
+
+						placed++;
+					}
+				}
+			}
+		}
+
+		logger.write("maps: %u roadside wrecks", placed);
 	}
 	/*
 	//=====================================================================================
