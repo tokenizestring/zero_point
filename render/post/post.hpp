@@ -50,7 +50,7 @@ namespace zp
 		ID3D11ShaderResourceView* resolve(ID3D11ShaderResourceView* current, ID3D11ShaderResourceView* motion, ID3D11ShaderResourceView* depth_view, bool enabled);
 		void expose(ID3D11ShaderResourceView* scene, std::float_t delta);
 		ID3D11ShaderResourceView* bloom_chain(ID3D11ShaderResourceView* scene, ID3D11VertexShader* fullscreen);
-		void light_shafts(ID3D11RenderTargetView* scene, ID3D11ShaderResourceView* depth_view, ID3D11VertexShader* fullscreen, structures::vec2_s sun, std::float_t strength);
+		void light_shafts(ID3D11RenderTargetView* scene, ID3D11ShaderResourceView* depth_view, ID3D11ShaderResourceView* cloud_view, ID3D11VertexShader* fullscreen, structures::vec2_s sun, std::float_t strength);
 		void fullscreen_pass(ID3D11RenderTargetView* target, std::uint32_t target_width, std::uint32_t target_height, ID3D11ShaderResourceView* source, ID3D11PixelShader* shader, ID3D11BlendState* blend);
 	};
 

@@ -230,11 +230,12 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void post_c::light_shafts(ID3D11RenderTargetView* scene, ID3D11ShaderResourceView* depth_view, ID3D11VertexShader* fullscreen, structures::vec2_s sun, std::float_t strength)
+	void post_c::light_shafts(ID3D11RenderTargetView* scene, ID3D11ShaderResourceView* depth_view, ID3D11ShaderResourceView* cloud_view, ID3D11VertexShader* fullscreen, structures::vec2_s sun, std::float_t strength)
 	{
-		const structures::shaft_constants_s constants{ { sun.x, sun.y, strength, 0.0f }, { shaft_decay, shaft_reach, 0.0f, shaft_focus } };
+		const structures::shaft_constants_s constants{ { sun.x, sun.y, strength, 0.0f }, { shaft_decay, shaft_reach, cloud_view ? 1.0f : 0.0f, shaft_focus } };
 
-		ID3D11ShaderResourceView* unbound{ nullptr };
+		ID3D11ShaderResourceView* masks[2] = { depth_view, cloud_view };
+		ID3D11ShaderResourceView* unbound[2]{};
 
 		gpu.update_buffer(shaft_buffer, &constants, sizeof(constants));
 
@@ -245,11 +246,11 @@ namespace zp
 		gpu.context->OMSetDepthStencilState(gpu.depth_none, 0u);
 		gpu.context->PSSetSamplers(0u, 1u, &gpu.sampler_linear_clamp);
 		gpu.context->PSSetConstantBuffers(7u, 1u, &shaft_buffer);
-		gpu.context->PSSetShaderResources(1u, 1u, &depth_view);
+		gpu.context->PSSetShaderResources(1u, 2u, masks);
 
 		fullscreen_pass(shafts[0].rtv, shafts[0].width, shafts[0].height, nullptr, shaft_mask_ps, gpu.blend_opaque);
 
-		gpu.context->PSSetShaderResources(1u, 1u, &unbound);
+		gpu.context->PSSetShaderResources(1u, 2u, unbound);
 
 		fullscreen_pass(shafts[1].rtv, shafts[1].width, shafts[1].height, shafts[0].srv, shaft_blur_ps, gpu.blend_opaque);
 		fullscreen_pass(scene, width, height, shafts[1].srv, shaft_apply_ps, gpu.blend_additive);

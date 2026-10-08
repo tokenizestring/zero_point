@@ -11,6 +11,7 @@ cbuffer shaft_constants : register(b7)
 
 Texture2D<float4> source_texture : register(t0);
 Texture2D<float> depth_texture : register(t1);
+Texture2D<float4> cloud_texture : register(t2);
 SamplerState linear_clamp : register(s0);
 
 static const int shaft_samples = 48;
@@ -36,8 +37,9 @@ float4 ps_mask(fullscreen_output input) : SV_Target
 
 	float2 delta = (input.uv - shaft_sun.xy) * float2(screen.x * screen.w, 1.0);
 	float glow = exp(-dot(delta, delta) * shaft_params.w);
+	float open = shaft_params.z > 0.5 ? cloud_texture.SampleLevel(linear_clamp, input.uv, 0.0).a : 1.0;
 
-	return float4(sky * (0.2 + glow), 0.0, 0.0, 0.0);
+	return float4(sky * open * (0.2 + glow), 0.0, 0.0, 0.0);
 }
 /*
 //=====================================================================================
