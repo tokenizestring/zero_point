@@ -460,6 +460,13 @@ namespace zp
 					index++;
 				}
 
+				else if (std::strcmp(current, "--ragdolls") == 0 && next[0])
+				{
+					options.ragdoll_test = static_cast<std::uint32_t>(std::clamp(std::atoi(next), 0, 8));
+
+					index++;
+				}
+
 				else if (std::strcmp(current, "--hunt") == 0 && next[0])
 				{
 					options.hunt_herd = std::atoi(next);
@@ -822,6 +829,18 @@ namespace zp
 
 			actors.list[1].position = { front.x, terrain.height(front.x, front.z), front.z };
 			actors.list[1].alerted = true;
+		}
+
+		for (auto index{ 0u }; index < options.ragdoll_test; index++)
+		{
+			const auto yaw{ options.camera_set ? degrees_to_radians(options.camera[3]) : player.yaw };
+			const structures::vec3_s eye{ options.camera_set ? structures::vec3_s{ options.camera[0], options.camera[1], options.camera[2] } : player.state.position };
+			const auto spot{ eye + mathematics.flat_forward(yaw + (static_cast<std::float_t>(index) - static_cast<std::float_t>(options.ragdoll_test - 1u) * 0.5f) * 0.3f) * (5.0f + static_cast<std::float_t>(index % 2u) * 1.5f) };
+
+			if (const auto body{ actors.spawn(actors.survivor(), { spot.x, terrain.height(spot.x, spot.z), spot.z }, yaw + pi + static_cast<std::float_t>(index) * 0.9f, structures::actor_behavior_corpse) }; body)
+			{
+				body->dead = false;
+			}
 		}
 
 		if (options.hunt_herd >= 0 && fauna.herds.size())
@@ -1457,6 +1476,19 @@ namespace zp
 		if (options.impact_test && frame_index == 5u)
 		{
 			stage_marks();
+		}
+
+		if (options.ragdoll_test && frame_index == ragdoll_test_frame)
+		{
+			for (auto& actor : actors.list)
+			{
+				if (actor.behavior == structures::actor_behavior_corpse && actor.dead == false)
+				{
+					actor.dead = true;
+					actor.death = 0.0f;
+					actor.shove = mathematics.flat_forward(actor.body_yaw + pi + mathematics.hash_float(actor.seed) - 0.5f) * ragdoll_shot_shove + structures::vec3_s{ 0.0f, 0.4f, 0.0f };
+				}
+			}
 		}
 
 		const auto charted{ chart.open };
