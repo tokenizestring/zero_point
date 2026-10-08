@@ -361,6 +361,23 @@ namespace zp
 	constexpr auto moon_irradiance = 0.1f;
 	constexpr auto atmosphere_bounce = 0.5f;
 	constexpr auto atmosphere_coverage = 0.36f;
+	constexpr auto cloud_shape_size = 128u;
+	constexpr auto cloud_detail_size = 32u;
+	constexpr auto cloud_weather_size = 512u;
+	constexpr auto cloud_noise_group = 4u;
+	constexpr auto cloud_shadow_size = 256u;
+	constexpr auto cloud_shadow_extent = 12000.0f;
+	constexpr auto cloud_bottom = 1400.0f;
+	constexpr auto cloud_top = 3800.0f;
+	constexpr auto cloud_storm_bottom = 850.0f;
+	constexpr auto cloud_extinction = 0.035f;
+	constexpr auto cloud_shadow_floor = 0.22f;
+	constexpr auto cloud_evolve = 0.35f;
+	constexpr auto cloud_light = 1.0f;
+	constexpr auto cloud_ambient = 1.0f;
+	constexpr auto cloud_wind_x = 9.0f;
+	constexpr auto cloud_wind_z = 4.0f;
+	constexpr std::float_t cloud_steps[5] = { 0.0f, 32.0f, 40.0f, 56.0f, 80.0f };
 	constexpr auto sun_tilt = 0.55f;
 	constexpr auto moon_tilt = 0.35f;
 	constexpr auto day_length = 2400.0f;
@@ -1172,6 +1189,7 @@ namespace zp
 			profile_models,
 			profile_decals,
 			profile_ssao,
+			profile_clouds,
 			profile_lighting,
 			profile_effects,
 			profile_post,
@@ -2170,6 +2188,7 @@ namespace zp
 			bool calm_camera;
 			bool ear_ringing;
 			bool censor;
+			std::uint32_t clouds;
 		};
 		/*
 		//=====================================================================================
@@ -3486,6 +3505,18 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		struct cloud_constants_s
+		{
+			vec4_s layer;
+			vec4_s wind;
+			vec4_s shade;
+			vec4_s target;
+			vec4_s state;
+			vec4_s area;
+		};
+		/*
+		//=====================================================================================
+		*/
 		struct post_constants_s
 		{
 			vec4_s params;
@@ -3541,6 +3572,7 @@ namespace zp
 			std::uint32_t ambient_occlusion;
 			std::uint32_t reflections;
 			std::uint32_t volumetrics;
+			std::uint32_t clouds;
 			std::uint32_t textures;
 			std::uint32_t anisotropy;
 			std::uint32_t effects;
@@ -5387,7 +5419,7 @@ namespace zp
 		{ 0.0f, 2.0f, 0.0f }
 	};
 
-	constexpr const char* profile_names[structures::profile_count] = { "c0 ground", "c0 foliage", "c1 ground", "c1 foliage", "c2 ground", "c2 foliage", "c3 ground", "c3 foliage", "world", "terrain", "foliage", "grass", "models", "decals", "ssao", "lighting", "effects", "post" };
+	constexpr const char* profile_names[structures::profile_count] = { "c0 ground", "c0 foliage", "c1 ground", "c1 foliage", "c2 ground", "c2 foliage", "c3 ground", "c3 foliage", "world", "terrain", "foliage", "grass", "models", "decals", "ssao", "clouds", "lighting", "effects", "post" };
 
 	constexpr structures::vec4_s grass_sprites[grass_sprite_count] =
 	{
@@ -5583,6 +5615,7 @@ namespace zp
 		functions::choice_row(structures::tab_graphics, "ambient_occlusion", "Ambient occlusion", "Darkens corners, creases and the ground under objects so everything sits in the world.", 2u, &structures::user_settings_s::ambient_occlusion, option_occlusion, static_cast<std::uint32_t>(std::size(option_occlusion)), true),
 		functions::choice_row(structures::tab_graphics, "reflections", "Reflections", "Reflections of the shore, the sky and the sun on the sea.", 2u, &structures::user_settings_s::reflections, option_off_on, 2u, true),
 		functions::choice_row(structures::tab_graphics, "light_shafts", "Light shafts", "Beams of sunlight breaking through trees, haze and fog.", 1u, &structures::user_settings_s::light_shafts, option_off_on, 2u, true),
+		functions::choice_row(structures::tab_graphics, "clouds", "Volumetric clouds", "Real three-dimensional clouds that drift with the wind, glow at sunrise and sunset and cast moving shadows over the island. Off draws a flat cloud layer instead.", 2u, &structures::user_settings_s::clouds, option_off_on, 2u, true),
 		functions::choice_row(structures::tab_graphics, "texture_filter", "Texture filtering", "Keeps the ground, roads and walls sharp when you look along them.", 1u, &structures::user_settings_s::texture_filter, option_filtering, static_cast<std::uint32_t>(std::size(option_filtering)), true),
 		functions::choice_row(structures::tab_graphics, "vegetation", "Vegetation distance", "How far away trees and bushes keep their full detail before they swap to simpler versions.", 3u, &structures::user_settings_s::vegetation, option_distances, static_cast<std::uint32_t>(std::size(option_distances)), true),
 		functions::choice_row(structures::tab_graphics, "grass", "Grass density", "How thick the grass grows and how far out it is drawn around you.", 3u, &structures::user_settings_s::grass, option_density, static_cast<std::uint32_t>(std::size(option_density)), true),
@@ -5711,7 +5744,7 @@ namespace zp
 		"Lay down a sleeping bag before you die, not after."
 	};
 
-	constexpr structures::user_settings_s default_user_settings{ structures::quality_high, 1.0f, 95.0f, 1.0f, 0.85f, 1.0f, 1.0f, 1.0f, true, true, false, false, { 'W', 'S', 'A', 'D', VK_SPACE, VK_CONTROL, VK_SHIFT, VK_MENU, 'E', 'R', 'R', VK_TAB, 'M', 'T', 'F', 'G', 'V' }, 1u, 1u, 0u, 1u, 3u, 2u, 1u, 1u, 3u, 2u, 2u, 1u, true, false, true, 0.35f, false, 0.7f, false, 0.8f, 0u, 0u, 0u, 2u, 1u, true, true, true, 1u, 0u, true, true, 1.0f, 0u, false, false, true, true, true, true, false, true, false };
+	constexpr structures::user_settings_s default_user_settings{ structures::quality_high, 1.0f, 95.0f, 1.0f, 0.85f, 1.0f, 1.0f, 1.0f, true, true, false, false, { 'W', 'S', 'A', 'D', VK_SPACE, VK_CONTROL, VK_SHIFT, VK_MENU, 'E', 'R', 'R', VK_TAB, 'M', 'T', 'F', 'G', 'V' }, 1u, 1u, 0u, 1u, 3u, 2u, 1u, 1u, 3u, 2u, 2u, 1u, true, false, true, 0.35f, false, 0.7f, false, 0.8f, 0u, 0u, 0u, 2u, 1u, true, true, true, 1u, 0u, true, true, 1.0f, 0u, false, false, true, true, true, true, false, true, false, 1u };
 	constexpr const char* bind_names[structures::bind_count] = { "Move forward", "Move back", "Move left", "Move right", "Jump", "Crouch", "Sprint", "Walk", "Use", "Reload", "Rotate or next piece", "Inventory", "Map", "Chat", "Melee", "Throw", "Visor" };
 	constexpr const char* compass_points[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 	constexpr const char* marker_prefixes[6] = { "col_", "ramp_", "loot_", "light_", "seat_", "exhaust" };
@@ -5739,7 +5772,7 @@ namespace zp
 	constexpr auto town_wrecks = 12u;
 	constexpr auto town_junction_clear = 9.0f;
 	constexpr const char* town_lamp_model = "street_lamp_01";
-	constexpr const char* town_wreck_models[2] = { "covered_car", "prop_wreck_hatch" };
+	constexpr const char* town_wreck_models[4] = { "covered_car", "prop_wreck_hatch", "prop_wreck_saloon", "prop_wreck_van" };
 	constexpr auto town_loot_chance = 0.45f;
 	constexpr const char* town_barrier_models[2] = { "concrete_road_barrier", "concrete_road_barrier_02" };
 	constexpr structures::town_building_s town_buildings[structures::town_building_count] =
