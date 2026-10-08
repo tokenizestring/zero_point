@@ -240,7 +240,22 @@ namespace zp
 			static_lights.push_back(convert_light(light));
 		}
 
-		frame_lights = static_lights;
+		gather_lights();
+	}
+	/*
+	//=====================================================================================
+	*/
+	void renderer_c::gather_lights()
+	{
+		frame_lights.clear();
+
+		for (const auto& light : static_lights)
+		{
+			if (mathematics.distance(light.position, camera.position) < light.radius + light_cull_distance)
+			{
+				frame_lights.push_back(light);
+			}
+		}
 	}
 	/*
 	//=====================================================================================
@@ -507,7 +522,7 @@ namespace zp
 		skinned_draws.clear();
 		palette_rows.clear();
 
-		frame_lights = static_lights;
+		gather_lights();
 
 		frame_index++;
 	}

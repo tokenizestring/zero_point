@@ -76,6 +76,7 @@ namespace zp
 		void destroy_targets();
 		void set_world();
 		void set_lights(const std::vector<structures::light_s>& lights);
+		void gather_lights();
 		void add_light(structures::vec3_s position, std::float_t radius, structures::vec3_s color);
 		void add_spot(structures::vec3_s position, std::float_t radius, structures::vec3_s color, structures::vec3_s direction, std::float_t cosine);
 		structures::light_gpu_s convert_light(const structures::light_s& light);
