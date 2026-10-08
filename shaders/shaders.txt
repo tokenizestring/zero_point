@@ -30,6 +30,12 @@ sky cs_prefilter cs_5_0 sky_prefilter_cs
 sky cs_brdf_lut cs_5_0 sky_lut_cs
 atmosphere cs_atmosphere cs_5_0 atmosphere_cs
 atmosphere cs_sh cs_5_0 atmosphere_sh_cs
+clouds cs_shape cs_5_0 clouds_shape_cs
+clouds cs_detail cs_5_0 clouds_detail_cs
+clouds cs_weather cs_5_0 clouds_weather_cs
+clouds cs_march cs_5_0 clouds_march_cs
+clouds cs_resolve cs_5_0 clouds_resolve_cs
+clouds cs_shadow cs_5_0 clouds_shadow_cs
 post vs_fullscreen vs_5_0 fullscreen_vs
 post ps_tonemap ps_5_0 tonemap_ps
 taa cs_main cs_5_0 taa_cs
