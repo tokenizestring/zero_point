@@ -39,15 +39,13 @@ namespace zp
 			{ "tree_dead_2", 8000u, 1200u }
 		};
 		constexpr auto terrain_seed = 20260928u;
-		constexpr auto terrain_cache_version = 7u;
-		constexpr auto bluff_guard = 55.0f;
-		constexpr auto bluff_height = 17.0f;
-		constexpr auto bluff_northern = 15.0f;
-		constexpr auto bluff_face = 11.0f;
-		constexpr auto bluff_reach = 320.0f;
-		constexpr auto terrain_erosion_size = 2305u;
-		constexpr auto terrain_erosion_cell = 2.0f;
-		constexpr auto terrain_erosion_droplets = 1920000u;
+		constexpr auto terrain_cache_version = 8u;
+		constexpr auto macro_size = 1536u;
+		constexpr auto macro_cell = 8.0f;
+		constexpr auto macro_detail = 1.6f;
+		constexpr auto terrain_erosion_size = 3073u;
+		constexpr auto terrain_erosion_cell = 4.0f;
+		constexpr auto terrain_erosion_droplets = 1200000u;
 		constexpr auto terrain_erosion_steps = 64u;
 		constexpr auto terrain_erosion_radius = 4;
 		constexpr auto terrain_height_scale = 200.0f;
@@ -64,11 +62,9 @@ namespace zp
 		constexpr auto biome_wind_steps = 20u;
 		constexpr auto biome_wind_stride = 40.0f;
 		constexpr auto biome_warp = 9.0f;
-		constexpr auto biome_farm_reach = 460.0f;
 		constexpr structures::vec2_s biome_upwind{ -0.94f, -0.34f };
 		constexpr structures::vec3_s layer_colors[terrain_layer_count] = { { 0.28f, 0.42f, 0.16f }, { 0.52f, 0.5f, 0.28f }, { 0.24f, 0.2f, 0.12f }, { 0.4f, 0.3f, 0.2f }, { 0.45f, 0.44f, 0.42f }, { 0.36f, 0.35f, 0.34f }, { 0.86f, 0.78f, 0.58f }, { 0.55f, 0.52f, 0.48f }, { 0.3f, 0.19f, 0.11f }, { 0.36f, 0.24f, 0.34f }, { 0.55f, 0.47f, 0.24f }, { 0.16f, 0.2f, 0.13f }, { 0.92f, 0.86f, 0.68f }, { 0.62f, 0.58f, 0.56f }, { 0.34f, 0.5f, 0.2f }, { 0.3f, 0.21f, 0.15f } };
 		constexpr structures::vec3_s biome_colors[structures::biome_count] = { { 0.05f, 0.18f, 0.3f }, { 0.9f, 0.84f, 0.62f }, { 0.45f, 0.45f, 0.48f }, { 0.95f, 0.9f, 0.45f }, { 0.1f, 0.45f, 0.5f }, { 0.45f, 0.75f, 0.25f }, { 0.85f, 0.65f, 0.2f }, { 0.1f, 0.5f, 0.12f }, { 0.02f, 0.28f, 0.2f }, { 0.65f, 0.3f, 0.65f }, { 0.6f, 0.45f, 0.25f }, { 0.85f, 0.85f, 0.9f } };
-		constexpr std::uint32_t farm_sites[] = { structures::landmark_town, structures::landmark_ouen, structures::landmark_portelet, structures::landmark_rozel, structures::landmark_landes, structures::landmark_trinity, structures::landmark_halt };
 		constexpr auto clip_offset_tolerance = 0.001f;
 		constexpr const char* clip_retarget_prefixes[] = { "m_", "f_" };
 		constexpr std::uint32_t bc7_weights[16] = { 0u, 4u, 9u, 13u, 17u, 21u, 26u, 30u, 34u, 38u, 43u, 47u, 51u, 55u, 60u, 64u };
@@ -410,6 +406,8 @@ namespace zp
 	{
 	public:
 
+		std::vector<std::float_t> macro;
+		std::uint32_t macro_stamp = 0u;
 		std::vector<std::float_t> coarse;
 		std::vector<std::float_t> coarse_flow;
 		std::vector<std::float_t> heights;
@@ -427,7 +425,8 @@ namespace zp
 		std::vector<std::uint8_t> control;
 		std::vector<baker::pak_item_s> items;
 
-		bool bake(const std::string& cache_path, const std::string& preview_path, bool use_cache);
+		bool bake(const std::string& cache_path, const std::string& preview_path, const std::string& macro_path, bool use_cache);
+		bool load_macro(const std::string& path);
 		void classify();
 		void blend(std::float_t x, std::float_t z, std::float_t* weights);
 		void add_compressed(const char* name, std::uint32_t size, const std::vector<std::uint8_t>& base);
@@ -441,7 +440,6 @@ namespace zp
 		void save_cache(const std::string& path);
 		void shape();
 		std::float_t elevation(std::float_t x, std::float_t z);
-		std::float_t clearance(std::float_t x, std::float_t z);
 		void erode();
 		void refine();
 		void settle();

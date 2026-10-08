@@ -9,79 +9,120 @@ namespace zp
 {
 	baker_terrain_c baker_terrain;
 
-	bool baker_terrain_c::bake(const std::string& cache_path, const std::string& preview_path, bool use_cache)
+	bool baker_terrain_c::bake(const std::string& cache_path, const std::string& preview_path, const std::string& macro_path, bool use_cache)
 	{
 		const auto start{ GetTickCount64() };
 
-		if (use_cache && load_cache(cache_path))
+		if (load_macro(macro_path))
 		{
-			logger.write("baker: terrain heights loaded from cache");
+			if (use_cache && load_cache(cache_path))
+			{
+				logger.write("baker: terrain heights loaded from cache");
+			}
+
+			else
+			{
+				shape();
+
+				erode();
+
+				refine();
+
+				save_cache(cache_path);
+			}
+
+			settle();
+
+			grade();
+
+			shade();
+
+			classify();
+
+			paint();
+
+			std::vector<std::uint8_t> height_bytes(heights.size() * sizeof(std::float_t));
+
+			std::memcpy(height_bytes.data(), heights.data(), height_bytes.size());
+
+			add_texture("terrain_height", DXGI_FORMAT_R32_FLOAT, terrain_resolution, height_bytes, false);
+			add_texture("terrain_shading", DXGI_FORMAT_R8G8B8A8_UNORM, terrain_texture_size, shading, true);
+			add_texture("terrain_grass", DXGI_FORMAT_R8G8B8A8_UNORM, ground_size, control, false);
+
+			for (auto splat{ 0u }; splat < terrain_splat_count; splat++)
+			{
+				char name[32]{};
+
+				std::snprintf(name, sizeof(name), "terrain_splat%u", splat);
+
+				add_compressed(name, terrain_texture_size, splats[splat]);
+			}
+
+			add_blob("terrain_biome", biomes);
+			add_blob("terrain_ground", ground);
+
+			structures::terrain_header_s header{ terrain_resolution, terrain_texture_size, terrain_size, terrain_origin, *std::min_element(heights.begin(), heights.end()), *std::max_element(heights.begin(), heights.end()), sea_level, baker::terrain_seed };
+
+			baker::pak_item_s info{};
+
+			std::snprintf(info.entry.name, sizeof(info.entry.name), "%s", "terrain_info");
+
+			info.entry.type = structures::pak_type_blob;
+
+			baker_models.append(info, &header, sizeof(header));
+
+			items.push_back(std::move(info));
+
+			write_routes();
+
+			water_normals();
+
+			preview(preview_path);
+
+			preview_biomes(preview_path.substr(0u, preview_path.rfind('.')) + "_biomes.png");
+
+			logger.write("baker: terrain %ux%u heights %.1f..%.1f m in %.1f s", terrain_resolution, terrain_resolution, header.minimum_height, header.maximum_height, static_cast<std::double_t>(GetTickCount64() - start) / 1000.0);
+
+			return true;
 		}
 
-		else
+		logger.write("baker: terrain needs %s", macro_path.c_str());
+
+		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	bool baker_terrain_c::load_macro(const std::string& path)
+	{
+		macro.assign(static_cast<std::size_t>(baker::macro_size) * baker::macro_size, 0.0f);
+
+		if (auto file{ std::fopen(path.c_str(), "rb") }; file)
 		{
-			shape();
+			const auto read{ std::fread(macro.data(), sizeof(std::float_t), macro.size(), file) };
 
-			erode();
+			std::fclose(file);
 
-			refine();
+			if (read == macro.size())
+			{
+				auto stamp{ 2166136261u };
 
-			save_cache(cache_path);
+				for (const auto value : macro)
+				{
+					std::uint32_t bits{};
+
+					std::memcpy(&bits, &value, sizeof(bits));
+
+					stamp = (stamp ^ bits) * 16777619u;
+				}
+
+				macro_stamp = stamp;
+
+				return true;
+			}
 		}
 
-		settle();
-
-		grade();
-
-		shade();
-
-		classify();
-
-		paint();
-
-		std::vector<std::uint8_t> height_bytes(heights.size() * sizeof(std::float_t));
-
-		std::memcpy(height_bytes.data(), heights.data(), height_bytes.size());
-
-		add_texture("terrain_height", DXGI_FORMAT_R32_FLOAT, terrain_resolution, height_bytes, false);
-		add_texture("terrain_shading", DXGI_FORMAT_R8G8B8A8_UNORM, terrain_texture_size, shading, true);
-		add_texture("terrain_grass", DXGI_FORMAT_R8G8B8A8_UNORM, ground_size, control, false);
-
-		for (auto splat{ 0u }; splat < terrain_splat_count; splat++)
-		{
-			char name[32]{};
-
-			std::snprintf(name, sizeof(name), "terrain_splat%u", splat);
-
-			add_compressed(name, terrain_texture_size, splats[splat]);
-		}
-
-		add_blob("terrain_biome", biomes);
-		add_blob("terrain_ground", ground);
-
-		structures::terrain_header_s header{ terrain_resolution, terrain_texture_size, terrain_size, terrain_origin, *std::min_element(heights.begin(), heights.end()), *std::max_element(heights.begin(), heights.end()), sea_level, baker::terrain_seed };
-
-		baker::pak_item_s info{};
-
-		std::snprintf(info.entry.name, sizeof(info.entry.name), "%s", "terrain_info");
-
-		info.entry.type = structures::pak_type_blob;
-
-		baker_models.append(info, &header, sizeof(header));
-
-		items.push_back(std::move(info));
-
-		write_routes();
-
-		water_normals();
-
-		preview(preview_path);
-
-		preview_biomes(preview_path.substr(0u, preview_path.rfind('.')) + "_biomes.png");
-
-		logger.write("baker: terrain %ux%u heights %.1f..%.1f m in %.1f s", terrain_resolution, terrain_resolution, header.minimum_height, header.maximum_height, static_cast<std::double_t>(GetTickCount64() - start) / 1000.0);
-
-		return true;
+		return false;
 	}
 	/*
 	//=====================================================================================
@@ -92,12 +133,12 @@ namespace zp
 
 		if (auto file{ std::fopen(path.c_str(), "rb") }; file)
 		{
-			std::uint32_t header[3]{};
+			std::uint32_t header[4]{};
 
 			heights.resize(static_cast<std::size_t>(terrain_resolution) * terrain_resolution);
 			flow.resize(heights.size());
 
-			if (std::fread(header, sizeof(header), 1u, file) == 1u && header[0] == baker::terrain_cache_version && header[1] == baker::terrain_seed && header[2] == terrain_resolution)
+			if (std::fread(header, sizeof(header), 1u, file) == 1u && header[0] == baker::terrain_cache_version && header[1] == baker::terrain_seed && header[2] == terrain_resolution && header[3] == macro_stamp)
 			{
 				result = std::fread(heights.data(), sizeof(std::float_t), heights.size(), file) == heights.size() && std::fread(flow.data(), sizeof(std::float_t), flow.size(), file) == flow.size();
 			}
@@ -114,7 +155,7 @@ namespace zp
 	{
 		if (auto file{ std::fopen(path.c_str(), "wb") }; file)
 		{
-			const std::uint32_t header[3] = { baker::terrain_cache_version, baker::terrain_seed, terrain_resolution };
+			const std::uint32_t header[4] = { baker::terrain_cache_version, baker::terrain_seed, terrain_resolution, macro_stamp };
 
 			std::fwrite(header, sizeof(header), 1u, file);
 			std::fwrite(heights.data(), sizeof(std::float_t), heights.size(), file);
@@ -147,62 +188,13 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	std::float_t baker_terrain_c::clearance(std::float_t x, std::float_t z)
-	{
-		auto nearest{ FLT_MAX };
-
-		for (const auto& site : world_sites)
-		{
-			nearest = std::min(nearest, mathematics.length(structures::vec2_s{ x - site.position.x, z - site.position.y }) - site.outer);
-		}
-
-		for (const auto& route : world_routes)
-		{
-			for (auto index{ 0u }; index + (route.closed ? 0u : 1u) < route.count; index++)
-			{
-				const auto from{ route.points[index] };
-				const auto span{ route.points[(index + 1u) % route.count] - from };
-				const auto along{ std::clamp(((x - from.x) * span.x + (z - from.y) * span.y) / std::max(span.x * span.x + span.y * span.y, 0.001f), 0.0f, 1.0f) };
-
-				nearest = std::min(nearest, mathematics.length(structures::vec2_s{ x - from.x - span.x * along, z - from.y - span.y * along }));
-			}
-		}
-
-		return nearest;
-	}
-	/*
-	//=====================================================================================
-	*/
 	std::float_t baker_terrain_c::elevation(std::float_t x, std::float_t z)
 	{
-		const auto seed{ baker::terrain_seed };
-		const auto half{ terrain_size * 0.5f };
-		const auto u{ x / half };
-		const auto v{ z / half };
-		const auto hu{ x / 1024.0f };
-		const auto hv{ z / 1024.0f };
-		const auto wu{ u + 0.42f * fbm(u * 1.1f + 11.3f, v * 1.1f - 4.1f, 4u, seed + 1u) + 0.1f * fbm(u * 3.2f, v * 3.2f, 3u, seed + 11u) + 0.035f * fbm(hu * 4.0f, hv * 4.0f, 3u, seed + 13u) };
-		const auto wv{ v + 0.42f * fbm(u * 1.1f - 7.7f, v * 1.1f + 2.9f, 4u, seed + 2u) + 0.1f * fbm(u * 3.2f + 3.3f, v * 3.2f, 3u, seed + 12u) + 0.035f * fbm(hu * 4.0f + 5.1f, hv * 4.0f - 2.3f, 3u, seed + 14u) };
-		const auto radius{ std::sqrt(wu * wu * 1.12f + wv * wv * 0.92f) };
-		const auto inland{ (0.74f - radius) * half };
-		const auto northern{ mathematics.smoothstep(-0.2f, 0.45f, v + 0.3f * fbm(u * 1.6f, v * 1.6f, 3u, seed + 6u)) };
-		const auto bluff{ mathematics.smoothstep(0.0f, 0.16f, fbm(wu * 2.2f - 5.0f, wv * 2.2f + 3.0f, 3u, seed + 18u)) * mathematics.smoothstep(baker::bluff_guard, baker::bluff_guard + 120.0f, clearance(x, z)) };
-		const auto crest{ (baker::bluff_height + baker::bluff_northern * northern) * (0.65f + 0.7f * fbm(hu * 5.0f + 9.0f, hv * 5.0f - 3.0f, 3u, seed + 19u)) };
-		const auto rampart{ bluff * crest * mathematics.smoothstep(3.0f, 3.0f + baker::bluff_face, inland) * (1.0f - mathematics.smoothstep(baker::bluff_reach * 0.25f, baker::bluff_reach, inland)) };
-		const auto cliff{ mathematics.smoothstep(0.1f, 0.34f, fbm(wu * 3.0f + 3.0f, wv * 3.0f - 8.0f, 3u, seed + 4u)) * (1.0f - bluff) };
-		const auto plains{ 1.8f * mathematics.smoothstep(0.0f, 22.0f, inland) + 5.0f * mathematics.smoothstep(18.0f, 150.0f, inland) + 7.0f * mathematics.smoothstep(220.0f, 950.0f, inland) };
-		const auto rolling{ 0.55f + 0.45f * fbm(u * 1.7f + 4.4f, v * 1.7f - 1.9f, 3u, seed + 17u) };
-		const auto hills{ (13.0f + 16.0f * fbm(hu * 3.1f, hv * 3.1f, 5u, seed + 5u) + 7.0f * ridged(hu * 5.5f, hv * 5.5f, 3u, seed + 8u)) * mathematics.smoothstep(40.0f, 380.0f, inland) * rolling };
-		const auto mountains{ 190.0f * std::pow(std::max(ridged(u * 3.4f + 0.7f, v * 3.4f - 0.4f, 6u, seed + 7u), 0.0f), 1.7f) * northern * mathematics.smoothstep(200.0f, 820.0f, inland) };
-		const auto western{ mathematics.smoothstep(0.0f, 0.4f, -u + 0.3f * fbm(u * 1.4f + 2.0f, v * 1.4f, 3u, seed + 15u)) * (1.0f - northern * 0.7f) };
-		const auto highlands{ 120.0f * std::pow(std::max(ridged(hu * 1.6f + 3.1f, hv * 1.6f + 1.7f, 5u, seed + 16u), 0.0f), 1.3f) * western * mathematics.smoothstep(120.0f, 560.0f, inland) };
-		const auto land{ plains + std::max(hills, 0.0f) + mountains + highlands + rampart };
-		const auto shelf{ inland > 0.0f ? land : -2.6f * mathematics.smoothstep(0.0f, 45.0f, -inland) + inland * 0.075f };
-		const auto cliff_top{ 14.0f + 7.0f * fbm(hu * 6.0f, hv * 6.0f, 3u, seed + 9u) };
-		const auto cliff_land{ inland > 6.0f ? std::max(land, cliff_top * mathematics.smoothstep(6.0f, 11.0f, inland) + land * 0.6f) : (inland > 0.0f ? 0.6f * mathematics.smoothstep(0.0f, 6.0f, inland) : shelf) };
-		const auto height{ mathematics.lerp(shelf, cliff_land, cliff) };
+		const auto base{ bicubic(macro, baker::macro_size, (x - terrain_origin) / baker::macro_cell - 0.5f, (z - terrain_origin) / baker::macro_cell - 0.5f) };
+		const auto land{ mathematics.smoothstep(0.5f, 6.0f, base) };
+		const auto detail{ baker::macro_detail * (fbm(x / 70.0f, z / 70.0f, 4u, baker::terrain_seed + 1u) + 0.5f * ridged(x / 160.0f, z / 160.0f, 3u, baker::terrain_seed + 2u) - 0.25f) * land };
 
-		return std::max(height, baker::terrain_sea_floor + 4.0f * fbm(u * 5.0f, v * 5.0f, 3u, seed + 10u));
+		return std::max(base + detail, baker::terrain_sea_floor + 4.0f * fbm(x / 600.0f, z / 600.0f, 3u, baker::terrain_seed + 10u));
 	}
 	/*
 	//=====================================================================================
@@ -386,10 +378,10 @@ namespace zp
 			{
 				for (auto column{ 0u }; column < size; column++)
 				{
-					const auto x{ terrain_origin + static_cast<std::float_t>(column) };
-					const auto z{ terrain_origin + static_cast<std::float_t>(row) };
+					const auto x{ terrain_origin + static_cast<std::float_t>(column) * terrain_spacing };
+					const auto z{ terrain_origin + static_cast<std::float_t>(row) * terrain_spacing };
 					const auto base{ bicubic(coarse, baker::terrain_erosion_size, static_cast<std::float_t>(column) * scale, static_cast<std::float_t>(row) * scale) * baker::terrain_height_scale };
-					const auto detail{ 0.25f * fbm(x / 9.0f, z / 9.0f, 3u, baker::terrain_seed + 20u) * mathematics.saturate(base / 2.0f) + 0.9f * ridged(x / 38.0f, z / 38.0f, 3u, baker::terrain_seed + 21u) * mathematics.saturate((base - 2.5f) / 6.0f) };
+					const auto detail{ 0.25f * fbm(x / 12.0f, z / 12.0f, 2u, baker::terrain_seed + 20u) * mathematics.saturate(base / 2.0f) + 0.9f * ridged(x / 38.0f, z / 38.0f, 3u, baker::terrain_seed + 21u) * mathematics.saturate((base - 2.5f) / 6.0f) };
 
 					heights[static_cast<std::size_t>(row) * size + column] = base + detail;
 					flow[static_cast<std::size_t>(row) * size + column] = bilinear(coarse_flow, baker::terrain_erosion_size, static_cast<std::float_t>(column) * scale, static_cast<std::float_t>(row) * scale);
@@ -415,31 +407,32 @@ namespace zp
 					const auto distance{ site.inner * static_cast<std::float_t>(ring) / 4.0f };
 					const auto theta{ static_cast<std::float_t>(angle) / 32.0f * two_pi };
 
-					sum += height_at(site.position.x + std::sin(theta) * distance, site.position.y + std::cos(theta) * distance);
+					if (const auto ground{ height_at(site.position.x + std::sin(theta) * distance, site.position.y + std::cos(theta) * distance) }; ground > sea_level + 1.0f)
+					{
+						sum += ground;
 
-					samples++;
+						samples++;
+					}
 				}
 			}
 
-			const auto target{ std::max(static_cast<std::float_t>(sum / static_cast<std::double_t>(samples)), 3.5f) };
-			const auto first_row{ static_cast<std::uint32_t>(std::clamp(site.position.y - site.outer - terrain_origin, 0.0f, static_cast<std::float_t>(size - 1u))) };
-			const auto last_row{ static_cast<std::uint32_t>(std::clamp(site.position.y + site.outer - terrain_origin + 1.0f, 0.0f, static_cast<std::float_t>(size - 1u))) };
-			const auto first_column{ static_cast<std::uint32_t>(std::clamp(site.position.x - site.outer - terrain_origin, 0.0f, static_cast<std::float_t>(size - 1u))) };
-			const auto last_column{ static_cast<std::uint32_t>(std::clamp(site.position.x + site.outer - terrain_origin + 1.0f, 0.0f, static_cast<std::float_t>(size - 1u))) };
+			const auto target{ std::max(static_cast<std::float_t>(sum / static_cast<std::double_t>(std::max(samples, 1u))), 3.5f) };
+			const auto first_row{ static_cast<std::uint32_t>(std::clamp((site.position.y - site.outer - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(size - 1u))) };
+			const auto last_row{ static_cast<std::uint32_t>(std::clamp((site.position.y + site.outer - terrain_origin) / terrain_spacing + 1.0f, 0.0f, static_cast<std::float_t>(size - 1u))) };
+			const auto first_column{ static_cast<std::uint32_t>(std::clamp((site.position.x - site.outer - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(size - 1u))) };
+			const auto last_column{ static_cast<std::uint32_t>(std::clamp((site.position.x + site.outer - terrain_origin) / terrain_spacing + 1.0f, 0.0f, static_cast<std::float_t>(size - 1u))) };
 
 			for (auto row{ first_row }; row <= last_row; row++)
 			{
 				for (auto column{ first_column }; column <= last_column; column++)
 				{
-					const auto x{ terrain_origin + static_cast<std::float_t>(column) };
-					const auto z{ terrain_origin + static_cast<std::float_t>(row) };
+					const auto x{ terrain_origin + static_cast<std::float_t>(column) * terrain_spacing };
+					const auto z{ terrain_origin + static_cast<std::float_t>(row) * terrain_spacing };
 					const auto distance{ std::sqrt((x - site.position.x) * (x - site.position.x) + (z - site.position.y) * (z - site.position.y)) };
 
-					if (distance < site.outer)
+					if (auto& height{ heights[static_cast<std::size_t>(row) * size + column] }; distance < site.outer && height > sea_level + 0.5f)
 					{
-						auto& height{ heights[static_cast<std::size_t>(row) * size + column] };
-
-						height = mathematics.lerp(height, target + (height - target) * 0.08f, mathematics.smoothstep(site.outer, site.inner, distance));
+						height = std::max(mathematics.lerp(height, target + (height - target) * 0.08f, mathematics.smoothstep(site.outer, site.inner, distance)), sea_level + 0.6f);
 					}
 				}
 			}
@@ -612,17 +605,17 @@ namespace zp
 				const auto squared{ std::max(span.x * span.x + span.y * span.y, 0.0001f) };
 				const auto joined{ pinned[index] != 0u && pinned[next] != 0u };
 				const auto reach{ std::max(flat[index], flat[next]) + baker::route_shoulder };
-				const auto first_column{ std::max(static_cast<std::int32_t>(std::min(from.x, to.x) - reach - terrain_origin), 0) };
-				const auto last_column{ std::min(static_cast<std::int32_t>(std::max(from.x, to.x) + reach - terrain_origin) + 1, size - 1) };
-				const auto first_row{ std::max(static_cast<std::int32_t>(std::min(from.y, to.y) - reach - terrain_origin), 0) };
-				const auto last_row{ std::min(static_cast<std::int32_t>(std::max(from.y, to.y) + reach - terrain_origin) + 1, size - 1) };
+				const auto first_column{ std::max(static_cast<std::int32_t>((std::min(from.x, to.x) - reach - terrain_origin) / terrain_spacing), 0) };
+				const auto last_column{ std::min(static_cast<std::int32_t>((std::max(from.x, to.x) + reach - terrain_origin) / terrain_spacing) + 1, size - 1) };
+				const auto first_row{ std::max(static_cast<std::int32_t>((std::min(from.y, to.y) - reach - terrain_origin) / terrain_spacing), 0) };
+				const auto last_row{ std::min(static_cast<std::int32_t>((std::max(from.y, to.y) + reach - terrain_origin) / terrain_spacing) + 1, size - 1) };
 
 				for (auto row{ first_row }; row <= last_row; row++)
 				{
 					for (auto column{ first_column }; column <= last_column; column++)
 					{
 						const auto cell{ static_cast<std::size_t>(row) * static_cast<std::size_t>(size) + static_cast<std::size_t>(column) };
-						const structures::vec2_s spot{ terrain_origin + static_cast<std::float_t>(column), terrain_origin + static_cast<std::float_t>(row) };
+						const structures::vec2_s spot{ terrain_origin + static_cast<std::float_t>(column) * terrain_spacing, terrain_origin + static_cast<std::float_t>(row) * terrain_spacing };
 						const auto along{ mathematics.saturate(((spot.x - from.x) * span.x + (spot.y - from.y) * span.y) / squared) };
 
 						if (const auto distance{ mathematics.length(spot - (from + span * along)) }; distance < reach && distance < nearest[cell])
@@ -644,7 +637,7 @@ namespace zp
 			for (const auto cell : touched)
 			{
 				const auto distance{ nearest[cell] };
-				const auto margin{ std::max(distance - broad[cell], 0.0f) * route.slope };
+				const auto margin{ std::max(distance - broad[cell] - terrain_spacing, 0.0f) * route.slope };
 				const auto closeness{ 1.0f - mathematics.smoothstep(half, half + baker::route_paint_band, distance) };
 
 				if ((bedded[cell] & 1u) == 0u || (bedded[cell] & 2u) != 0u)
@@ -828,7 +821,7 @@ namespace zp
 					const auto down{ heights[static_cast<std::size_t>(row ? row - 1u : 0u) * size + column] };
 					const auto up{ heights[static_cast<std::size_t>(std::min(row + 1u, size - 1u)) * size + column] };
 
-					normals[static_cast<std::size_t>(row) * size + column] = mathematics.normalize({ left - right, 2.0f, down - up });
+					normals[static_cast<std::size_t>(row) * size + column] = mathematics.normalize({ left - right, 2.0f * terrain_spacing, down - up });
 				}
 			});
 
@@ -856,7 +849,7 @@ namespace zp
 							const auto px{ std::clamp(x + sx * distance, 0.0f, static_cast<std::float_t>(size - 1u)) };
 							const auto pz{ std::clamp(z + sz * distance, 0.0f, static_cast<std::float_t>(size - 1u)) };
 
-							horizon = std::max(horizon, (bilinear(heights, size, px, pz) - base) / distance);
+							horizon = std::max(horizon, (bilinear(heights, size, px, pz) - base) / (distance * terrain_spacing));
 
 							distance *= 1.36f;
 						}
@@ -875,7 +868,6 @@ namespace zp
 	{
 		const auto size{ static_cast<std::int32_t>(biome_size) };
 		const auto count{ static_cast<std::size_t>(size) * size };
-		const auto half{ terrain_size * 0.5f };
 		const auto radius{ baker::biome_relief_radius };
 
 		std::vector<std::float_t> level(count), steep(count), damp(count), coast(count), relief(count), exposure(count), moist(count);
@@ -889,13 +881,14 @@ namespace zp
 					const auto cell{ static_cast<std::size_t>(row) * biome_size + column };
 					const auto x{ terrain_origin + (static_cast<std::float_t>(column) + 0.5f) * biome_cell };
 					const auto z{ terrain_origin + (static_cast<std::float_t>(row) + 0.5f) * biome_cell };
-					const auto source{ static_cast<std::size_t>(z - terrain_origin) * terrain_resolution + static_cast<std::size_t>(x - terrain_origin) };
+					const auto ratio{ static_cast<std::uint32_t>(biome_cell / terrain_spacing) };
+					const auto source{ static_cast<std::size_t>((z - terrain_origin) / terrain_spacing) * terrain_resolution + static_cast<std::size_t>((x - terrain_origin) / terrain_spacing) };
 
 					auto water{ 0.0f };
 
-					for (auto offset{ 0u }; offset < 16u; offset++)
+					for (auto offset{ 0u }; offset < ratio * ratio; offset++)
 					{
-						water = std::max(water, flow[(static_cast<std::size_t>(row) * 4u + offset / 4u) * terrain_resolution + column * 4u + offset % 4u]);
+						water = std::max(water, flow[(static_cast<std::size_t>(row) * ratio + offset / ratio) * terrain_resolution + column * ratio + offset % ratio]);
 					}
 
 					level[cell] = height_at(x, z);
@@ -988,18 +981,10 @@ namespace zp
 					const auto forest{ 0.5f + 0.3f * fbm(x / 90.0f, z / 90.0f, 4u, baker::terrain_seed + 32u) + 0.42f * region + 0.1f * mathematics.saturate(-relief[cell] / 5.0f) - 0.22f * exposure[cell] - 0.08f * mathematics.saturate(relief[cell] / 6.0f) };
 					const auto shoreline{ 1.6f + 1.2f * fbm(x / 25.0f, z / 25.0f, 2u, baker::terrain_seed + 33u) };
 
-					auto farmed{ false };
-
-					for (const auto& site : world_sites)
-					{
-						const auto gap{ mathematics.length(structures::vec2_s{ x - site.position.x, z - site.position.y }) };
-
-						farmed = farmed || (std::find(std::begin(baker::farm_sites), std::end(baker::farm_sites), static_cast<std::uint32_t>(site.landmark)) != std::end(baker::farm_sites) && gap < std::min(site.outer * 2.1f, baker::biome_farm_reach) * (1.0f + 0.9f * edge + 0.5f * drift) && gap > site.inner * 0.55f);
-					}
-
-					const auto wooded{ forest > 0.535f ? (tall > 48.0f + 28.0f * edge || z / half > 0.12f + 0.5f * drift ? structures::biome_pinewood : structures::biome_woodland) : (relief[cell] < -2.5f && tilt > 0.06f && coast[cell] > 120.0f ? structures::biome_woodland : (farmed && tilt < 0.09f && tall > 4.0f ? structures::biome_farmland : structures::biome_meadow)) };
+					const auto farmed{ tilt < 0.085f && coast[cell] > 170.0f + 90.0f * edge && tall > 6.0f && region + 0.6f * drift > -0.42f };
+					const auto wooded{ forest > 0.56f ? (region < -0.2f && coast[cell] < 900.0f ? structures::biome_pinewood : structures::biome_woodland) : (relief[cell] < -2.5f && tilt > 0.06f && coast[cell] > 120.0f ? structures::biome_woodland : (farmed ? structures::biome_farmland : structures::biome_meadow)) };
 					const auto windswept{ (exposure[cell] > 0.62f && coast[cell] < 300.0f + 160.0f * drift && tall > 7.0f) || (relief[cell] > 3.5f && exposure[cell] > 0.45f && tall > 30.0f) || (coast[cell] < 150.0f + 260.0f * edge && tall > 11.0f && drift > -0.12f) };
-					const auto upland{ tall > 148.0f + 44.0f * edge ? structures::biome_summit : (tall > 86.0f + 40.0f * edge ? structures::biome_moor : (windswept ? structures::biome_heath : wooded)) };
+					const auto upland{ tall > 118.0f + 20.0f * edge ? structures::biome_summit : (tall > 96.0f + 14.0f * edge && exposure[cell] > 0.4f ? structures::biome_moor : (windswept ? structures::biome_heath : wooded)) };
 					const auto soaked{ (moist[cell] > 0.17f + 0.06f * edge && tilt < 0.05f && tall < 30.0f) || (tall < 4.4f + 1.5f * drift && tilt < 0.022f && coast[cell] > 50.0f && edge > 0.08f) };
 					const auto sandy{ coast[cell] < 190.0f + 120.0f * edge && tall < 12.0f && tilt < 0.16f && exposure[cell] > 0.5f };
 					const auto inland{ sandy ? structures::biome_dunes : (soaked ? structures::biome_marsh : upland) };
@@ -1087,12 +1072,30 @@ namespace zp
 			{
 				for (auto column{ 0u }; column < size; column++)
 				{
-					const auto source{ static_cast<std::size_t>(row) * terrain_resolution + column };
+					const auto ratio{ static_cast<std::uint32_t>(terrain_texture_cell / terrain_spacing) };
+					const auto source{ static_cast<std::size_t>(row * ratio + ratio / 2u) * terrain_resolution + column * ratio + ratio / 2u };
 					const auto texel{ static_cast<std::size_t>(row) * size + column };
-					const auto x{ terrain_origin + static_cast<std::float_t>(column) + 0.5f };
-					const auto z{ terrain_origin + static_cast<std::float_t>(row) + 0.5f };
-					const auto height{ (heights[source] + heights[source + 1u] + heights[source + terrain_resolution] + heights[source + terrain_resolution + 1u]) * 0.25f };
-					const auto normal{ mathematics.normalize(normals[source] + normals[source + 1u] + normals[source + terrain_resolution] + normals[source + terrain_resolution + 1u]) };
+					const auto x{ terrain_origin + (static_cast<std::float_t>(column) + 0.5f) * terrain_texture_cell };
+					const auto z{ terrain_origin + (static_cast<std::float_t>(row) + 0.5f) * terrain_texture_cell };
+
+					auto summed_height{ 0.0f };
+					auto closeness{ 0.0f };
+					auto strongest{ 0u };
+
+					structures::vec3_s summed_normal{};
+
+					for (auto offset{ 0u }; offset < (ratio + 1u) * (ratio + 1u); offset++)
+					{
+						const auto vertex{ static_cast<std::size_t>(std::min(row * ratio + offset / (ratio + 1u), terrain_resolution - 1u)) * terrain_resolution + std::min(column * ratio + offset % (ratio + 1u), terrain_resolution - 1u) };
+
+						summed_height += heights[vertex];
+						summed_normal += normals[vertex];
+						closeness = std::max(closeness, route_near[vertex]);
+						strongest = std::max(strongest, static_cast<std::uint32_t>(route_kind[vertex]));
+					}
+
+					const auto height{ summed_height / static_cast<std::float_t>((ratio + 1u) * (ratio + 1u)) };
+					const auto normal{ mathematics.normalize(summed_normal) };
 					const auto slope{ 1.0f - normal.y };
 					const auto wetness{ mathematics.saturate(std::log2(1.0f + flow[source] / 80.0f) / 4.0f) };
 					const auto patches{ 0.5f + 0.5f * fbm(x / 34.0f, z / 34.0f, 4u, baker::terrain_seed + 30u) };
@@ -1194,9 +1197,9 @@ namespace zp
 						}
 					}
 
-					if (const auto closeness{ std::max({ route_near[source], route_near[source + 1u], route_near[source + terrain_resolution], route_near[source + terrain_resolution + 1u] }) }; closeness > 0.0f)
+					if (closeness > 0.0f)
 					{
-						const auto rail{ std::max({ route_kind[source], route_kind[source + 1u], route_kind[source + terrain_resolution], route_kind[source + terrain_resolution + 1u] }) == structures::route_rail + 1u };
+						const auto rail{ strongest == structures::route_rail + 1u };
 
 						for (auto& value : weight)
 						{
@@ -1223,10 +1226,8 @@ namespace zp
 						splats[layer / 4u][texel * 4u + layer % 4u] = static_cast<std::uint8_t>(std::clamp(weight[layer] / std::max(total, 1e-4f) * 255.0f + 0.5f, 0.0f, 255.0f));
 					}
 
-					if (row % 2u == 0u && column % 2u == 0u)
+					if (const auto cell{ static_cast<std::size_t>(row * ground_size / size) * ground_size + column * ground_size / size }; cell < ground.size())
 					{
-						const auto cell{ static_cast<std::size_t>(row / 2u) * ground_size + column / 2u };
-
 						ground[cell] = static_cast<std::uint8_t>(heaviest);
 						control[cell * 4u + 0u] = static_cast<std::uint8_t>(std::clamp(lawn * 255.0f + 0.5f, 0.0f, 255.0f));
 						control[cell * 4u + 1u] = static_cast<std::uint8_t>(std::clamp(parched * 255.0f + 0.5f, 0.0f, 255.0f));
@@ -1457,7 +1458,8 @@ namespace zp
 			for (auto column{ 0u }; column < size; column++)
 			{
 				const auto cell{ static_cast<std::size_t>(size - 1u - row) * size + column };
-				const auto source{ (static_cast<std::size_t>(size - 1u - row) * 4u + 2u) * terrain_resolution + column * 4u + 2u };
+				const auto ratio{ static_cast<std::uint32_t>(biome_cell / terrain_spacing) };
+				const auto source{ (static_cast<std::size_t>(size - 1u - row) * ratio + ratio / 2u) * terrain_resolution + column * ratio + ratio / 2u };
 				const auto color{ baker::biome_colors[biomes[cell]] * (0.45f + 0.65f * std::max(0.0f, mathematics.dot(normals[source], light))) };
 
 				for (auto channel{ 0u }; channel < 3u; channel++)
@@ -1485,8 +1487,9 @@ namespace zp
 		{
 			for (auto column{ 0u }; column < size; column++)
 			{
+				const auto ratio{ static_cast<std::uint32_t>(terrain_texture_cell / terrain_spacing) };
 				const auto texel{ static_cast<std::size_t>(size - 1u - row) * 2u * terrain_texture_size + column * 2u };
-				const auto source{ static_cast<std::size_t>(size - 1u - row) * 2u * terrain_resolution + column * 2u };
+				const auto source{ static_cast<std::size_t>(size - 1u - row) * 2u * ratio * terrain_resolution + column * 2u * ratio };
 				const auto height{ heights[source] };
 
 				structures::vec3_s color{};
@@ -1519,7 +1522,7 @@ namespace zp
 	*/
 	std::float_t baker_terrain_c::height_at(std::float_t x, std::float_t z)
 	{
-		return bilinear(heights, terrain_resolution, std::clamp(x - terrain_origin, 0.0f, terrain_size), std::clamp(z - terrain_origin, 0.0f, terrain_size));
+		return bilinear(heights, terrain_resolution, std::clamp((x - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(terrain_resolution - 1u)), std::clamp((z - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(terrain_resolution - 1u)));
 	}
 	/*
 	//=====================================================================================

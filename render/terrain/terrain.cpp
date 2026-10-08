@@ -81,6 +81,8 @@ namespace zp
 		{
 			std::memcpy(&header, pak.data(info), sizeof(header));
 
+			cell = header.world_size / static_cast<std::float_t>(header.resolution - 1u);
+
 			const auto biome_entry{ pak.find("terrain_biome") };
 			const auto ground_entry{ pak.find("terrain_ground") };
 
@@ -104,9 +106,9 @@ namespace zp
 				painted = painted && splat_views[splat];
 			}
 
-			bounds.assign(terrain_lod_levels, {});
+			bounds.assign(gpu.device ? terrain_lod_levels : 0u, {});
 
-			for (auto level{ 0u }; level < terrain_lod_levels; level++)
+			for (auto level{ 0u }; level < bounds.size(); level++)
 			{
 				const auto count{ (header.resolution - 1u) / (terrain_patch_cells << level) };
 
@@ -158,7 +160,7 @@ namespace zp
 
 			enabled = heights && biome_data && ground_data && ((height_view && shading_view && grass_view && painted) || gpu.device == nullptr);
 
-			grass_mask.assign(static_cast<std::size_t>(header.texture_size) * header.texture_size, 0u);
+			grass_mask.assign(gpu.device ? static_cast<std::size_t>(grass_mask_size) * grass_mask_size : 0u, 0u);
 
 			logger.write("terrain: %ux%u heights %.1f..%.1f m, %s", header.resolution, header.resolution, header.minimum_height, header.maximum_height, enabled ? "ready" : "incomplete");
 		}
@@ -220,8 +222,8 @@ namespace zp
 	{
 		if (enabled)
 		{
-			const auto fx{ x - header.origin };
-			const auto fz{ z - header.origin };
+			const auto fx{ (x - header.origin) / cell };
+			const auto fz{ (z - header.origin) / cell };
 			const auto ix{ static_cast<std::int32_t>(std::floor(fx)) };
 			const auto iz{ static_cast<std::int32_t>(std::floor(fz)) };
 			const auto tx{ fx - static_cast<std::float_t>(ix) };
@@ -237,7 +239,7 @@ namespace zp
 	*/
 	structures::vec3_s terrain_c::normal(std::float_t x, std::float_t z)
 	{
-		return mathematics.normalize({ height(x - 1.0f, z) - height(x + 1.0f, z), 2.0f, height(x, z - 1.0f) - height(x, z + 1.0f) });
+		return mathematics.normalize({ height(x - cell, z) - height(x + cell, z), 2.0f * cell, height(x, z - cell) - height(x, z + cell) });
 	}
 	/*
 	//=====================================================================================
@@ -276,27 +278,27 @@ namespace zp
 	*/
 	void terrain_c::mask_rectangle(structures::vec3_s center, std::float_t half_x, std::float_t half_z, std::float_t yaw)
 	{
-		if (enabled && grass_mask.size() == static_cast<std::size_t>(header.texture_size) * header.texture_size)
+		if (enabled && grass_mask.size() == static_cast<std::size_t>(grass_mask_size) * grass_mask_size)
 		{
 			const auto axis_x{ structures::vec3_s{ std::cos(yaw), 0.0f, -std::sin(yaw) } };
 			const auto axis_z{ structures::vec3_s{ std::sin(yaw), 0.0f, std::cos(yaw) } };
-			const auto reach{ std::sqrt(half_x * half_x + half_z * half_z) + 1.0f };
-			const auto limit{ static_cast<std::int32_t>(header.texture_size) - 1 };
-			const auto first_x{ std::clamp(static_cast<std::int32_t>(center.x - reach - header.origin), 0, limit) };
-			const auto last_x{ std::clamp(static_cast<std::int32_t>(center.x + reach - header.origin), 0, limit) };
-			const auto first_z{ std::clamp(static_cast<std::int32_t>(center.z - reach - header.origin), 0, limit) };
-			const auto last_z{ std::clamp(static_cast<std::int32_t>(center.z + reach - header.origin), 0, limit) };
+			const auto reach{ std::sqrt(half_x * half_x + half_z * half_z) + grass_mask_cell };
+			const auto limit{ static_cast<std::int32_t>(grass_mask_size) - 1 };
+			const auto first_x{ std::clamp(static_cast<std::int32_t>((center.x - reach - header.origin) / grass_mask_cell), 0, limit) };
+			const auto last_x{ std::clamp(static_cast<std::int32_t>((center.x + reach - header.origin) / grass_mask_cell), 0, limit) };
+			const auto first_z{ std::clamp(static_cast<std::int32_t>((center.z - reach - header.origin) / grass_mask_cell), 0, limit) };
+			const auto last_z{ std::clamp(static_cast<std::int32_t>((center.z + reach - header.origin) / grass_mask_cell), 0, limit) };
 
 			for (auto tz{ first_z }; tz <= last_z; tz++)
 			{
 				for (auto tx{ first_x }; tx <= last_x; tx++)
 				{
-					const structures::vec3_s offset{ header.origin + static_cast<std::float_t>(tx) + 0.5f - center.x, 0.0f, header.origin + static_cast<std::float_t>(tz) + 0.5f - center.z };
-					const auto inside{ std::min(half_x + 0.5f - std::fabs(mathematics.dot(offset, axis_x)), half_z + 0.5f - std::fabs(mathematics.dot(offset, axis_z))) };
+					const structures::vec3_s offset{ header.origin + (static_cast<std::float_t>(tx) + 0.5f) * grass_mask_cell - center.x, 0.0f, header.origin + (static_cast<std::float_t>(tz) + 0.5f) * grass_mask_cell - center.z };
+					const auto inside{ std::min(half_x + grass_mask_cell * 0.5f - std::fabs(mathematics.dot(offset, axis_x)), half_z + grass_mask_cell * 0.5f - std::fabs(mathematics.dot(offset, axis_z))) / grass_mask_cell };
 
 					if (inside > 0.0f)
 					{
-						auto& texel{ grass_mask[static_cast<std::size_t>(tz) * header.texture_size + tx] };
+						auto& texel{ grass_mask[static_cast<std::size_t>(tz) * grass_mask_size + tx] };
 
 						texel = std::max(texel, static_cast<std::uint8_t>(std::min(inside, 1.0f) * 255.0f));
 					}
@@ -315,8 +317,8 @@ namespace zp
 		{
 			D3D11_TEXTURE2D_DESC description{};
 
-			description.Width = header.texture_size;
-			description.Height = header.texture_size;
+			description.Width = grass_mask_size;
+			description.Height = grass_mask_size;
 			description.MipLevels = 1u;
 			description.ArraySize = 1u;
 			description.Format = DXGI_FORMAT_R8_UNORM;
@@ -324,7 +326,7 @@ namespace zp
 			description.Usage = D3D11_USAGE_IMMUTABLE;
 			description.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
-			const D3D11_SUBRESOURCE_DATA data{ grass_mask.data(), header.texture_size, 0u };
+			const D3D11_SUBRESOURCE_DATA data{ grass_mask.data(), grass_mask_size, 0u };
 
 			ID3D11Texture2D* texture{ nullptr };
 
@@ -351,7 +353,7 @@ namespace zp
 	void terrain_c::node_box(std::uint32_t x, std::uint32_t z, std::uint32_t level, structures::vec3_s& minimum, structures::vec3_s& maximum)
 	{
 		const auto count{ (header.resolution - 1u) / (terrain_patch_cells << level) };
-		const auto size{ static_cast<std::float_t>(terrain_patch_cells << level) };
+		const auto size{ static_cast<std::float_t>(terrain_patch_cells << level) * cell };
 		const auto& entry{ bounds[level][static_cast<std::size_t>(z) * count + x] };
 
 		minimum = { header.origin + static_cast<std::float_t>(x) * size, entry.x, header.origin + static_cast<std::float_t>(z) * size };
@@ -469,10 +471,10 @@ namespace zp
 		const auto minimum{ mathematics.minimum(start, end) - extents - structures::vec3_s{ 0.01f, 0.01f, 0.01f } };
 		const auto maximum{ mathematics.maximum(start, end) + extents + structures::vec3_s{ 0.01f, 0.01f, 0.01f } };
 		const auto limit{ static_cast<std::int32_t>(header.resolution) - 2 };
-		const auto x0{ std::clamp(static_cast<std::int32_t>(std::floor(minimum.x - header.origin)), 0, limit) };
-		const auto x1{ std::clamp(static_cast<std::int32_t>(std::floor(maximum.x - header.origin)), 0, limit) };
-		const auto z0{ std::clamp(static_cast<std::int32_t>(std::floor(minimum.z - header.origin)), 0, limit) };
-		const auto z1{ std::clamp(static_cast<std::int32_t>(std::floor(maximum.z - header.origin)), 0, limit) };
+		const auto x0{ std::clamp(static_cast<std::int32_t>(std::floor((minimum.x - header.origin) / cell)), 0, limit) };
+		const auto x1{ std::clamp(static_cast<std::int32_t>(std::floor((maximum.x - header.origin) / cell)), 0, limit) };
+		const auto z0{ std::clamp(static_cast<std::int32_t>(std::floor((minimum.z - header.origin) / cell)), 0, limit) };
+		const auto z1{ std::clamp(static_cast<std::int32_t>(std::floor((maximum.z - header.origin) / cell)), 0, limit) };
 
 		structures::plane_s planes[terrain_clip_planes]{};
 
@@ -480,13 +482,15 @@ namespace zp
 		{
 			for (auto x{ x0 }; x <= x1; x++)
 			{
-				const structures::vec3_s corners[4] = { { header.origin + static_cast<std::float_t>(x), sample(x, z), header.origin + static_cast<std::float_t>(z) }, { header.origin + static_cast<std::float_t>(x + 1), sample(x + 1, z), header.origin + static_cast<std::float_t>(z) }, { header.origin + static_cast<std::float_t>(x), sample(x, z + 1), header.origin + static_cast<std::float_t>(z + 1) }, { header.origin + static_cast<std::float_t>(x + 1), sample(x + 1, z + 1), header.origin + static_cast<std::float_t>(z + 1) } };
+				const auto column_x{ header.origin + static_cast<std::float_t>(x) * cell };
+				const auto row_z{ header.origin + static_cast<std::float_t>(z) * cell };
+				const structures::vec3_s corners[4] = { { column_x, sample(x, z), row_z }, { column_x + cell, sample(x + 1, z), row_z }, { column_x, sample(x, z + 1), row_z + cell }, { column_x + cell, sample(x + 1, z + 1), row_z + cell } };
 				const auto top{ std::max(std::max(corners[0].y, corners[1].y), std::max(corners[2].y, corners[3].y)) };
 
 				if (minimum.y <= top)
 				{
 					const std::uint32_t triangles[2][3] = { { 0u, 2u, 1u }, { 1u, 2u, 3u } };
-					const auto surface{ layer_surfaces[std::min(ground(corners[0].x + 0.5f, corners[0].z + 0.5f), terrain_layer_count - 1u)] };
+					const auto surface{ layer_surfaces[std::min(ground(corners[0].x + cell * 0.5f, corners[0].z + cell * 0.5f), terrain_layer_count - 1u)] };
 
 					for (const auto& triangle : triangles)
 					{

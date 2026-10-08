@@ -213,7 +213,7 @@ namespace zp
 	{
 		if (vertex_shader && pixel_shader && rain_now > 0.01f)
 		{
-			const structures::rain_constants_s constants{ { rain_now, clock, flash, 0.0f }, { wind.x, 0.0f, wind.z, 0.0f }, { terrain.constants.params.x, terrain.constants.params.w, terrain.enabled && terrain.height_view ? 1.0f : 0.0f, water.enabled ? water.height : -100000.0f } };
+			const structures::rain_constants_s constants{ { rain_now, clock, flash, terrain.cell }, { wind.x, 0.0f, wind.z, 0.0f }, { terrain.constants.params.x, terrain.constants.params.w, terrain.enabled && terrain.height_view ? 1.0f : 0.0f, water.enabled ? water.height : -100000.0f } };
 			const D3D11_VIEWPORT viewport{ 0.0f, 0.0f, static_cast<std::float_t>(renderer.width), static_cast<std::float_t>(renderer.height), 0.0f, 1.0f };
 
 			gpu.update_buffer(constant_buffer, &constants, sizeof(constants));

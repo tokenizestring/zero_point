@@ -63,7 +63,7 @@ struct layer_result
 
 float terrain_height(float2 world_xz)
 {
-	return terrain_heights.SampleLevel(terrain_clamp, (world_xz - terrain_params.x + 0.5) / terrain_params.w, 0.0);
+	return terrain_heights.SampleLevel(terrain_clamp, ((world_xz - terrain_params.x) * (terrain_params.w - 1.0) / terrain_params.y + 0.5) / terrain_params.w, 0.0);
 }
 /*
 //=====================================================================================

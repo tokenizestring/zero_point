@@ -77,7 +77,7 @@ float3 rain_light()
 */
 float impact_height(float3 position)
 {
-	float land = rain_ground.z > 0.5 ? terrain_heights.SampleLevel(linear_clamp, (position.xz - rain_ground.x + 0.5) / rain_ground.y, 0.0) : -100000.0;
+	float land = rain_ground.z > 0.5 ? terrain_heights.SampleLevel(linear_clamp, ((position.xz - rain_ground.x) / rain_params.w + 0.5) / rain_ground.y, 0.0) : -100000.0;
 
 	return max(max(land, rain_ground.w), roof_height(roof_map, position));
 }

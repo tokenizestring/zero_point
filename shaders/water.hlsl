@@ -83,7 +83,7 @@ float seabed_depth(float2 xz)
 
 	[branch] if (water_terrain_params.w > 0.5)
 	{
-		depth = max(water_shallow.w - water_terrain.SampleLevel(linear_clamp, (xz - water_terrain_params.x + 0.5) / water_terrain_params.z, 0.0), 0.0);
+		depth = max(water_shallow.w - water_terrain.SampleLevel(linear_clamp, ((xz - water_terrain_params.x) * (water_terrain_params.z - 1.0) / water_terrain_params.y + 0.5) / water_terrain_params.z, 0.0), 0.0);
 	}
 
 	return depth;

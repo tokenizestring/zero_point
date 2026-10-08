@@ -37,6 +37,7 @@ namespace zp
 		ID3D11InputLayout* shadow_layout = nullptr;
 		std::uint32_t index_count = 0u;
 		structures::vec3_s camera{};
+		std::float_t cell = terrain_spacing;
 		bool enabled = false;
 
 		bool create();

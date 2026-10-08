@@ -273,7 +273,7 @@ pixel_input vs_grass(grass_input input)
 	float seed = grass_hash(seed_cell);
 	float2 world_xz = (cell + float2(grass_hash(seed_cell + 3.1), grass_hash(seed_cell + 7.7))) * params.x;
 	float distance = length(world_xz - camera_position.xz);
-	float height = grass_heights.SampleLevel(grass_sampler, (world_xz - grass_terrain.x + 0.5) / grass_terrain.z, 0.0);
+	float height = grass_heights.SampleLevel(grass_sampler, ((world_xz - grass_terrain.x) * (grass_terrain.z - 1.0) / grass_terrain.y + 0.5) / grass_terrain.z, 0.0);
 	float4 splat = grass_splat.SampleLevel(grass_sampler, (world_xz - grass_terrain.x) / grass_terrain.y, 0.0);
 	float density = splat.r * (1.0 - grass_mask.SampleLevel(grass_sampler, (world_xz - grass_terrain.x) / grass_terrain.y, 0.0));
 	float fade = saturate((params.y - distance) / (params.y * 0.25)) * (ring == 1 ? saturate((distance - params.z) / 5.0) : 1.0);
