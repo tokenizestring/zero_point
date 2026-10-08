@@ -1,0 +1,16 @@
+{
+ "size": 1536,
+ "cell": 8.0,
+ "origin": -6144.0,
+ "horizontal_scale": 0.62,
+ "vertical_scale": 0.8,
+ "centre": [
+  49.214,
+  -2.131
+ ],
+ "rows_north_to_south": false,
+ "minimum": -34.05732727050781,
+ "maximum": 110.73979187011719,
+ "land_km2": 47.09184,
+ "source": "Copernicus DEM GLO-30, produced using Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA"
+}
