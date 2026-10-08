@@ -1207,15 +1207,15 @@ car_specs = {
     "hatch": {
         "seed": 171, "length": 3.73, "axles": (-1.2, 1.2), "tyre": 0.285, "rim": 0.165, "tyre_width": 0.165, "track": 0.69, "sink": 0.055,
         "exponent": 5.0, "egg": 0.07, "belt": 0.92, "roof": 1.37, "w_belt": 0.785, "w_roof": 0.625,
-        "stations": [(-1.865, 0.36, 0.7, 0.74), (-1.845, 0.3, 0.77, 0.765), (-1.76, 0.25, 0.8, 0.787), (-1.5, 0.23, 0.82, 0.8), (-1.0, 0.21, 0.86, 0.805), (-0.6, 0.2, 0.9, 0.805), (0.0, 0.2, 0.92, 0.805), (0.6, 0.2, 0.93, 0.805), (1.2, 0.22, 0.94, 0.8), (1.6, 0.25, 0.94, 0.787), (1.79, 0.3, 0.93, 0.765), (1.865, 0.38, 0.9, 0.74)],
-        "a": (-0.6, -0.08), "pillars": [(0.44, 0.42)], "c": (0.95, 0.9), "roof_y": (-0.08, 0.92), "rear": "hatch", "tail": (1.76, 0.96),
-        "doors": [(-0.56, 0.44)], "open": (1.0, 0, 1.05), "dash": -0.52, "front_seat": -0.05, "rear_seat": 0.62, "cabin_end": 0.92, "floor": 0.3,
+        "stations": [(-1.865, 0.34, 0.75, 0.75), (-1.845, 0.3, 0.785, 0.775), (-1.76, 0.25, 0.805, 0.79), (-1.5, 0.23, 0.82, 0.8), (-1.0, 0.21, 0.86, 0.805), (-0.6, 0.2, 0.9, 0.805), (0.0, 0.2, 0.92, 0.805), (0.6, 0.2, 0.93, 0.805), (1.2, 0.22, 0.94, 0.8), (1.6, 0.25, 0.94, 0.787), (1.79, 0.3, 0.93, 0.765), (1.865, 0.38, 0.9, 0.74)],
+        "a": (-0.6, -0.08), "pillars": [(0.44, 0.42)], "c": (1.2, 1.12), "roof_y": (-0.08, 1.3), "rear": "hatch", "tail": (1.77, 0.98),
+        "doors": [(-0.56, 0.44)], "open": (1.0, 0, 1.05), "dash": -0.52, "front_seat": -0.05, "rear_seat": 0.62, "cabin_end": 1.62, "floor": 0.3,
         "paint": ("car_blue", (0.06, 0.12, 0.21)), "odd": None, "plate": "J 48213", "headlights": "round", "loot": ("box", (0.15, 0.62, 0.45)),
     },
     "saloon": {
         "seed": 181, "length": 4.45, "axles": (-1.37, 1.21), "tyre": 0.3, "rim": 0.178, "tyre_width": 0.175, "track": 0.71, "sink": 0.06,
         "exponent": 5.5, "egg": 0.06, "belt": 0.9, "roof": 1.38, "w_belt": 0.835, "w_roof": 0.655,
-        "stations": [(-2.225, 0.36, 0.68, 0.79), (-2.2, 0.3, 0.76, 0.82), (-2.1, 0.25, 0.79, 0.84), (-1.7, 0.23, 0.81, 0.85), (-1.0, 0.21, 0.85, 0.85), (-0.7, 0.2, 0.88, 0.85), (0.0, 0.2, 0.9, 0.85), (0.8, 0.2, 0.91, 0.85), (1.4, 0.22, 0.92, 0.85), (1.9, 0.25, 0.92, 0.84), (2.15, 0.3, 0.9, 0.82), (2.225, 0.38, 0.86, 0.79)],
+        "stations": [(-2.225, 0.34, 0.77, 0.8), (-2.205, 0.3, 0.8, 0.83), (-2.1, 0.25, 0.815, 0.845), (-1.7, 0.23, 0.81, 0.85), (-1.0, 0.21, 0.85, 0.85), (-0.7, 0.2, 0.88, 0.85), (0.0, 0.2, 0.9, 0.85), (0.8, 0.2, 0.91, 0.85), (1.4, 0.22, 0.92, 0.85), (1.9, 0.25, 0.92, 0.84), (2.15, 0.3, 0.9, 0.82), (2.225, 0.38, 0.86, 0.79)],
         "a": (-0.72, -0.2), "pillars": [(0.25, 0.22)], "c": (1.36, 0.86), "roof_y": (-0.2, 0.88), "rear": "saloon", "tail": (2.2, 0.9),
         "doors": [(-0.68, 0.24), (0.26, 1.12)], "open": (-1.0, 1, 1.15), "dash": -0.62, "front_seat": -0.12, "rear_seat": 0.72, "cabin_end": 1.1, "floor": 0.3,
         "paint": ("car_beige", (0.26, 0.19, 0.1)), "odd": ("primer_door", 0), "plate": "J 27694", "headlights": "square", "loot": ("box", (-0.2, 0.74, 0.45)),
@@ -1296,6 +1296,7 @@ def car_mask(spec, key, kind, widest):
 
 def car_looks(spec, key):
     name, color = spec["paint"]
+    produce_looks()
     vk.register("tyre", "rubber", perished=0.75, dirt=0.8)
     vk.register("trim_black", "plastic", color=(0.025, 0.025, 0.025), fade=0.6, gloss=0.55, dirt=0.75)
     vk.register("lens_red", "plastic", color=(0.22, 0.015, 0.012), fade=0.3, gloss=0.2, dirt=0.65)
@@ -1549,21 +1550,21 @@ def car_front(m, spec, shell, rng, drop, key):
     plate_text = spec["plate"]
     vk.text_mask("plate_" + key, 4.7, [(plate_text, 0.68, 0.5, "arialbd.ttf", 2.35, 4.2, 1.0, 1.1)], 1024, [(0.04, 0.03)])
     if kind == "hatch":
-        grille_z = (0.55, 0.69)
-        shell.add(vk.block(v(-0.64, front - 0.03, grille_z[0]), v(0.64, front + 0.02, grille_z[1])), "trim_black", drop, 0.006)
+        grille_z = (0.52, 0.66)
+        shell.add(vk.block(v(-0.62, front - 0.025, grille_z[0]), v(0.62, front + 0.02, grille_z[1])), "trim_black", drop, 0.006)
         for k in range(4):
             z = grille_z[0] + 0.02 + k * 0.032
-            shell.add(vk.block(v(-0.38, front - 0.04, z), v(0.38, front - 0.03, z + 0.012)), "trim_black", drop, 0.002)
-        lights = [(-0.52, 0.62, "round"), (0.52, 0.62, "round")]
+            shell.add(vk.block(v(-0.36, front - 0.035, z), v(0.36, front - 0.025, z + 0.012)), "trim_black", drop, 0.002)
+        lights = [(-0.5, 0.59, "round"), (0.5, 0.59, "round")]
         bumper = (0.36, 0.46, 0.06)
         tails = [(-0.6, 0.64, 0.17, 0.15), (0.6, 0.64, 0.17, 0.15)]
     elif kind == "saloon":
-        grille_z = (0.56, 0.72)
-        shell.add(vk.block(v(-0.5, front - 0.025, grille_z[0]), v(0.5, front + 0.02, grille_z[1])), "chrome", drop, 0.006)
+        grille_z = (0.52, 0.68)
+        shell.add(vk.block(v(-0.44, front - 0.025, grille_z[0]), v(0.44, front + 0.02, grille_z[1])), "chrome", drop, 0.006)
         for k in range(6):
             z = grille_z[0] + 0.015 + k * 0.026
-            shell.add(vk.block(v(-0.48, front - 0.035, z), v(0.48, front - 0.025, z + 0.01)), "trim_black", drop, 0.002)
-        lights = [(-0.66, 0.64, "square"), (0.66, 0.64, "square")]
+            shell.add(vk.block(v(-0.42, front - 0.035, z), v(0.42, front - 0.025, z + 0.01)), "trim_black", drop, 0.002)
+        lights = [(-0.6, 0.61, "square"), (0.6, 0.61, "square")]
         bumper = (0.38, 0.47, 0.07)
         tails = [(-0.55, 0.72, 0.38, 0.11), (0.55, 0.72, 0.38, 0.11)]
     else:
@@ -1645,7 +1646,13 @@ def car_interior(m, spec, cabin, rng, drop):
         cabin.add(vk.pillow(1.25, 0.45, 0.13, rng, 0.3, 0.03, 0.08), "seat_vinyl", drop @ Matrix.Translation((0.0, rear - 0.08, floor + 0.25)))
         cabin.add(vk.pillow(1.25, 0.12, 0.52, rng, 0.3, 0.0, 0.06), "seat_vinyl", drop @ Matrix.Translation((0.0, rear + 0.2, floor + 0.55)) @ Matrix.Rotation(-0.3, 4, 'X'))
         cabin.add(vk.block(v(-0.62, rear - 0.3, floor), v(0.62, rear + 0.15, floor + 0.18)), "trim_dark", drop, 0.01)
-        cabin.add(vk.block(v(-width, spec["cabin_end"] - 0.06, spec["belt"] - 0.04), v(width, spec["cabin_end"] + 0.15, spec["belt"] - 0.02)), "dash", drop)
+        if spec["rear"] == "hatch":
+            cabin.add(vk.block(v(-width, rear + 0.32, spec["belt"] - 0.05), v(width, spec["cabin_end"] - 0.02, spec["belt"] - 0.03)), "dash", drop)
+            for side in (-1.0, 1.0):
+                axle = spec["axles"][1]
+                cabin.add(vk.block(v(side * 0.49 if side > 0 else -width, axle - 0.36, floor), v(width if side > 0 else -0.49, axle + 0.36, spec["tyre"] + 0.37)), "trim_dark", drop, 0.02)
+        else:
+            cabin.add(vk.block(v(-width, spec["cabin_end"] - 0.06, spec["belt"] - 0.04), v(width, spec["cabin_end"] + 0.15, spec["belt"] - 0.02)), "dash", drop)
         cabin.add(vk.rod(v(0.0, seat_y - 0.2, floor + 0.02), v(0.0, seat_y - 0.28, floor + 0.32), 0.008, 6), "steel", drop)
         cabin.add(g.sphere(0.025, 10, 6), "dash", drop @ Matrix.Translation((0.0, seat_y - 0.28, floor + 0.33)))
     else:
@@ -1772,7 +1779,9 @@ def car_wreck(kind):
             return "trim_dark"
         for axle, side, radius in wells:
             if side * c.x > widest - 0.302 and math.hypot(c.y - axle, c.z - spec["tyre"]) < radius + 0.004:
-                return "underbody"
+                radial = v(0.0, c.y - axle, c.z - spec["tyre"])
+                if (radial.length > 1e-6 and face.normal.dot(radial.normalized()) < -0.5) or (face.normal.x * side > 0.5 and side * c.x < widest - 0.25):
+                    return "underbody"
         if face.normal.z < -0.6 and c.z < 0.4:
             return "underbody"
         return None

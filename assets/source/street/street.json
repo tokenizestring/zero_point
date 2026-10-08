@@ -1,0 +1,360 @@
+{
+ "space": "Blender model space in metres: X right, Y back (front faces -Y), Z up; origin at ground contact, bottom centre",
+ "props": {
+  "prop_bollard": {
+   "model": "prop_bollard",
+   "far_model": "prop_bollard_far",
+   "size": [
+    0.268,
+    0.269,
+    1.085
+   ],
+   "bounds_min": [
+    -0.134,
+    -0.135,
+    -0.064
+   ],
+   "bounds_max": [
+    0.134,
+    0.134,
+    1.021
+   ],
+   "triangles": 1744,
+   "triangles_far": 128,
+   "markers": [
+    "col_metal_1"
+   ],
+   "footprint_radius": 0.134,
+   "kind": "point"
+  },
+  "prop_bench": {
+   "model": "prop_bench",
+   "far_model": "prop_bench_far",
+   "size": [
+    1.878,
+    0.951,
+    0.899
+   ],
+   "bounds_min": [
+    -0.938,
+    -0.508,
+    -0.003
+   ],
+   "bounds_max": [
+    0.94,
+    0.443,
+    0.896
+   ],
+   "triangles": 11636,
+   "triangles_far": 72,
+   "markers": [
+    "col_wood_1",
+    "col_wood_2",
+    "col_metal_1",
+    "col_metal_2"
+   ],
+   "kind": "point",
+   "front": "-Y (seat faces -Y)",
+   "length": 1.86
+  },
+  "prop_bus_shelter": {
+   "model": "prop_bus_shelter",
+   "far_model": "prop_bus_shelter_far",
+   "size": [
+    3.244,
+    2.032,
+    3.08
+   ],
+   "bounds_min": [
+    -1.622,
+    -1.222,
+    -0.08
+   ],
+   "bounds_max": [
+    1.622,
+    0.81,
+    3.0
+   ],
+   "triangles": 5696,
+   "triangles_far": 108,
+   "markers": [
+    "col_glass_1",
+    "col_glass_2",
+    "col_glass_3",
+    "col_metal_1",
+    "col_wood_1",
+    "col_metal_2"
+   ],
+   "kind": "point",
+   "front": "-Y (open side)",
+   "length": 3.24
+  },
+  "prop_phone_box": {
+   "model": "prop_phone_box",
+   "far_model": "prop_phone_box_far",
+   "size": [
+    1.06,
+    1.743,
+    2.475
+   ],
+   "bounds_min": [
+    -0.53,
+    -1.213,
+    -0.06
+   ],
+   "bounds_max": [
+    0.53,
+    0.53,
+    2.415
+   ],
+   "triangles": 10514,
+   "triangles_far": 56,
+   "markers": [
+    "col_metal_1"
+   ],
+   "kind": "point",
+   "front": "-Y (door, hinged on -X side, ajar)",
+   "footprint": [
+    0.915,
+    0.915
+   ]
+  },
+  "prop_post_box": {
+   "model": "prop_post_box",
+   "far_model": "prop_post_box_far",
+   "size": [
+    0.763,
+    0.981,
+    1.667
+   ],
+   "bounds_min": [
+    -0.308,
+    -0.642,
+    -0.067
+   ],
+   "bounds_max": [
+    0.455,
+    0.339,
+    1.6
+   ],
+   "triangles": 2788,
+   "triangles_far": 140,
+   "markers": [
+    "col_metal_1"
+   ],
+   "kind": "point",
+   "front": "-Y (aperture and door)",
+   "footprint_radius": 0.31
+  },
+  "prop_street_sign": {
+   "model": "prop_street_sign",
+   "far_model": "prop_street_sign_far",
+   "size": [
+    1.554,
+    1.544,
+    2.812
+   ],
+   "bounds_min": [
+    -0.525,
+    -0.742,
+    -0.083
+   ],
+   "bounds_max": [
+    1.029,
+    0.802,
+    2.729
+   ],
+   "triangles": 1484,
+   "triangles_far": 105,
+   "markers": [
+    "col_metal_1"
+   ],
+   "kind": "point",
+   "front": "-Y"
+  },
+  "prop_litter_bin": {
+   "model": "prop_litter_bin",
+   "far_model": "prop_litter_bin_far",
+   "size": [
+    1.086,
+    1.114,
+    1.086
+   ],
+   "bounds_min": [
+    -0.507,
+    -0.651,
+    -0.006
+   ],
+   "bounds_max": [
+    0.579,
+    0.463,
+    1.08
+   ],
+   "triangles": 4240,
+   "triangles_far": 112,
+   "markers": [
+    "col_metal_1"
+   ],
+   "kind": "point",
+   "front": "-Y",
+   "footprint_radius": 0.26
+  },
+  "prop_market_stall_a": {
+   "model": "prop_market_stall_a",
+   "far_model": "prop_market_stall_a_far",
+   "size": [
+    3.059,
+    1.999,
+    2.418
+   ],
+   "bounds_min": [
+    -1.403,
+    -1.198,
+    -0.05
+   ],
+   "bounds_max": [
+    1.656,
+    0.801,
+    2.368
+   ],
+   "triangles": 7968,
+   "triangles_far": 92,
+   "markers": [
+    "col_wood_1",
+    "col_wood_2",
+    "col_wood_3",
+    "col_wood_4",
+    "loot_food_1",
+    "col_wood_5",
+    "col_wood_6"
+   ],
+   "kind": "point",
+   "front": "-Y (counter side)",
+   "variant": "a"
+  },
+  "prop_market_stall_b": {
+   "model": "prop_market_stall_b",
+   "far_model": "prop_market_stall_b_far",
+   "size": [
+    3.933,
+    2.083,
+    2.488
+   ],
+   "bounds_min": [
+    -1.403,
+    -1.329,
+    -0.05
+   ],
+   "bounds_max": [
+    2.53,
+    0.754,
+    2.438
+   ],
+   "triangles": 6932,
+   "triangles_far": 80,
+   "markers": [
+    "col_wood_1",
+    "col_wood_2",
+    "col_wood_3",
+    "loot_food_1",
+    "col_wood_4"
+   ],
+   "kind": "point",
+   "front": "-Y (counter side)",
+   "variant": "b"
+  },
+  "prop_war_memorial": {
+   "model": "prop_war_memorial",
+   "far_model": "prop_war_memorial_far",
+   "size": [
+    2.6,
+    2.857,
+    5.777
+   ],
+   "bounds_min": [
+    -1.3,
+    -1.557,
+    -0.08
+   ],
+   "bounds_max": [
+    1.3,
+    1.3,
+    5.697
+   ],
+   "triangles": 3320,
+   "triangles_far": 84,
+   "markers": [
+    "col_rock_1",
+    "col_rock_2",
+    "col_rock_3",
+    "col_rock_4",
+    "col_rock_5"
+   ],
+   "kind": "point",
+   "front": "-Y (main inscription)",
+   "footprint": [
+    2.6,
+    2.6
+   ]
+  },
+  "prop_horse_trough": {
+   "model": "prop_horse_trough",
+   "far_model": "prop_horse_trough_far",
+   "size": [
+    2.2,
+    1.566,
+    0.75
+   ],
+   "bounds_min": [
+    -1.1,
+    -1.186,
+    -0.06
+   ],
+   "bounds_max": [
+    1.1,
+    0.38,
+    0.69
+   ],
+   "triangles": 1100,
+   "triangles_far": 12,
+   "markers": [
+    "col_rock_1"
+   ],
+   "kind": "point",
+   "front": "-Y (inscription)",
+   "footprint": [
+    2.2,
+    0.72
+   ]
+  },
+  "prop_garden_wall": {
+   "model": "prop_garden_wall",
+   "far_model": "prop_garden_wall_far",
+   "size": [
+    4.034,
+    0.555,
+    1.16
+   ],
+   "bounds_min": [
+    -2.013,
+    -0.273,
+    -0.06
+   ],
+   "bounds_max": [
+    2.021,
+    0.282,
+    1.1
+   ],
+   "triangles": 8486,
+   "triangles_far": 28,
+   "markers": [
+    "col_rock_1"
+   ],
+   "kind": "tile",
+   "tile_axis": "X",
+   "tile_length": 4.0,
+   "height": 1.1,
+   "front": "both faces dressed"
+  }
+ }
+}

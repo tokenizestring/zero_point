@@ -1297,6 +1297,31 @@ def look_plastic(gr, p):
     gr.finish(color, rough, 0.0, height, 0.2, 0.0004 * s, 0.003 * s)
 
 
+def crack_lines(gr, s, impacts, reach, amount, spokes=11.0, width=0.0016):
+    k = impacts / s
+    scaled = gr.mapping((k, k, k), (4.0, 2.0, 7.0))
+    node = gr.tree.nodes.new('ShaderNodeTexVoronoi')
+    node.feature = 'F1'
+    node.inputs['Scale'].default_value = 1.0
+    node.inputs['Randomness'].default_value = 1.0
+    gr.tree.links.new(scaled, node.inputs['Vector'])
+    offset = gr.vector('SUBTRACT', scaled, node.outputs['Position'])
+    split = gr.tree.nodes.new('ShaderNodeSeparateXYZ')
+    gr.tree.links.new(offset, split.inputs['Vector'])
+    distance = gr.mul(gr.vector('LENGTH', offset), 1.0 / k)
+    across = gr.ramp(gr.m('ABSOLUTE', gr.nx), 0.4, 0.7)
+    angle = gr.lerp(across, gr.m('ARCTAN2', split.outputs['Z'], split.outputs['X']), gr.m('ARCTAN2', split.outputs['Z'], split.outputs['Y']))
+    warp = gr.sub(gr.noise(5.0 / s, 3.0, 0.6), 0.5)
+    phase = gr.m('FRACT', gr.add(gr.mul(angle, spokes / tau), gr.mul(warp, 0.7)))
+    arc = gr.mul(gr.mul(gr.m('ABSOLUTE', gr.sub(phase, 0.5)), tau / spokes), distance)
+    radial = gr.mul(gr.ramp(arc, width, 0.0), gr.ramp(gr.add(distance, gr.mul(warp, 0.2)), reach, 0.03), True)
+    ring_phase = gr.m('FRACT', gr.add(gr.mul(distance, 16.0), gr.mul(warp, 1.4)))
+    ring = gr.ramp(gr.mul(gr.m('ABSOLUTE', gr.sub(ring_phase, 0.5)), 1.0 / 16.0), width, 0.0)
+    ring = gr.mul(gr.mul(ring, gr.ramp(distance, reach * 0.6, 0.05)), gr.ramp(gr.noise(9.0 / s, 2.0, 0.5, offset=(1.0, 5.0, 2.0)), 0.48, 0.56), True)
+    crush = gr.mul(gr.ramp(gr.voronoi(60.0 / s, 'DISTANCE_TO_EDGE', 'Distance'), 0.06, 0.0), gr.ramp(distance, 0.05, 0.01), True)
+    return gr.mul(gr.most(gr.most(radial, ring), crush), amount * 1.2, True)
+
+
 def look_glass(gr, p):
     s = p.get("scale", 1.0)
     dirt = gr.ramp(gr.noise(2.5 / s, 5.0, 0.6), 0.3, 0.75)
@@ -1305,11 +1330,7 @@ def look_glass(gr, p):
     height = 0.0
     cracked = p.get("cracked", 0.0)
     if cracked > 0.0:
-        bent = gr.warped(0.09 * s, 4.0 / s)
-        fine = gr.ramp(gr.voronoi(p.get("shards", 7.0) / s, 'DISTANCE_TO_EDGE', 'Distance', randomness=1.0, source=bent), 0.016, 0.0)
-        coarse = gr.ramp(gr.voronoi(2.2 / s, 'DISTANCE_TO_EDGE', 'Distance', randomness=1.0, source=gr.warped(0.2 * s, 2.0 / s)), 0.006, 0.0)
-        star = gr.ramp(gr.voronoi(1.1 / s, 'F1', 'Distance', offset=(3.0, 1.0, 2.0)), 0.6, 0.12)
-        lines = gr.most(gr.mul(fine, gr.mul(star, cracked * 2.2), True), gr.mul(coarse, cracked))
+        lines = crack_lines(gr, s, p.get("impacts", 1.7), p.get("reach", 0.32), cracked)
         color = gr.mix(lines, color, (0.3, 0.31, 0.3))
         rough = gr.lerp(lines, rough, 0.45)
         height = gr.mul(lines, -1.0)
@@ -1402,7 +1423,7 @@ def standard_looks():
     register("spike", "metal", kind="steel", rust=0.5)
     register("rubber", "rubber", perished=0.5)
     register("glass", "glass", cracked=0.0)
-    register("glass_cracked", "glass", cracked=0.6)
+    register("glass_cracked", "glass", cracked=0.8, impacts=2.4, reach=0.42)
     register("moss", "organic", kind="moss")
     register("leaves", "organic", kind="leaves")
     register("dirt", "organic", kind="dirt")
