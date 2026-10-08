@@ -33,9 +33,10 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Bullet holes, blood and footprints that are kept on the server and shown to everyone nearby
 - Gulls wheel over the coast and crows over the fields and woods, flapping and gliding, and a gunshot sends them climbing away. Schools of mackerel and sea bass swim offshore and scatter when you swim close
 - Day and night cycle with a procedural sky, weather (overcast, rain, storms with lightning), an ocean you can swim and dive in
+- Volumetric clouds that drift with the wind, glow gold at sunrise and sunset, let sunbeams through their gaps and cast moving shadows over the land and the sea
 - Buildings modelled in Blender with interiors, collision and loot spots
-- Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a granite war memorial, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, and rows of furnished Victorian terraced houses with back yards. A church, hall, pub, shops, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
-- Wrecked cars, barricades and junk in the streets and yards, with loot to find
+- Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a war memorial, market stalls, a horse trough, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, pillar boxes, finger posts and guard railings at the crossroads, and rows of furnished Victorian terraced houses and high street shops with flats above. A church, hall, pub, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
+- Sandbag checkpoints with traffic cones and concrete barriers at the edges of town, burnt out hatchbacks, saloons and vans in the streets, and junk in the yards, with loot to find: crates behind the sandbags, goods left on the market stalls
 
 **Vehicles**
 - An armoured junk rover and a scrap helicopter you can drive and fly, with a seat for a passenger. The Blender models are on the way; simple stand-ins are in the game until then
@@ -70,6 +71,7 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 
 **Technology**
 - Deferred renderer: tiled compute lighting, cascaded shadows, ambient occlusion, temporal anti-aliasing, auto exposure, bloom, image based lighting
+- Raymarched volumetric clouds from noise the game generates on the graphics card at start up, rendered at half resolution with temporal smoothing, plus a cloud shadow map for the ground and the sea
 - GPU skinned characters, instanced foliage with impostors, GPU grass, screen-space reflections on water
 - Full-body first person: look down and you see your own legs and feet, and your shadow is your whole body
 - Brush and heightfield collision with swept box traces, moving platforms

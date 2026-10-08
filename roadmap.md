@@ -67,7 +67,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [x] Cloud layer thickens and darkens with the weather; splashes where rain lands; day and night clock matches the sun
     - [x] Branching lightning bolts on the horizon, hidden behind terrain and trees, synced with the flash and thunder
     - [x] Sun shafts through the canopy (quarter-res sky mask, radial blur toward the sun, fades with cloud cover)
-    - [ ] Volumetric clouds, puddle ripples
+    - [x] Volumetric clouds: raymarched at half resolution through generated Perlin-Worley noise, lit by the sun with multiple scattering and the sky, temporal smoothing, weather-driven cover, a cloud shadow map that darkens the ground and the sea glitter, and sun shafts that only break through gaps (Volumetric clouds setting)
+    - [ ] Puddle ripples
 28. [ ] Lighting: contact shadows, better ambient occlusion, specular occlusion, interior light probes, shadowed local lights
 29. [ ] Post: time-of-day colour grading, lens effects, subtle grain, optional motion blur
 30. [ ] Materials pass: every surface checked (albedo range, roughness, normal strength), grime, moss and leak decals
@@ -98,7 +99,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 34. [ ] Detailed, fully furnished structures (Blender-built or CC0 downloads):
     - [x] Cottage, two-storey house, ruin, shed and barn built in Blender with interiors, collision and loot spots; town, villages, farms and hamlets placed across the island
     - [x] Saint Aubin laid out as a planned town: two main streets crossing at a square, back lanes, kerbed pavements, centre lines, lamps, a granite memorial, planters with oaks, bollards and benches, wrecks and barricades, building rows packed by each model's real size
-    - [ ] Furnished town buildings from Blender: terraced houses in; shop, pub, church, police station, clinic, garage, fuel station, flats, school and hall still to come
+    - [ ] Furnished town buildings from Blender: terraced houses and the high street shop in; pub, church, police station, clinic, garage, fuel station, flats, school and hall still to come
+    - [x] Street furniture from Blender: war memorial, market stalls, horse trough, litter bins, pillar boxes, finger posts, phone box, bus shelters, benches, bollards, guard railings at the crossroads, stone churchyard walls, sandbag checkpoints with traffic cones, and burnt out hatchback, saloon and van wrecks; loot spots on the props spawn crates
     - [ ] Offshore oil rig
     - [ ] Fisherman's cottages (kitchen, table, beds, shelves, stove, clutter)
     - [ ] Farmhouse, barn, silo and sheds
