@@ -1,0 +1,238 @@
+{
+ "space": "Blender model space in metres. +X = vehicle left, -X = vehicle right, -Y = forward (nose / front bumper), +Z = up. Origin on the ground plane on the centreline (rover: midway between the axles; helicopter: 0.25 m ahead of the main rotor mast, which stands at y = 0.25). The engine baker maps Blender (x, y, z) to engine (x, z, y), so engine forward is -Z.",
+ "model": "veh_rover",
+ "far_model": "veh_rover_far",
+ "triangles": 57651,
+ "triangles_far": 464,
+ "bounds_min": [
+  -0.96,
+  -2.398,
+  -0.001
+ ],
+ "bounds_max": [
+  1.018,
+  2.412,
+  3.23
+ ],
+ "size": [
+  1.978,
+  4.81,
+  3.231
+ ],
+ "parts": {
+  "body": {
+   "origin": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "triangles": 41995
+  },
+  "steering": {
+   "origin": [
+    -0.42,
+    -0.42,
+    1.42
+   ],
+   "triangles": 524
+  },
+  "wheel_fl": {
+   "origin": [
+    0.775,
+    -1.397,
+    0.4
+   ],
+   "triangles": 3783
+  },
+  "wheel_fr": {
+   "origin": [
+    -0.775,
+    -1.397,
+    0.4
+   ],
+   "triangles": 3783
+  },
+  "wheel_rl": {
+   "origin": [
+    0.775,
+    1.397,
+    0.4
+   ],
+   "triangles": 3783
+  },
+  "wheel_rr": {
+   "origin": [
+    -0.775,
+    1.397,
+    0.4
+   ],
+   "triangles": 3783
+  }
+ },
+ "markers": [
+  "col_metal_1",
+  "col_metal_2",
+  "col_metal_3",
+  "col_metal_4",
+  "col_metal_5",
+  "exhaust",
+  "seat_driver",
+  "seat_passenger",
+  "light_head_l",
+  "light_head_r"
+ ],
+ "wheels": {
+  "wheel_fl": {
+   "centre": [
+    0.775,
+    -1.397,
+    0.4
+   ],
+   "radius": 0.4,
+   "width": 0.27,
+   "axle": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "outer_face": "+X",
+   "steers": true,
+   "driven": true
+  },
+  "wheel_fr": {
+   "centre": [
+    -0.775,
+    -1.397,
+    0.4
+   ],
+   "radius": 0.4,
+   "width": 0.27,
+   "axle": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "outer_face": "-X",
+   "steers": true,
+   "driven": true
+  },
+  "wheel_rl": {
+   "centre": [
+    0.775,
+    1.397,
+    0.4
+   ],
+   "radius": 0.4,
+   "width": 0.27,
+   "axle": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "outer_face": "+X",
+   "steers": false,
+   "driven": true
+  },
+  "wheel_rr": {
+   "centre": [
+    -0.775,
+    1.397,
+    0.4
+   ],
+   "radius": 0.4,
+   "width": 0.27,
+   "axle": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "outer_face": "-X",
+   "steers": false,
+   "driven": true
+  }
+ },
+ "steering": {
+  "part": "steering",
+  "hub": [
+   -0.42,
+   -0.42,
+   1.42
+  ],
+  "axis_toward_driver": [
+   0.0,
+   0.8,
+   0.6
+  ],
+  "rim_radius": 0.2
+ },
+ "wheelbase": 2.794,
+ "track": 1.55,
+ "wheel_radius": 0.4,
+ "tyre_width": 0.27,
+ "ride_height": {
+  "wheel_centre": 0.4,
+  "chassis_rail_bottom": 0.47,
+  "floor": 0.74,
+  "roof": 1.98,
+  "rack_top": 2.63
+ },
+ "mass_kg": 2850,
+ "mass_note": "Land Rover 110 hardtop kerb weight about 1900 kg plus about 950 kg of armour plate, cage, bull bar, rack, spare wheel and cargo",
+ "centre_of_mass": [
+  0.0,
+  0.05,
+  0.95
+ ],
+ "lights": {
+  "light_head_l": {
+   "position": [
+    0.68,
+    -2.05,
+    1.0
+   ],
+   "direction": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "kind": "headlight"
+  },
+  "light_head_r": {
+   "position": [
+    -0.68,
+    -2.05,
+    1.0
+   ],
+   "direction": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "kind": "headlight"
+  }
+ },
+ "exhaust": {
+  "position": [
+   0.95,
+   0.42,
+   2.56
+  ],
+  "direction": [
+   0.0,
+   0.0,
+   1.0
+  ]
+ },
+ "seats": {
+  "seat_driver": [
+   -0.42,
+   -0.13,
+   1.76
+  ],
+  "seat_passenger": [
+   0.42,
+   -0.13,
+   1.76
+  ]
+ }
+}

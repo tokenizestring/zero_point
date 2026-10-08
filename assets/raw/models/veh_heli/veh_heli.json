@@ -1,0 +1,200 @@
+{
+ "space": "Blender model space in metres. +X = vehicle left, -X = vehicle right, -Y = forward (nose / front bumper), +Z = up. Origin on the ground plane on the centreline (rover: midway between the axles; helicopter: 0.25 m ahead of the main rotor mast, which stands at y = 0.25). The engine baker maps Blender (x, y, z) to engine (x, z, y), so engine forward is -Z.",
+ "model": "veh_heli",
+ "far_model": "veh_heli_far",
+ "triangles": 27112,
+ "triangles_far": 340,
+ "bounds_min": [
+  -4,
+  -2.632,
+  -0.001
+ ],
+ "bounds_max": [
+  4,
+  6.722,
+  2.95
+ ],
+ "size": [
+  8,
+  9.354,
+  2.951
+ ],
+ "parts": {
+  "body": {
+   "origin": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "triangles": 25244
+  },
+  "rotor_main": {
+   "origin": [
+    0,
+    0.25,
+    2.62
+   ],
+   "triangles": 1412
+  },
+  "rotor_tail": {
+   "origin": [
+    0.33,
+    6.22,
+    1.93
+   ],
+   "triangles": 456
+  }
+ },
+ "markers": [
+  "col_metal_1",
+  "col_metal_2",
+  "col_metal_3",
+  "col_metal_4",
+  "col_metal_5",
+  "col_metal_6",
+  "seat_pilot",
+  "seat_passenger",
+  "light_head",
+  "light_nav_l",
+  "light_nav_r",
+  "light_tail"
+ ],
+ "rotor_main": {
+  "part": "rotor_main",
+  "hub": [
+   0.0,
+   0.25,
+   2.62
+  ],
+  "axis": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "radius": 4.0,
+  "blades": 2,
+  "spin": "counter-clockwise seen from above"
+ },
+ "rotor_tail": {
+  "part": "rotor_tail",
+  "hub": [
+   0.33,
+   6.22,
+   1.93
+  ],
+  "axis": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "radius": 0.7,
+  "blades": 2
+ },
+ "skid_contacts": [
+  [
+   -1.0,
+   -1.5,
+   0.0
+  ],
+  [
+   -1.0,
+   1.95,
+   0.0
+  ],
+  [
+   1.0,
+   -1.5,
+   0.0
+  ],
+  [
+   1.0,
+   1.95,
+   0.0
+  ]
+ ],
+ "mass_kg": 1150,
+ "mass_note": "welded steel tube airframe, armour plate cockpit, flat-six engine, 80 l drum tank; between a two-seat light helicopter (about 650 kg empty) and a small utility type",
+ "centre_of_mass": [
+  0.0,
+  0.1,
+  1.25
+ ],
+ "seats": {
+  "seat_pilot": [
+   -0.35,
+   -1.2,
+   1.74
+  ],
+  "seat_passenger": [
+   0.35,
+   -1.2,
+   1.74
+  ]
+ },
+ "lights": {
+  "light_head": {
+   "position": [
+    0.0,
+    -2.52,
+    0.83
+   ],
+   "direction": [
+    0.0,
+    -0.9439,
+    -0.3304
+   ],
+   "kind": "landing"
+  },
+  "light_nav_l": {
+   "position": [
+    0.81,
+    -1.0,
+    0.96
+   ],
+   "direction": [
+    1.0,
+    0.0,
+    0.0
+   ],
+   "kind": "navigation red (port)"
+  },
+  "light_nav_r": {
+   "position": [
+    -0.81,
+    -1.0,
+    0.96
+   ],
+   "direction": [
+    -1.0,
+    0.0,
+    0.0
+   ],
+   "kind": "navigation green (starboard)"
+  },
+  "light_tail": {
+   "position": [
+    0.0,
+    6.6,
+    2.9
+   ],
+   "direction": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "kind": "tail white"
+  }
+ },
+ "exhausts": [
+  [
+   -0.42,
+   1.65,
+   1.67
+  ],
+  [
+   0.42,
+   1.65,
+   1.67
+  ]
+ ]
+}
