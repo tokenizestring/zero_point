@@ -48,6 +48,8 @@ static const float2 poisson[16] =
 	float2(-0.24188840, 0.99706507), float2(-0.81409955, 0.91437590), float2(0.19984126, 0.78641367), float2(0.14383161, -0.14100790)
 };
 
+static const float contact_range = 50.0;
+
 groupshared uint tile_depth_near;
 groupshared uint tile_depth_far;
 groupshared uint tile_light_count;
@@ -178,6 +180,49 @@ float sun_shadow(float3 world_position, float3 normal, float view_depth, float2 
 				result = lerp(result, 1.0, blend);
 			}
 		}
+	}
+
+	return result;
+}
+/*
+//=====================================================================================
+*/
+float contact_shadow(float3 world_position, float3 normal, float view_depth, float2 pixel)
+{
+	float result = 1.0;
+
+	[branch] if (quality_params.x > 1.5 && view_depth < contact_range && sun_direction.y > 0.0)
+	{
+		uint steps = quality_params.x > 2.5 ? 12u : 6u;
+		float reach = 0.35 + view_depth * 0.012;
+		float thickness = 0.12 + view_depth * 0.006;
+		float3 start = world_position + normal * (0.01 + view_depth * 0.0008);
+		float4 clip_start = mul(float4(start, 1.0), view_projection);
+		float4 clip_end = mul(float4(start + sun_direction.xyz * reach, 1.0), view_projection);
+		float offset = interleaved_gradient_noise(pixel + exposure_params.w * 5.588238);
+
+		[loop] for (uint index = 0; index < steps; index++)
+		{
+			float along = ((float)index + offset) / (float)steps;
+			float4 clip = lerp(clip_start, clip_end, along);
+			float2 uv = clip.xy / clip.w * float2(0.5, -0.5) + 0.5;
+
+			[branch] if (any(uv < 0.0) || any(uv > 1.0))
+			{
+				break;
+			}
+
+			float gap = clip.w - camera_position.w / max(depth_texture.SampleLevel(point_clamp, uv, 0.0), 0.0000001);
+
+			[branch] if (gap > 0.0 && gap < thickness)
+			{
+				result = along * along;
+
+				break;
+			}
+		}
+
+		result = lerp(result, 1.0, saturate((view_depth - contact_range * 0.7) / (contact_range * 0.3)));
 	}
 
 	return result;
@@ -435,6 +480,11 @@ void cs_main(uint3 id : SV_DispatchThreadID, uint3 group : SV_GroupID, uint thre
 			{
 				float shadow = sun_shadow(world_position, n, view_depth, float2(id.xy)) * cloud_sunlight(cloud_shadows, linear_clamp, world_position);
 				float sky_visibility = 1.0;
+
+				[branch] if (shadow > 0.01 && viewmodel == false && (flags & 8u) == 0u)
+				{
+					shadow *= contact_shadow(world_position, n, view_depth, float2(id.xy));
+				}
 				float3 irradiance = probe_counts.w > 0.5 ? probe_irradiance(world_position, n, sky_visibility) : sh_irradiance(n);
 
 				[branch] if (weather_params.x > 0.001 && viewmodel == false)
