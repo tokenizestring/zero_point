@@ -58,21 +58,25 @@ namespace zp
 	constexpr auto material_texture_size = 1024u;
 	constexpr auto sky_sh_coefficients = 9u;
 	constexpr auto max_materials = 256u;
-	constexpr auto terrain_size = 4608.0f;
-	constexpr auto terrain_resolution = 4609u;
-	constexpr auto terrain_texture_size = 4608u;
-	constexpr auto terrain_origin = -2304.0f;
+	constexpr auto terrain_size = 12288.0f;
+	constexpr auto terrain_spacing = 2.0f;
+	constexpr auto terrain_resolution = 6145u;
+	constexpr auto terrain_texture_size = 3072u;
+	constexpr auto terrain_texture_cell = 4.0f;
+	constexpr auto terrain_origin = -6144.0f;
 	constexpr auto terrain_layer_count = 16u;
 	constexpr auto terrain_splat_count = 4u;
 	constexpr auto biome_cell = 4.0f;
-	constexpr auto biome_size = 1152u;
-	constexpr auto ground_cell = 2.0f;
-	constexpr auto ground_size = 2304u;
+	constexpr auto biome_size = 3072u;
+	constexpr auto ground_cell = 4.0f;
+	constexpr auto ground_size = 3072u;
+	constexpr auto grass_mask_cell = 2.0f;
+	constexpr auto grass_mask_size = 6144u;
 	constexpr auto field_spacing = 76.0f;
 	constexpr auto field_bank = 1.7f;
-	constexpr auto terrain_patch_cells = 36u;
+	constexpr auto terrain_patch_cells = 48u;
 	constexpr auto terrain_lod_levels = 8u;
-	constexpr auto terrain_lod_base_range = 80.0f;
+	constexpr auto terrain_lod_base_range = 213.0f;
 	constexpr auto terrain_morph_start = 0.7f;
 	constexpr auto terrain_maximum_patches = 2048u;
 	constexpr auto sea_level = 0.0f;
@@ -242,11 +246,11 @@ namespace zp
 	constexpr auto fir_variant_count = 6u;
 	constexpr auto dead_tree_variant_count = 3u;
 	constexpr auto foliage_cell_size = 64.0f;
-	constexpr auto foliage_maximum_instances = 65536u;
+	constexpr auto foliage_maximum_instances = 262144u;
 	constexpr auto foliage_maximum_species = 192u;
 	constexpr auto island_spawn_rays = 48u;
 	constexpr auto route_cell = 4.0f;
-	constexpr auto route_cells = 1152u;
+	constexpr auto route_cells = 3072u;
 	constexpr auto route_clear_margin = 4.0f;
 	constexpr auto route_building_gap = 13.0f;
 	constexpr auto route_prop_gap = 2.5f;
@@ -373,7 +377,7 @@ namespace zp
 	constexpr auto cloud_weather_size = 512u;
 	constexpr auto cloud_noise_group = 4u;
 	constexpr auto cloud_shadow_size = 256u;
-	constexpr auto cloud_shadow_extent = 12000.0f;
+	constexpr auto cloud_shadow_extent = 16000.0f;
 	constexpr auto cloud_bottom = 1400.0f;
 	constexpr auto cloud_top = 3800.0f;
 	constexpr auto cloud_storm_bottom = 850.0f;
@@ -500,15 +504,15 @@ namespace zp
 	constexpr auto decal_gloss = 0.16f;
 	constexpr auto decal_distance_fade = 0.2f;
 	constexpr auto mark_capacity = 32768u;
-	constexpr auto mark_cell = 32.0f;
-	constexpr auto mark_cells = 144u;
-	constexpr auto mark_interest = 2;
+	constexpr auto mark_cell = 64.0f;
+	constexpr auto mark_cells = 192u;
+	constexpr auto mark_interest = 1;
 	constexpr auto mark_bytes = 14u;
 	constexpr auto marks_per_message = 36u;
 	constexpr auto mark_queue_room = 96u;
 	constexpr auto mark_cells_per_flush = 3u;
 	constexpr auto mark_backlog = 1024u;
-	constexpr auto mark_plane_scale = 16777216.0f / 4608.0f;
+	constexpr auto mark_plane_scale = 16777216.0f / terrain_size;
 	constexpr auto mark_height_floor = -16.0f;
 	constexpr auto mark_height_scale = 256.0f;
 	constexpr auto mark_age_step = 8.0;
@@ -537,7 +541,7 @@ namespace zp
 	constexpr auto nude_character = "survivor_male_nude";
 	constexpr auto server_executable_name = "zero_point_server.exe";
 	constexpr auto net_protocol_id = 0x314E505Au;
-	constexpr auto net_protocol_version = 10u;
+	constexpr auto net_protocol_version = 11u;
 	constexpr auto net_time_scale = 4096.0;
 	constexpr auto net_time_window = 1.0;
 	constexpr auto net_time_lead = 0.1;
@@ -606,10 +610,10 @@ namespace zp
 	constexpr auto world_save_interval = 60.0f;
 	constexpr auto world_save_name = "zero_point_world.sav";
 	constexpr std::uint32_t world_save_magic = 0x5A505744u;
-	constexpr std::uint32_t world_save_version = 9u;
+	constexpr std::uint32_t world_save_version = 10u;
 	constexpr std::uint32_t world_save_marks = 8u;
 	constexpr std::uint32_t world_save_layout = 9u;
-	constexpr std::uint32_t world_save_oldest = 7u;
+	constexpr std::uint32_t world_save_oldest = 10u;
 	constexpr std::uint32_t world_save_tiers = 5u;
 	constexpr std::uint32_t world_save_claims = 5u;
 	constexpr std::uint32_t world_save_locks = 6u;
@@ -618,7 +622,7 @@ namespace zp
 	constexpr auto net_rewind_samples = 32u;
 	constexpr auto net_rewind_limit = 0.5f;
 	constexpr auto net_shot_range = 900.0f;
-	constexpr auto net_shot_bytes = 16u;
+	constexpr auto net_shot_bytes = 24u;
 	constexpr auto net_snapshot_shots = 24u;
 	constexpr auto net_tracer_range = 250.0f;
 	constexpr auto player_hit_radius = 0.3f;
@@ -638,7 +642,7 @@ namespace zp
 	constexpr auto net_player_respawn = 600.0f;
 	constexpr auto net_history_size = 256u;
 	constexpr auto net_grid_cell = 64.0f;
-	constexpr auto net_grid_size = 80u;
+	constexpr auto net_grid_size = 200u;
 	constexpr auto net_name_length = 32u;
 	constexpr auto net_name_copies = 16u;
 	constexpr auto net_password_length = 32u;
@@ -660,7 +664,7 @@ namespace zp
 	constexpr auto net_report_interval = 2.0f;
 	constexpr auto net_priority_near = 12.0f;
 	constexpr auto net_early_status_time = 35.0;
-	constexpr auto net_player_bytes = 18u;
+	constexpr auto net_player_bytes = 22u;
 	constexpr auto socket_buffer_bytes = 4 * 1024 * 1024;
 	constexpr DWORD socket_ignore_reset = 0x9800000Cu;
 
@@ -1613,7 +1617,28 @@ namespace zp
 			landmark_rozel,
 			landmark_landes,
 			landmark_trinity,
+			landmark_helier,
+			landmark_brelade,
+			landmark_quennevais,
+			landmark_peter,
+			landmark_lawrence,
+			landmark_mary,
+			landmark_john,
+			landmark_martin,
+			landmark_grouville,
+			landmark_clement,
+			landmark_saviour,
 			landmark_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum settlement_e : std::uint32_t
+		{
+			settlement_outlier,
+			settlement_farm,
+			settlement_hamlet,
+			settlement_village
 		};
 		/*
 		//=====================================================================================
@@ -5162,14 +5187,14 @@ namespace zp
 	};
 	constexpr std::float_t audio_tail_gains[structures::acoustic_count] = { 0.42f, 0.8f, 0.75f, 0.8f, 0.95f, 0.0f };
 
-	constexpr auto fauna_maximum = 220u;
+	constexpr auto fauna_maximum = 1000u;
 	constexpr auto fauna_think_interval = 0.1f;
 	constexpr auto fauna_wake_range = 420.0f;
 	constexpr auto fauna_dormant_step = 0.5f;
 	constexpr auto fauna_sync_range = 280.0f;
 	constexpr auto fauna_snapshot_animals = 40u;
 	constexpr auto fauna_snapshot_reserve = 12u;
-	constexpr auto fauna_animal_bytes = 13u;
+	constexpr auto fauna_animal_bytes = 17u;
 	constexpr auto fauna_lod_distance = 45.0f;
 	constexpr auto fauna_draw_distance = 300.0f;
 	constexpr auto fauna_carcass_time = 900.0f;
@@ -5210,7 +5235,7 @@ namespace zp
 		{ "Wild boar", "boar", "boar_lod", { "boar_idle", "boar_idle_look", "boar_root", "boar_alert", "boar_walk", "boar_trot", "boar_run", "boar_hit", "boar_death", "boar_rest", "boar_attack" }, 150.0f, 0.22f, 0.45f, 0.55f, 1.2f, 3.2f, 9.0f, 40.0f, 120.0f, 0.6f, structures::item_raw_pork, 8u, 2u, 6u, 4u, pi, 1.05f, true },
 		{ "Horse", "horse", "horse_lod", { "horse_idle", "horse_idle_look", "horse_graze", "horse_alert", "horse_walk", "horse_trot", "horse_gallop", "horse_hit", "horse_death", "horse_idle", "horse_rear" }, 300.0f, 0.36f, 0.75f, 1.25f, 1.7f, 3.8f, 13.0f, 60.0f, 150.0f, 0.0f, structures::item_raw_horse, 16u, 6u, 4u, 8u, pi, 0.7f, true }
 	};
-	constexpr auto wildlife_maximum = 640u;
+	constexpr auto wildlife_maximum = 2600u;
 	constexpr auto wildlife_bird_range = 420.0f;
 	constexpr auto wildlife_fish_range = 70.0f;
 	constexpr auto wildlife_active_margin = 180.0f;
@@ -5223,16 +5248,16 @@ namespace zp
 	constexpr auto wildlife_bed_clearance = 0.4f;
 	constexpr structures::wildlife_kind_s wildlife_kinds[structures::wildlife_kind_count] =
 	{
-		{ "bird_gull", structures::creature_flap, 0.05f, 0.5f, 2.4f, 8.5f, 22.0f, 18.0f, 8.0f, 4u, 9u, 10u, 0.6f, (1u << structures::biome_beach) | (1u << structures::biome_shore) | (1u << structures::biome_dunes), 90.0f, 0.0f, 0.0f },
-		{ "bird_crow", structures::creature_flap, 0.05f, 0.6f, 3.6f, 11.0f, 14.0f, 26.0f, 6.0f, 5u, 12u, 10u, 0.25f, (1u << structures::biome_farmland) | (1u << structures::biome_meadow) | (1u << structures::biome_woodland) | (1u << structures::biome_heath), 140.0f, 0.0f, 0.0f },
-		{ "fish_mackerel", structures::creature_swim, 0.354f, 0.03f, 3.2f, 1.1f, 3.5f, 2.5f, 1.0f, 14u, 26u, 12u, 0.0f, 1u << structures::biome_sea, 14.0f, 3.5f, 14.0f },
-		{ "fish_bass", structures::creature_swim, 0.603f, 0.045f, 1.6f, 0.7f, 2.5f, 4.5f, 0.8f, 3u, 6u, 10u, 0.0f, 1u << structures::biome_sea, 10.0f, 5.0f, 16.0f }
+		{ "bird_gull", structures::creature_flap, 0.05f, 0.5f, 2.4f, 8.5f, 22.0f, 18.0f, 8.0f, 4u, 9u, 40u, 0.6f, (1u << structures::biome_beach) | (1u << structures::biome_shore) | (1u << structures::biome_dunes), 90.0f, 0.0f, 0.0f },
+		{ "bird_crow", structures::creature_flap, 0.05f, 0.6f, 3.6f, 11.0f, 14.0f, 26.0f, 6.0f, 5u, 12u, 40u, 0.25f, (1u << structures::biome_farmland) | (1u << structures::biome_meadow) | (1u << structures::biome_woodland) | (1u << structures::biome_heath), 140.0f, 0.0f, 0.0f },
+		{ "fish_mackerel", structures::creature_swim, 0.354f, 0.03f, 3.2f, 1.1f, 3.5f, 2.5f, 1.0f, 14u, 26u, 48u, 0.0f, 1u << structures::biome_sea, 14.0f, 3.5f, 14.0f },
+		{ "fish_bass", structures::creature_swim, 0.603f, 0.045f, 1.6f, 0.7f, 2.5f, 4.5f, 0.8f, 3u, 6u, 40u, 0.0f, 1u << structures::biome_sea, 10.0f, 5.0f, 16.0f }
 	};
 	constexpr structures::herd_kind_s herd_kinds[] =
 	{
-		{ structures::species_stag, structures::species_hind, 3u, 7u, 16u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_heath) | (1u << structures::biome_meadow) | (1u << structures::biome_moor) },
-		{ structures::species_boar, structures::species_boar, 2u, 5u, 9u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_marsh) },
-		{ structures::species_horse, structures::species_horse, 3u, 7u, 6u, (1u << structures::biome_meadow) | (1u << structures::biome_farmland) | (1u << structures::biome_heath) | (1u << structures::biome_moor) | (1u << structures::biome_dunes) }
+		{ structures::species_stag, structures::species_hind, 3u, 7u, 64u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_heath) | (1u << structures::biome_meadow) | (1u << structures::biome_moor) },
+		{ structures::species_boar, structures::species_boar, 2u, 5u, 36u, (1u << structures::biome_woodland) | (1u << structures::biome_pinewood) | (1u << structures::biome_marsh) },
+		{ structures::species_horse, structures::species_horse, 3u, 7u, 24u, (1u << structures::biome_meadow) | (1u << structures::biome_farmland) | (1u << structures::biome_heath) | (1u << structures::biome_moor) | (1u << structures::biome_dunes) }
 	};
 	constexpr std::uint32_t ambience_sounds[structures::ambience_count] = { structures::sound_amb_forest, structures::sound_amb_crickets, structures::sound_amb_drone, structures::sound_amb_wind, structures::sound_amb_ocean };
 
@@ -5357,43 +5382,98 @@ namespace zp
 	constexpr auto arrow_life = 90.0f;
 	constexpr auto maximum_arrows = 64u;
 
-	constexpr const char* landmark_names[structures::landmark_count] = { "Saint Aubin", "Signal Post", "Breaker's Yard", "Gorey Harbour", "Saint Ouen", "Portelet", "Noirmont Battery", "The Institute", "Le Pulec Quarry", "Saint Aubin Halt", "Rozel Farm", "Les Landes Farm", "Trinity Farm" };
-	constexpr bool landmark_minor[structures::landmark_count] = { false, false, false, false, false, false, false, false, true, true, true, true, true };
-	constexpr bool landmark_below[structures::landmark_count] = { false, false, false, false, false, false, false, false, false, true, false, false, false };
+	constexpr const char* landmark_names[structures::landmark_count] = { "Saint Aubin", "Signal Post", "Breaker's Yard", "Gorey Harbour", "Saint Ouen", "Portelet", "Noirmont Battery", "The Institute", "Ronez Quarry", "La Haule Halt", "Rozel Farm", "Les Landes Farm", "Trinity Farm", "Saint Helier", "Saint Brelade's Bay", "Les Quennevais", "Saint Peter", "Saint Lawrence", "Saint Mary", "Saint John", "Saint Martin", "Grouville", "Saint Clement", "Saint Saviour" };
+	constexpr bool landmark_minor[structures::landmark_count] = { false, false, false, false, false, false, false, false, true, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false };
+	constexpr bool landmark_below[structures::landmark_count] = { false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+	constexpr std::uint32_t landmark_settlements[structures::landmark_count] = { structures::settlement_village, structures::settlement_outlier, structures::settlement_outlier, structures::settlement_hamlet, structures::settlement_village, structures::settlement_hamlet, structures::settlement_outlier, structures::settlement_outlier, structures::settlement_outlier, structures::settlement_outlier, structures::settlement_farm, structures::settlement_farm, structures::settlement_farm, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village, structures::settlement_village };
+	constexpr std::uint32_t landmark_houses[structures::landmark_count] = { 8u, 2u, 2u, 6u, 9u, 4u, 2u, 2u, 2u, 2u, 3u, 3u, 3u, 26u, 10u, 12u, 9u, 8u, 8u, 8u, 9u, 8u, 9u, 8u };
 	constexpr structures::world_site_s world_sites[] =
 	{
-		{ { 460.0f, -420.0f }, 150.0f, 240.0f, 0.0f, structures::landmark_town },
-		{ { 860.0f, -300.0f }, 60.0f, 110.0f, 0.0f, structures::landmark_halt },
-		{ { 1180.0f, -330.0f }, 90.0f, 150.0f, 0.35f, structures::landmark_yard },
-		{ { 1520.0f, 300.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_harbour },
-		{ { 300.0f, 1450.0f }, 110.0f, 180.0f, 0.0f, structures::landmark_ouen },
-		{ { 1284.0f, 1232.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_rozel },
-		{ { 172.0f, -844.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_landes },
-		{ { -92.0f, -1300.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_trinity },
-		{ { -1100.0f, -1480.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_portelet },
-		{ { -1610.0f, 330.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_battery },
-		{ { 740.0f, 580.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_institute },
-		{ { 200.0f, 944.0f }, 35.0f, 70.0f, 0.0f, structures::landmark_outpost },
-		{ { -900.0f, -600.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_quarry }
+		{ { -612.0f, -1092.0f }, 150.0f, 240.0f, 0.0f, structures::landmark_town },
+		{ { 1668.0f, 1972.0f }, 35.0f, 70.0f, 0.0f, structures::landmark_outpost },
+		{ { 1572.0f, -2476.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_yard },
+		{ { 4916.0f, -1172.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_harbour },
+		{ { -3420.0f, 1172.0f }, 110.0f, 180.0f, 0.0f, structures::landmark_ouen },
+		{ { -2372.0f, -2764.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_portelet },
+		{ { -1716.0f, -2900.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_battery },
+		{ { -732.0f, -548.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_institute },
+		{ { -684.0f, 2652.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_quarry },
+		{ { -1124.0f, -1124.0f }, 60.0f, 110.0f, 0.0f, structures::landmark_halt },
+		{ { 3900.0f, 1188.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_rozel },
+		{ { -4564.0f, 2396.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_landes },
+		{ { 1692.0f, 1580.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_trinity },
+		{ { 1060.0f, -1932.0f }, 240.0f, 360.0f, 0.0f, structures::landmark_helier },
+		{ { -2980.0f, -1988.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_brelade },
+		{ { -3668.0f, -1620.0f }, 100.0f, 160.0f, 0.0f, structures::landmark_quennevais },
+		{ { -2516.0f, -4.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_peter },
+		{ { -260.0f, 500.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_lawrence },
+		{ { -1892.0f, 1652.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_mary },
+		{ { -228.0f, 2172.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_john },
+		{ { 3628.0f, 180.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_martin },
+		{ { 3444.0f, -2300.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_grouville },
+		{ { 2204.0f, -2860.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_clement },
+		{ { 2100.0f, -1436.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_saviour }
 	};
-	constexpr structures::vec2_s railway_points[] = { { 1480.0f, 360.0f }, { 1560.0f, 700.0f }, { 1500.0f, 1000.0f }, { 1380.0f, 1300.0f }, { 1100.0f, 1520.0f }, { 700.0f, 1620.0f }, { 300.0f, 1520.0f }, { -60.0f, 1500.0f }, { -330.0f, 1330.0f }, { -560.0f, 1150.0f }, { -850.0f, 1030.0f }, { -1150.0f, 930.0f }, { -1380.0f, 740.0f }, { -1460.0f, 480.0f }, { -1520.0f, 150.0f }, { -1680.0f, -300.0f }, { -1620.0f, -700.0f }, { -1500.0f, -1050.0f }, { -1250.0f, -1350.0f }, { -1000.0f, -1480.0f }, { -640.0f, -1560.0f }, { -240.0f, -1470.0f }, { 150.0f, -1300.0f }, { 500.0f, -1000.0f }, { 800.0f, -650.0f }, { 880.0f, -300.0f }, { 1100.0f, -100.0f }, { 1350.0f, 150.0f } };
-	constexpr structures::vec2_s south_road_points[] = { { 1180.0f, -330.0f }, { 1004.0f, -305.0f }, { 860.0f, -330.0f }, { 800.0f, -350.0f }, { 722.0f, -361.0f }, { 600.0f, -420.0f }, { 528.0f, -485.0f }, { 460.0f, -560.0f }, { 379.0f, -630.0f }, { 300.0f, -700.0f }, { 257.0f, -766.0f }, { 172.0f, -844.0f }, { 118.0f, -957.0f }, { 60.0f, -1029.0f }, { -26.0f, -1194.0f }, { -92.0f, -1300.0f }, { -256.0f, -1334.0f }, { -337.0f, -1459.0f }, { -418.0f, -1478.0f }, { -586.0f, -1514.0f }, { -649.0f, -1516.0f }, { -832.0f, -1500.0f }, { -947.0f, -1438.0f }, { -1022.0f, -1413.0f }, { -1100.0f, -1480.0f } };
-	constexpr structures::vec2_s east_road_points[] = { { 800.0f, -350.0f }, { 849.0f, -277.0f }, { 932.0f, -146.0f }, { 975.0f, -91.0f }, { 1084.0f, -8.0f }, { 1120.0f, 19.0f }, { 1177.0f, 78.0f }, { 1250.0f, 158.0f }, { 1400.0f, 330.0f }, { 1419.0f, 416.0f }, { 1464.0f, 560.0f }, { 1485.0f, 742.0f }, { 1475.0f, 835.0f }, { 1422.0f, 953.0f }, { 1338.0f, 1174.0f }, { 1284.0f, 1232.0f }, { 1184.0f, 1326.0f }, { 1090.0f, 1379.0f }, { 950.0f, 1413.0f }, { 844.0f, 1410.0f }, { 741.0f, 1491.0f }, { 594.0f, 1479.0f }, { 533.0f, 1494.0f }, { 421.0f, 1479.0f }, { 300.0f, 1450.0f } };
-	constexpr structures::vec2_s west_road_points[] = { { 300.0f, 1450.0f }, { 126.0f, 1418.0f }, { 35.0f, 1461.0f }, { -128.0f, 1430.0f }, { -195.0f, 1366.0f }, { -398.0f, 1200.0f }, { -452.0f, 1161.0f }, { -592.0f, 1080.0f }, { -719.0f, 1016.0f }, { -912.0f, 946.0f }, { -1030.0f, 913.0f }, { -1166.0f, 826.0f }, { -1209.0f, 760.0f }, { -1256.0f, 690.0f }, { -1399.0f, 556.0f }, { -1436.0f, 379.0f }, { -1425.0f, 300.0f }, { -1477.0f, 180.0f }, { -1451.0f, 80.0f }, { -1473.0f, 2.0f }, { -1540.0f, -139.0f }, { -1544.0f, -286.0f }, { -1581.0f, -378.0f }, { -1589.0f, -582.0f }, { -1572.0f, -734.0f }, { -1437.0f, -841.0f }, { -1436.0f, -978.0f }, { -1403.0f, -1073.0f }, { -1350.0f, -1188.0f }, { -1229.0f, -1272.0f }, { -1163.0f, -1321.0f }, { -1072.0f, -1370.0f }, { -1022.0f, -1413.0f } };
-	constexpr structures::vec2_s valley_road_points[] = { { 460.0f, -300.0f }, { 500.0f, -52.0f }, { 553.0f, 21.0f }, { 666.0f, 112.0f }, { 770.0f, 176.0f }, { 783.0f, 297.0f }, { 856.0f, 370.0f }, { 857.0f, 506.0f }, { 850.0f, 565.0f }, { 810.0f, 590.0f }, { 740.0f, 580.0f } };
-	constexpr structures::vec2_s quarry_road_points[] = { { 300.0f, -700.0f }, { 81.0f, -674.0f }, { -58.0f, -636.0f }, { -142.0f, -653.0f }, { -302.0f, -696.0f }, { -400.0f, -666.0f }, { -480.0f, -646.0f }, { -646.0f, -634.0f }, { -734.0f, -655.0f }, { -900.0f, -600.0f } };
-	constexpr structures::vec2_s battery_road_points[] = { { -1425.0f, 300.0f }, { -1520.0f, 318.0f }, { -1610.0f, 330.0f } };
-	constexpr structures::vec2_s harbour_road_points[] = { { 1400.0f, 330.0f }, { 1460.0f, 315.0f }, { 1520.0f, 300.0f } };
+	constexpr structures::vec2_s railway_points[] = { { 1060.0f, -1676.0f }, { 980.0f, -1720.0f }, { 900.0f, -1764.0f }, { 780.0f, -1756.0f }, { 704.0f, -1784.0f }, { 628.0f, -1812.0f }, { 535.0f, -1721.0f }, { 442.0f, -1630.0f }, { 350.0f, -1538.0f }, { 257.0f, -1447.0f }, { 164.0f, -1356.0f }, { 76.0f, -1356.0f }, { 20.0f, -1312.0f }, { -36.0f, -1268.0f }, { -92.0f, -1268.0f }, { -156.0f, -1156.0f }, { -204.0f, -1164.0f }, { -236.0f, -1116.0f }, { -300.0f, -1140.0f }, { -368.0f, -1112.0f }, { -436.0f, -1084.0f }, { -476.0f, -1172.0f }, { -524.0f, -1124.0f }, { -548.0f, -1164.0f }, { -636.0f, -1164.0f }, { -748.0f, -1096.0f }, { -860.0f, -1028.0f }, { -972.0f, -1092.0f }, { -1044.0f, -1188.0f }, { -1084.0f, -1164.0f }, { -1156.0f, -1204.0f }, { -1164.0f, -1148.0f }, { -1296.0f, -1152.0f }, { -1428.0f, -1156.0f }, { -1412.0f, -1092.0f }, { -1364.0f, -1084.0f }, { -1388.0f, -1004.0f }, { -1332.0f, -932.0f }, { -1420.0f, -868.0f }, { -1500.0f, -908.0f }, { -1476.0f, -836.0f }, { -1516.0f, -804.0f }, { -1468.0f, -732.0f }, { -1516.0f, -660.0f }, { -1580.0f, -668.0f }, { -1640.0f, -568.0f }, { -1700.0f, -468.0f }, { -1796.0f, -412.0f }, { -1892.0f, -356.0f }, { -1988.0f, -300.0f }, { -2016.0f, -208.0f }, { -2044.0f, -116.0f }, { -2100.0f, -60.0f }, { -2180.0f, -52.0f }, { -2180.0f, 12.0f }, { -2244.0f, 76.0f }, { -2380.0f, 84.0f }, { -2452.0f, 36.0f }, { -2524.0f, -12.0f }, { -2564.0f, 28.0f }, { -2580.0f, 76.0f }, { -2516.0f, 164.0f }, { -2524.0f, 244.0f }, { -2532.0f, 324.0f }, { -2460.0f, 388.0f }, { -2436.0f, 500.0f }, { -2412.0f, 612.0f }, { -2388.0f, 724.0f }, { -2464.0f, 820.0f }, { -2540.0f, 916.0f }, { -2524.0f, 964.0f }, { -2632.0f, 908.0f }, { -2740.0f, 852.0f }, { -2796.0f, 860.0f }, { -2884.0f, 936.0f }, { -2972.0f, 1012.0f }, { -3068.0f, 992.0f }, { -3164.0f, 972.0f }, { -3264.0f, 1004.0f }, { -3364.0f, 1036.0f }, { -3388.0f, 1012.0f }, { -3384.0f, 1092.0f }, { -3380.0f, 1172.0f }, { -3332.0f, 1180.0f }, { -3284.0f, 1108.0f }, { -3236.0f, 1124.0f }, { -3212.0f, 1092.0f }, { -3100.0f, 1084.0f }, { -3076.0f, 1132.0f }, { -3004.0f, 1108.0f }, { -2980.0f, 1188.0f }, { -2896.0f, 1244.0f }, { -2812.0f, 1300.0f }, { -2712.0f, 1304.0f }, { -2612.0f, 1308.0f }, { -2556.0f, 1364.0f }, { -2457.0f, 1396.0f }, { -2359.0f, 1428.0f }, { -2260.0f, 1460.0f }, { -2164.0f, 1412.0f }, { -2108.0f, 1484.0f }, { -2060.0f, 1452.0f }, { -1996.0f, 1492.0f }, { -1876.0f, 1484.0f }, { -1844.0f, 1532.0f }, { -1852.0f, 1644.0f }, { -1772.0f, 1580.0f }, { -1740.0f, 1492.0f }, { -1676.0f, 1492.0f }, { -1652.0f, 1452.0f }, { -1576.0f, 1520.0f }, { -1500.0f, 1588.0f }, { -1404.0f, 1588.0f }, { -1336.0f, 1556.0f }, { -1268.0f, 1524.0f }, { -1204.0f, 1608.0f }, { -1140.0f, 1692.0f }, { -1052.0f, 1684.0f }, { -956.0f, 1732.0f }, { -860.0f, 1780.0f }, { -852.0f, 1836.0f }, { -756.0f, 1884.0f }, { -724.0f, 1964.0f }, { -692.0f, 2044.0f }, { -616.0f, 2064.0f }, { -540.0f, 2084.0f }, { -504.0f, 2156.0f }, { -468.0f, 2228.0f }, { -408.0f, 2272.0f }, { -348.0f, 2316.0f }, { -228.0f, 2268.0f }, { -236.0f, 2148.0f }, { -156.0f, 2108.0f }, { -100.0f, 1988.0f }, { -20.0f, 1980.0f }, { 84.0f, 1900.0f }, { 164.0f, 1920.0f }, { 244.0f, 1940.0f }, { 284.0f, 1908.0f }, { 380.0f, 1916.0f }, { 460.0f, 1956.0f }, { 452.0f, 2076.0f }, { 492.0f, 2068.0f }, { 556.0f, 2140.0f }, { 684.0f, 2120.0f }, { 812.0f, 2100.0f }, { 876.0f, 2156.0f }, { 916.0f, 2092.0f }, { 996.0f, 2188.0f }, { 1036.0f, 2156.0f }, { 1068.0f, 2204.0f }, { 1172.0f, 2124.0f }, { 1276.0f, 2044.0f }, { 1292.0f, 1980.0f }, { 1324.0f, 1996.0f }, { 1312.0f, 1920.0f }, { 1300.0f, 1844.0f }, { 1384.0f, 1748.0f }, { 1468.0f, 1652.0f }, { 1564.0f, 1652.0f }, { 1596.0f, 1692.0f }, { 1652.0f, 1668.0f }, { 1708.0f, 1600.0f }, { 1764.0f, 1532.0f }, { 1884.0f, 1516.0f }, { 1916.0f, 1428.0f }, { 1980.0f, 1436.0f }, { 1988.0f, 1372.0f }, { 2116.0f, 1356.0f }, { 2236.0f, 1412.0f }, { 2236.0f, 1364.0f }, { 2292.0f, 1348.0f }, { 2260.0f, 1236.0f }, { 2308.0f, 1184.0f }, { 2356.0f, 1132.0f }, { 2452.0f, 1220.0f }, { 2468.0f, 1172.0f }, { 2556.0f, 1212.0f }, { 2692.0f, 1204.0f }, { 2783.0f, 1169.0f }, { 2873.0f, 1135.0f }, { 2964.0f, 1100.0f }, { 3028.0f, 1020.0f }, { 3028.0f, 884.0f }, { 2980.0f, 756.0f }, { 3044.0f, 724.0f }, { 3108.0f, 692.0f }, { 3116.0f, 620.0f }, { 3188.0f, 548.0f }, { 3200.0f, 472.0f }, { 3212.0f, 396.0f }, { 3292.0f, 340.0f }, { 3388.0f, 356.0f }, { 3460.0f, 308.0f }, { 3460.0f, 196.0f }, { 3380.0f, 236.0f }, { 3340.0f, 148.0f }, { 3300.0f, 60.0f }, { 3180.0f, -4.0f }, { 3188.0f, -140.0f }, { 3137.0f, -220.0f }, { 3087.0f, -300.0f }, { 3036.0f, -380.0f }, { 3100.0f, -428.0f }, { 3052.0f, -532.0f }, { 3056.0f, -604.0f }, { 3060.0f, -676.0f }, { 3028.0f, -764.0f }, { 2972.0f, -808.0f }, { 2916.0f, -852.0f }, { 2924.0f, -972.0f }, { 2932.0f, -1092.0f }, { 2864.0f, -1172.0f }, { 2796.0f, -1252.0f }, { 2780.0f, -1352.0f }, { 2764.0f, -1452.0f }, { 2804.0f, -1484.0f }, { 2876.0f, -1444.0f }, { 2868.0f, -1476.0f }, { 2916.0f, -1492.0f }, { 2896.0f, -1560.0f }, { 2876.0f, -1628.0f }, { 2908.0f, -1684.0f }, { 3036.0f, -1668.0f }, { 3052.0f, -1796.0f }, { 3100.0f, -1780.0f }, { 3212.0f, -1860.0f }, { 3252.0f, -1836.0f }, { 3268.0f, -1932.0f }, { 3336.0f, -1880.0f }, { 3404.0f, -1828.0f }, { 3508.0f, -1876.0f }, { 3540.0f, -1740.0f }, { 3612.0f, -1696.0f }, { 3684.0f, -1652.0f }, { 3700.0f, -1596.0f }, { 3836.0f, -1572.0f }, { 3972.0f, -1548.0f }, { 4060.0f, -1500.0f }, { 4092.0f, -1412.0f }, { 4148.0f, -1404.0f }, { 4236.0f, -1312.0f }, { 4324.0f, -1220.0f }, { 4420.0f, -1228.0f }, { 4420.0f, -1312.0f }, { 4420.0f, -1396.0f }, { 4372.0f, -1436.0f }, { 4340.0f, -1564.0f }, { 4364.0f, -1628.0f }, { 4308.0f, -1660.0f }, { 4316.0f, -1748.0f }, { 4260.0f, -1828.0f }, { 4304.0f, -1944.0f }, { 4348.0f, -2060.0f }, { 4348.0f, -2164.0f }, { 4288.0f, -2248.0f }, { 4228.0f, -2332.0f }, { 4240.0f, -2456.0f }, { 4252.0f, -2580.0f }, { 4196.0f, -2620.0f }, { 4196.0f, -2700.0f }, { 4112.0f, -2720.0f }, { 4028.0f, -2740.0f }, { 3960.0f, -2800.0f }, { 3892.0f, -2860.0f }, { 3816.0f, -2852.0f }, { 3740.0f, -2844.0f }, { 3660.0f, -2892.0f }, { 3540.0f, -2852.0f }, { 3472.0f, -2876.0f }, { 3404.0f, -2900.0f }, { 3356.0f, -2948.0f }, { 3336.0f, -3024.0f }, { 3316.0f, -3100.0f }, { 3248.0f, -3140.0f }, { 3180.0f, -3180.0f }, { 3092.0f, -3140.0f }, { 3052.0f, -3204.0f }, { 2996.0f, -3212.0f }, { 2924.0f, -3140.0f }, { 2836.0f, -3128.0f }, { 2748.0f, -3116.0f }, { 2668.0f, -3148.0f }, { 2564.0f, -3084.0f }, { 2548.0f, -2996.0f }, { 2476.0f, -3004.0f }, { 2428.0f, -2944.0f }, { 2380.0f, -2884.0f }, { 2292.0f, -2872.0f }, { 2204.0f, -2860.0f }, { 2172.0f, -2812.0f }, { 2132.0f, -2828.0f }, { 2060.0f, -2756.0f }, { 1988.0f, -2684.0f }, { 1916.0f, -2644.0f }, { 1844.0f, -2660.0f }, { 1776.0f, -2600.0f }, { 1708.0f, -2540.0f }, { 1580.0f, -2516.0f }, { 1532.0f, -2556.0f }, { 1532.0f, -2472.0f }, { 1532.0f, -2388.0f }, { 1452.0f, -2356.0f }, { 1372.0f, -2324.0f }, { 1348.0f, -2244.0f }, { 1400.0f, -2184.0f }, { 1452.0f, -2124.0f }, { 1420.0f, -2108.0f }, { 1460.0f, -2068.0f }, { 1412.0f, -2020.0f }, { 1428.0f, -1916.0f }, { 1324.0f, -1880.0f }, { 1220.0f, -1844.0f }, { 1180.0f, -1764.0f }, { 1132.0f, -1772.0f }, { 1124.0f, -1676.0f }, { 1076.0f, -1644.0f } };
+	constexpr structures::vec2_s road_helier_halt_points[] = { { 1060.0f, -1932.0f }, { 1036.0f, -1892.0f }, { 1004.0f, -1892.0f }, { 944.0f, -1820.0f }, { 884.0f, -1748.0f }, { 832.0f, -1752.0f }, { 780.0f, -1756.0f }, { 748.0f, -1788.0f }, { 672.0f, -1784.0f }, { 596.0f, -1780.0f }, { 540.0f, -1724.0f }, { 484.0f, -1668.0f }, { 428.0f, -1612.0f }, { 364.0f, -1580.0f }, { 305.0f, -1521.0f }, { 247.0f, -1463.0f }, { 188.0f, -1404.0f }, { 148.0f, -1404.0f }, { 100.0f, -1356.0f }, { 28.0f, -1340.0f }, { -36.0f, -1276.0f }, { -132.0f, -1268.0f }, { -176.0f, -1240.0f }, { -220.0f, -1212.0f }, { -280.0f, -1212.0f }, { -340.0f, -1212.0f }, { -420.0f, -1188.0f }, { -508.0f, -1188.0f }, { -572.0f, -1176.0f }, { -636.0f, -1164.0f }, { -668.0f, -1132.0f }, { -740.0f, -1100.0f }, { -788.0f, -1100.0f }, { -832.0f, -1136.0f }, { -876.0f, -1172.0f }, { -932.0f, -1180.0f }, { -1020.0f, -1176.0f }, { -1108.0f, -1172.0f }, { -1124.0f, -1124.0f } };
+	constexpr structures::vec2_s road_town_portelet_points[] = { { -612.0f, -1236.0f }, { -652.0f, -1236.0f }, { -684.0f, -1204.0f }, { -652.0f, -1212.0f }, { -668.0f, -1188.0f }, { -660.0f, -1156.0f } };
+	constexpr structures::vec2_s road_town_portelet_1_points[] = { { -1124.0f, -1172.0f }, { -1164.0f, -1196.0f }, { -1236.0f, -1180.0f }, { -1284.0f, -1132.0f }, { -1292.0f, -1100.0f }, { -1372.0f, -1044.0f }, { -1356.0f, -1012.0f }, { -1388.0f, -996.0f }, { -1356.0f, -956.0f }, { -1324.0f, -916.0f }, { -1340.0f, -868.0f }, { -1340.0f, -900.0f }, { -1380.0f, -900.0f }, { -1380.0f, -860.0f }, { -1412.0f, -876.0f }, { -1444.0f, -836.0f }, { -1492.0f, -836.0f }, { -1551.0f, -780.0f }, { -1609.0f, -724.0f }, { -1668.0f, -668.0f }, { -1732.0f, -668.0f }, { -1804.0f, -604.0f }, { -1848.0f, -644.0f }, { -1892.0f, -684.0f }, { -1932.0f, -684.0f }, { -1940.0f, -716.0f }, { -1972.0f, -748.0f }, { -1956.0f, -772.0f }, { -1956.0f, -852.0f }, { -1980.0f, -900.0f }, { -2004.0f, -948.0f }, { -1996.0f, -1028.0f }, { -2020.0f, -1060.0f }, { -2068.0f, -1120.0f }, { -2116.0f, -1180.0f }, { -2169.0f, -1236.0f }, { -2223.0f, -1292.0f }, { -2276.0f, -1348.0f }, { -2328.0f, -1376.0f }, { -2380.0f, -1404.0f }, { -2436.0f, -1460.0f }, { -2476.0f, -1468.0f }, { -2508.0f, -1508.0f }, { -2596.0f, -1508.0f }, { -2580.0f, -1556.0f }, { -2628.0f, -1604.0f }, { -2628.0f, -1680.0f }, { -2628.0f, -1756.0f }, { -2580.0f, -1804.0f }, { -2516.0f, -1804.0f }, { -2484.0f, -1836.0f }, { -2452.0f, -1836.0f }, { -2420.0f, -1860.0f }, { -2348.0f, -1927.0f }, { -2276.0f, -1994.0f }, { -2204.0f, -2062.0f }, { -2132.0f, -2129.0f }, { -2060.0f, -2196.0f }, { -2084.0f, -2236.0f }, { -2084.0f, -2316.0f }, { -2016.0f, -2380.0f }, { -1948.0f, -2444.0f }, { -1916.0f, -2452.0f }, { -1916.0f, -2508.0f }, { -1900.0f, -2580.0f }, { -1944.0f, -2624.0f }, { -1988.0f, -2668.0f }, { -2044.0f, -2668.0f }, { -2076.0f, -2692.0f }, { -2148.0f, -2684.0f }, { -2220.0f, -2700.0f }, { -2252.0f, -2732.0f }, { -2300.0f, -2732.0f }, { -2332.0f, -2764.0f }, { -2372.0f, -2764.0f } };
+	constexpr structures::vec2_s road_portelet_battery_points[] = { { -2004.0f, -2676.0f }, { -1940.0f, -2740.0f }, { -1864.0f, -2804.0f }, { -1788.0f, -2868.0f }, { -1748.0f, -2868.0f }, { -1716.0f, -2900.0f } };
+	constexpr structures::vec2_s road_town_brelade_points[] = { { -2516.0f, -1820.0f }, { -2516.0f, -1872.0f }, { -2516.0f, -1924.0f }, { -2476.0f, -1964.0f }, { -2476.0f, -1996.0f }, { -2516.0f, -2036.0f }, { -2580.0f, -2028.0f }, { -2604.0f, -2052.0f }, { -2620.0f, -2028.0f }, { -2652.0f, -2052.0f }, { -2716.0f, -2004.0f }, { -2748.0f, -2004.0f }, { -2844.0f, -1988.0f }, { -2912.0f, -1988.0f }, { -2980.0f, -1988.0f } };
+	constexpr structures::vec2_s road_brelade_quennevais_points[] = { { -2636.0f, -1772.0f }, { -2696.0f, -1772.0f }, { -2756.0f, -1772.0f }, { -2792.0f, -1736.0f }, { -2828.0f, -1700.0f }, { -2876.0f, -1692.0f }, { -2924.0f, -1664.0f }, { -2972.0f, -1636.0f }, { -3068.0f, -1628.0f }, { -3112.0f, -1600.0f }, { -3156.0f, -1572.0f }, { -3225.0f, -1575.0f }, { -3295.0f, -1577.0f }, { -3364.0f, -1580.0f }, { -3388.0f, -1604.0f }, { -3476.0f, -1604.0f }, { -3572.0f, -1612.0f }, { -3668.0f, -1620.0f } };
+	constexpr structures::vec2_s road_quennevais_peter_points[] = { { -3364.0f, -1572.0f }, { -3328.0f, -1504.0f }, { -3292.0f, -1436.0f }, { -3284.0f, -1364.0f }, { -3244.0f, -1316.0f }, { -3244.0f, -1284.0f }, { -3204.0f, -1244.0f }, { -3164.0f, -1180.0f }, { -3164.0f, -1148.0f }, { -3106.0f, -1090.0f }, { -3048.0f, -1032.0f }, { -2990.0f, -974.0f }, { -2932.0f, -916.0f }, { -2888.0f, -848.0f }, { -2844.0f, -780.0f }, { -2828.0f, -716.0f }, { -2772.0f, -660.0f }, { -2772.0f, -628.0f }, { -2748.0f, -604.0f }, { -2743.0f, -521.0f }, { -2737.0f, -439.0f }, { -2732.0f, -356.0f }, { -2696.0f, -312.0f }, { -2660.0f, -268.0f }, { -2644.0f, -196.0f }, { -2599.0f, -143.0f }, { -2553.0f, -89.0f }, { -2508.0f, -36.0f }, { -2516.0f, -4.0f } };
+	constexpr structures::vec2_s road_peter_ouen_points[] = { { -2524.0f, 4.0f }, { -2564.0f, 44.0f }, { -2568.0f, 108.0f }, { -2572.0f, 172.0f }, { -2616.0f, 224.0f }, { -2660.0f, 276.0f }, { -2692.0f, 348.0f }, { -2724.0f, 420.0f }, { -2788.0f, 472.0f }, { -2852.0f, 524.0f }, { -2852.0f, 556.0f }, { -2900.0f, 612.0f }, { -2948.0f, 668.0f }, { -2996.0f, 724.0f }, { -2996.0f, 764.0f }, { -3052.0f, 820.0f }, { -3060.0f, 852.0f }, { -3084.0f, 876.0f }, { -3132.0f, 884.0f }, { -3196.0f, 948.0f }, { -3260.0f, 1012.0f }, { -3292.0f, 1012.0f }, { -3336.0f, 1056.0f }, { -3380.0f, 1100.0f }, { -3380.0f, 1132.0f }, { -3420.0f, 1172.0f } };
+	constexpr structures::vec2_s road_ouen_landes_points[] = { { -3420.0f, 1180.0f }, { -3420.0f, 1276.0f }, { -3480.0f, 1328.0f }, { -3540.0f, 1380.0f }, { -3540.0f, 1460.0f }, { -3588.0f, 1508.0f }, { -3636.0f, 1556.0f }, { -3684.0f, 1604.0f }, { -3700.0f, 1644.0f }, { -3700.0f, 1700.0f }, { -3724.0f, 1740.0f }, { -3784.0f, 1800.0f }, { -3844.0f, 1860.0f }, { -3876.0f, 1868.0f }, { -3936.0f, 1926.0f }, { -3996.0f, 1984.0f }, { -4056.0f, 2042.0f }, { -4116.0f, 2100.0f }, { -4156.0f, 2116.0f }, { -4212.0f, 2168.0f }, { -4268.0f, 2220.0f }, { -4332.0f, 2220.0f }, { -4404.0f, 2284.0f }, { -4484.0f, 2340.0f }, { -4516.0f, 2348.0f }, { -4564.0f, 2396.0f } };
+	constexpr structures::vec2_s road_peter_lawrence_points[] = { { -2564.0f, 180.0f }, { -2540.0f, 248.0f }, { -2516.0f, 316.0f }, { -2460.0f, 388.0f }, { -2460.0f, 444.0f }, { -2460.0f, 500.0f }, { -2420.0f, 540.0f }, { -2420.0f, 620.0f }, { -2408.0f, 680.0f }, { -2396.0f, 740.0f }, { -2396.0f, 828.0f }, { -2396.0f, 916.0f }, { -2388.0f, 980.0f }, { -2364.0f, 1004.0f }, { -2356.0f, 1100.0f }, { -2308.0f, 1152.0f }, { -2260.0f, 1204.0f }, { -2204.0f, 1244.0f }, { -2124.0f, 1236.0f }, { -2036.0f, 1252.0f }, { -2012.0f, 1276.0f }, { -1952.0f, 1232.0f }, { -1892.0f, 1188.0f }, { -1820.0f, 1188.0f }, { -1780.0f, 1148.0f }, { -1740.0f, 1108.0f }, { -1700.0f, 1108.0f }, { -1676.0f, 1084.0f }, { -1612.0f, 1088.0f }, { -1548.0f, 1092.0f }, { -1500.0f, 1124.0f }, { -1464.0f, 1080.0f }, { -1428.0f, 1036.0f }, { -1348.0f, 1028.0f }, { -1316.0f, 996.0f }, { -1268.0f, 945.0f }, { -1220.0f, 895.0f }, { -1172.0f, 844.0f }, { -1116.0f, 844.0f }, { -1068.0f, 812.0f }, { -988.0f, 812.0f }, { -908.0f, 764.0f }, { -812.0f, 764.0f }, { -768.0f, 732.0f }, { -724.0f, 700.0f }, { -676.0f, 700.0f }, { -632.0f, 668.0f }, { -588.0f, 636.0f }, { -540.0f, 628.0f }, { -500.0f, 588.0f }, { -460.0f, 548.0f }, { -396.0f, 548.0f }, { -372.0f, 524.0f }, { -300.0f, 524.0f }, { -260.0f, 500.0f } };
+	constexpr structures::vec2_s road_lawrence_institute_points[] = { { -260.0f, 492.0f }, { -332.0f, 424.0f }, { -404.0f, 356.0f }, { -404.0f, 296.0f }, { -404.0f, 236.0f }, { -428.0f, 212.0f }, { -420.0f, 144.0f }, { -412.0f, 76.0f }, { -436.0f, 28.0f }, { -436.0f, -32.0f }, { -436.0f, -92.0f }, { -476.0f, -140.0f }, { -476.0f, -172.0f }, { -500.0f, -204.0f }, { -504.0f, -296.0f }, { -508.0f, -388.0f }, { -552.0f, -436.0f }, { -596.0f, -484.0f }, { -676.0f, -540.0f }, { -732.0f, -548.0f } };
+	constexpr structures::vec2_s road_lawrence_helier_points[] = { { -508.0f, -404.0f }, { -492.0f, -452.0f }, { -468.0f, -476.0f }, { -468.0f, -532.0f }, { -468.0f, -588.0f }, { -436.0f, -668.0f }, { -444.0f, -724.0f }, { -396.0f, -796.0f }, { -444.0f, -788.0f }, { -444.0f, -828.0f }, { -412.0f, -868.0f }, { -444.0f, -900.0f }, { -484.0f, -900.0f }, { -452.0f, -932.0f }, { -420.0f, -972.0f }, { -420.0f, -1028.0f }, { -360.0f, -1084.0f }, { -300.0f, -1140.0f }, { -292.0f, -1204.0f } };
+	constexpr structures::vec2_s road_peter_mary_points[] = { { -2172.0f, 1252.0f }, { -2136.0f, 1288.0f }, { -2100.0f, 1324.0f }, { -2100.0f, 1380.0f }, { -2044.0f, 1436.0f }, { -1996.0f, 1500.0f }, { -1956.0f, 1508.0f }, { -1948.0f, 1564.0f }, { -1892.0f, 1620.0f }, { -1892.0f, 1652.0f } };
+	constexpr structures::vec2_s road_mary_john_points[] = { { -1884.0f, 1652.0f }, { -1828.0f, 1656.0f }, { -1772.0f, 1660.0f }, { -1748.0f, 1684.0f }, { -1668.0f, 1684.0f }, { -1588.0f, 1684.0f }, { -1536.0f, 1680.0f }, { -1484.0f, 1676.0f }, { -1420.0f, 1668.0f }, { -1324.0f, 1652.0f }, { -1284.0f, 1668.0f }, { -1228.0f, 1668.0f }, { -1164.0f, 1708.0f }, { -1068.0f, 1708.0f }, { -1044.0f, 1732.0f }, { -980.0f, 1744.0f }, { -916.0f, 1756.0f }, { -884.0f, 1788.0f }, { -828.0f, 1832.0f }, { -772.0f, 1876.0f }, { -708.0f, 1880.0f }, { -644.0f, 1884.0f }, { -596.0f, 1928.0f }, { -548.0f, 1972.0f }, { -492.0f, 2004.0f }, { -420.0f, 2004.0f }, { -404.0f, 2044.0f }, { -364.0f, 2084.0f }, { -324.0f, 2084.0f }, { -276.0f, 2128.0f }, { -228.0f, 2172.0f } };
+	constexpr structures::vec2_s road_john_quarry_points[] = { { -244.0f, 2180.0f }, { -260.0f, 2236.0f }, { -316.0f, 2292.0f }, { -372.0f, 2348.0f }, { -428.0f, 2404.0f }, { -484.0f, 2460.0f }, { -516.0f, 2460.0f }, { -548.0f, 2484.0f }, { -604.0f, 2544.0f }, { -660.0f, 2604.0f }, { -684.0f, 2652.0f } };
+	constexpr structures::vec2_s road_john_trinity_points[] = { { -220.0f, 2164.0f }, { -164.0f, 2104.0f }, { -108.0f, 2044.0f }, { -52.0f, 2044.0f }, { 8.0f, 1984.0f }, { 68.0f, 1924.0f }, { 108.0f, 1924.0f }, { 164.0f, 1924.0f }, { 228.0f, 1924.0f }, { 252.0f, 1940.0f }, { 276.0f, 1916.0f }, { 343.0f, 1919.0f }, { 409.0f, 1921.0f }, { 476.0f, 1924.0f }, { 516.0f, 1884.0f }, { 556.0f, 1844.0f }, { 628.0f, 1820.0f }, { 684.0f, 1764.0f }, { 740.0f, 1708.0f }, { 804.0f, 1696.0f }, { 868.0f, 1684.0f }, { 940.0f, 1689.0f }, { 1012.0f, 1695.0f }, { 1084.0f, 1700.0f }, { 1108.0f, 1676.0f }, { 1140.0f, 1676.0f }, { 1208.0f, 1660.0f }, { 1276.0f, 1644.0f }, { 1332.0f, 1596.0f }, { 1372.0f, 1588.0f }, { 1404.0f, 1596.0f }, { 1444.0f, 1580.0f }, { 1532.0f, 1592.0f }, { 1620.0f, 1604.0f }, { 1692.0f, 1580.0f } };
+	constexpr structures::vec2_s road_trinity_outpost_points[] = { { 1692.0f, 1588.0f }, { 1692.0f, 1636.0f }, { 1688.0f, 1724.0f }, { 1684.0f, 1812.0f }, { 1660.0f, 1860.0f }, { 1664.0f, 1916.0f }, { 1668.0f, 1972.0f } };
+	constexpr structures::vec2_s road_trinity_rozel_points[] = { { 1700.0f, 1580.0f }, { 1764.0f, 1532.0f }, { 1828.0f, 1524.0f }, { 1892.0f, 1516.0f }, { 1956.0f, 1452.0f }, { 2020.0f, 1388.0f }, { 2076.0f, 1364.0f }, { 2144.0f, 1364.0f }, { 2212.0f, 1364.0f }, { 2271.0f, 1321.0f }, { 2329.0f, 1279.0f }, { 2388.0f, 1236.0f }, { 2476.0f, 1224.0f }, { 2564.0f, 1212.0f }, { 2639.0f, 1201.0f }, { 2713.0f, 1191.0f }, { 2788.0f, 1180.0f }, { 2812.0f, 1156.0f }, { 2852.0f, 1156.0f }, { 2900.0f, 1124.0f }, { 2964.0f, 1124.0f }, { 3028.0f, 1124.0f }, { 3052.0f, 1100.0f }, { 3136.0f, 1084.0f }, { 3220.0f, 1068.0f }, { 3268.0f, 1032.0f }, { 3316.0f, 996.0f }, { 3393.0f, 1001.0f }, { 3471.0f, 1007.0f }, { 3548.0f, 1012.0f }, { 3596.0f, 1060.0f }, { 3644.0f, 1108.0f }, { 3732.0f, 1108.0f }, { 3788.0f, 1156.0f }, { 3836.0f, 1156.0f }, { 3900.0f, 1188.0f } };
+	constexpr structures::vec2_s road_trinity_helier_points[] = { { 1244.0f, 1636.0f }, { 1196.0f, 1580.0f }, { 1148.0f, 1524.0f }, { 1108.0f, 1460.0f }, { 1108.0f, 1420.0f }, { 1084.0f, 1396.0f }, { 1084.0f, 1324.0f }, { 1052.0f, 1292.0f }, { 1076.0f, 1244.0f }, { 1076.0f, 1196.0f }, { 1036.0f, 1156.0f }, { 1032.0f, 1084.0f }, { 1028.0f, 1012.0f }, { 980.0f, 964.0f }, { 980.0f, 916.0f }, { 940.0f, 868.0f }, { 940.0f, 780.0f }, { 908.0f, 724.0f }, { 905.0f, 652.0f }, { 903.0f, 580.0f }, { 900.0f, 508.0f }, { 852.0f, 460.0f }, { 852.0f, 420.0f }, { 828.0f, 388.0f }, { 828.0f, 336.0f }, { 828.0f, 284.0f }, { 844.0f, 204.0f }, { 844.0f, 106.0f }, { 844.0f, 8.0f }, { 844.0f, -90.0f }, { 844.0f, -188.0f }, { 840.0f, -240.0f }, { 836.0f, -292.0f }, { 820.0f, -340.0f }, { 788.0f, -372.0f }, { 788.0f, -420.0f }, { 812.0f, -444.0f }, { 804.0f, -516.0f }, { 796.0f, -588.0f }, { 796.0f, -668.0f }, { 796.0f, -748.0f }, { 796.0f, -828.0f }, { 828.0f, -884.0f }, { 828.0f, -940.0f }, { 828.0f, -996.0f }, { 780.0f, -1052.0f }, { 812.0f, -1124.0f }, { 844.0f, -1124.0f }, { 876.0f, -1164.0f }, { 900.0f, -1188.0f }, { 900.0f, -1268.0f }, { 924.0f, -1292.0f }, { 956.0f, -1316.0f }, { 956.0f, -1348.0f }, { 980.0f, -1388.0f }, { 988.0f, -1452.0f }, { 948.0f, -1520.0f }, { 908.0f, -1588.0f }, { 924.0f, -1644.0f }, { 924.0f, -1724.0f }, { 900.0f, -1748.0f } };
+	constexpr structures::vec2_s road_rozel_martin_points[] = { { 3508.0f, 996.0f }, { 3452.0f, 940.0f }, { 3396.0f, 884.0f }, { 3340.0f, 828.0f }, { 3268.0f, 772.0f }, { 3316.0f, 708.0f }, { 3316.0f, 676.0f }, { 3340.0f, 652.0f }, { 3340.0f, 604.0f }, { 3399.0f, 540.0f }, { 3457.0f, 476.0f }, { 3516.0f, 412.0f }, { 3524.0f, 336.0f }, { 3532.0f, 260.0f }, { 3580.0f, 220.0f }, { 3628.0f, 180.0f } };
+	constexpr structures::vec2_s road_martin_harbour_points[] = { { 3636.0f, 172.0f }, { 3681.0f, 121.0f }, { 3727.0f, 71.0f }, { 3772.0f, 20.0f }, { 3796.0f, -44.0f }, { 3844.0f, -92.0f }, { 3876.0f, -140.0f }, { 3908.0f, -188.0f }, { 3948.0f, -236.0f }, { 3952.0f, -324.0f }, { 3956.0f, -412.0f }, { 3972.0f, -492.0f }, { 3968.0f, -560.0f }, { 3964.0f, -628.0f }, { 4012.0f, -668.0f }, { 4020.0f, -708.0f }, { 4044.0f, -732.0f }, { 4040.0f, -808.0f }, { 4036.0f, -884.0f }, { 3996.0f, -900.0f }, { 3956.0f, -940.0f }, { 3916.0f, -980.0f }, { 3916.0f, -1044.0f }, { 3932.0f, -1068.0f }, { 3924.0f, -1148.0f }, { 3916.0f, -1228.0f }, { 3863.0f, -1287.0f }, { 3809.0f, -1345.0f }, { 3756.0f, -1404.0f }, { 3756.0f, -1468.0f }, { 3828.0f, -1471.0f }, { 3900.0f, -1473.0f }, { 3972.0f, -1476.0f }, { 4028.0f, -1420.0f }, { 4084.0f, -1364.0f }, { 4132.0f, -1328.0f }, { 4180.0f, -1292.0f }, { 4232.0f, -1252.0f }, { 4284.0f, -1212.0f }, { 4351.0f, -1201.0f }, { 4417.0f, -1191.0f }, { 4484.0f, -1180.0f }, { 4540.0f, -1132.0f }, { 4604.0f, -1140.0f }, { 4644.0f, -1104.0f }, { 4684.0f, -1068.0f }, { 4736.0f, -1064.0f }, { 4788.0f, -1060.0f }, { 4832.0f, -1020.0f }, { 4876.0f, -980.0f }, { 4972.0f, -980.0f }, { 4996.0f, -1004.0f }, { 5004.0f, -1060.0f }, { 4940.0f, -1108.0f }, { 4916.0f, -1172.0f } };
+	constexpr structures::vec2_s road_martin_saviour_points[] = { { 3636.0f, 140.0f }, { 3576.0f, 72.0f }, { 3516.0f, 4.0f }, { 3448.0f, 0.0f }, { 3380.0f, -4.0f }, { 3344.0f, -40.0f }, { 3308.0f, -76.0f }, { 3260.0f, -76.0f }, { 3244.0f, -148.0f }, { 3183.0f, -209.0f }, { 3122.0f, -270.0f }, { 3062.0f, -330.0f }, { 3001.0f, -391.0f }, { 2940.0f, -452.0f }, { 2904.0f, -500.0f }, { 2868.0f, -548.0f }, { 2804.0f, -607.0f }, { 2740.0f, -665.0f }, { 2676.0f, -724.0f }, { 2644.0f, -780.0f }, { 2612.0f, -836.0f }, { 2604.0f, -868.0f }, { 2560.0f, -916.0f }, { 2516.0f, -964.0f }, { 2492.0f, -988.0f }, { 2460.0f, -988.0f }, { 2404.0f, -1040.0f }, { 2348.0f, -1092.0f }, { 2313.0f, -1151.0f }, { 2279.0f, -1209.0f }, { 2244.0f, -1268.0f }, { 2184.0f, -1328.0f }, { 2124.0f, -1388.0f }, { 2100.0f, -1436.0f } };
+	constexpr structures::vec2_s road_saviour_helier_points[] = { { 2100.0f, -1444.0f }, { 2100.0f, -1484.0f }, { 2056.0f, -1528.0f }, { 2012.0f, -1572.0f }, { 1996.0f, -1644.0f }, { 1932.0f, -1708.0f }, { 1876.0f, -1788.0f }, { 1832.0f, -1816.0f }, { 1788.0f, -1844.0f }, { 1732.0f, -1892.0f }, { 1684.0f, -1948.0f }, { 1648.0f, -1988.0f }, { 1612.0f, -2028.0f }, { 1596.0f, -2084.0f }, { 1596.0f, -2180.0f }, { 1564.0f, -2172.0f }, { 1564.0f, -2204.0f }, { 1516.0f, -2244.0f }, { 1476.0f, -2212.0f }, { 1468.0f, -2180.0f }, { 1420.0f, -2180.0f }, { 1364.0f, -2108.0f }, { 1324.0f, -2092.0f }, { 1276.0f, -2044.0f }, { 1236.0f, -2044.0f }, { 1180.0f, -1988.0f }, { 1148.0f, -1988.0f }, { 1068.0f, -1940.0f } };
+	constexpr structures::vec2_s road_helier_yard_points[] = { { 1444.0f, -2188.0f }, { 1456.0f, -2240.0f }, { 1468.0f, -2292.0f }, { 1508.0f, -2340.0f }, { 1548.0f, -2388.0f }, { 1556.0f, -2468.0f }, { 1572.0f, -2476.0f } };
+	constexpr structures::vec2_s road_helier_clement_points[] = { { 1580.0f, -2484.0f }, { 1612.0f, -2532.0f }, { 1692.0f, -2548.0f }, { 1736.0f, -2580.0f }, { 1780.0f, -2612.0f }, { 1836.0f, -2620.0f }, { 1860.0f, -2644.0f }, { 1908.0f, -2644.0f }, { 1940.0f, -2676.0f }, { 1988.0f, -2684.0f }, { 2040.0f, -2736.0f }, { 2092.0f, -2788.0f }, { 2124.0f, -2788.0f }, { 2164.0f, -2824.0f }, { 2204.0f, -2860.0f } };
+	constexpr structures::vec2_s road_clement_grouville_points[] = { { 2212.0f, -2860.0f }, { 2264.0f, -2856.0f }, { 2316.0f, -2852.0f }, { 2356.0f, -2816.0f }, { 2396.0f, -2780.0f }, { 2436.0f, -2756.0f }, { 2476.0f, -2756.0f }, { 2520.0f, -2712.0f }, { 2564.0f, -2668.0f }, { 2624.0f, -2668.0f }, { 2684.0f, -2668.0f }, { 2732.0f, -2620.0f }, { 2732.0f, -2580.0f }, { 2780.0f, -2508.0f }, { 2812.0f, -2524.0f }, { 2836.0f, -2500.0f }, { 2812.0f, -2468.0f }, { 2852.0f, -2444.0f }, { 2868.0f, -2388.0f }, { 2892.0f, -2372.0f }, { 2924.0f, -2356.0f }, { 2964.0f, -2364.0f }, { 2988.0f, -2340.0f }, { 3040.0f, -2340.0f }, { 3092.0f, -2340.0f }, { 3180.0f, -2330.0f }, { 3268.0f, -2320.0f }, { 3356.0f, -2310.0f }, { 3444.0f, -2300.0f } };
+	constexpr structures::vec2_s road_grouville_harbour_points[] = { { 3452.0f, -2292.0f }, { 3456.0f, -2212.0f }, { 3460.0f, -2132.0f }, { 3420.0f, -2092.0f }, { 3372.0f, -2132.0f }, { 3412.0f, -2072.0f }, { 3452.0f, -2012.0f }, { 3500.0f, -1972.0f }, { 3508.0f, -1940.0f }, { 3492.0f, -1908.0f }, { 3532.0f, -1844.0f }, { 3532.0f, -1772.0f }, { 3591.0f, -1713.0f }, { 3649.0f, -1655.0f }, { 3708.0f, -1596.0f }, { 3772.0f, -1592.0f }, { 3836.0f, -1588.0f }, { 3872.0f, -1552.0f }, { 3908.0f, -1516.0f }, { 3948.0f, -1516.0f }, { 3980.0f, -1484.0f } };
+	constexpr structures::vec2_s road_ouen_mary_points[] = { { -3228.0f, 996.0f }, { -3156.0f, 1028.0f }, { -3084.0f, 1036.0f }, { -3012.0f, 1044.0f }, { -2988.0f, 1068.0f }, { -2924.0f, 1068.0f }, { -2900.0f, 1084.0f }, { -2812.0f, 1084.0f }, { -2724.0f, 1084.0f }, { -2684.0f, 1124.0f }, { -2600.0f, 1126.0f }, { -2516.0f, 1128.0f }, { -2432.0f, 1130.0f }, { -2348.0f, 1132.0f } };
 	constexpr structures::world_route_s world_routes[] =
 	{
 		{ railway_points, static_cast<std::uint32_t>(std::size(railway_points)), structures::route_rail, 5.2f, 0.025f, 100.0f, 0.65f, true },
-		{ south_road_points, static_cast<std::uint32_t>(std::size(south_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
-		{ east_road_points, static_cast<std::uint32_t>(std::size(east_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
-		{ west_road_points, static_cast<std::uint32_t>(std::size(west_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
-		{ valley_road_points, static_cast<std::uint32_t>(std::size(valley_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
-		{ quarry_road_points, static_cast<std::uint32_t>(std::size(quarry_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
-		{ battery_road_points, static_cast<std::uint32_t>(std::size(battery_road_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
-		{ harbour_road_points, static_cast<std::uint32_t>(std::size(harbour_road_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false }
+		{ road_helier_halt_points, static_cast<std::uint32_t>(std::size(road_helier_halt_points)), structures::route_road, 7.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_town_portelet_points, static_cast<std::uint32_t>(std::size(road_town_portelet_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_town_portelet_1_points, static_cast<std::uint32_t>(std::size(road_town_portelet_1_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_portelet_battery_points, static_cast<std::uint32_t>(std::size(road_portelet_battery_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_town_brelade_points, static_cast<std::uint32_t>(std::size(road_town_brelade_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_brelade_quennevais_points, static_cast<std::uint32_t>(std::size(road_brelade_quennevais_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_quennevais_peter_points, static_cast<std::uint32_t>(std::size(road_quennevais_peter_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_peter_ouen_points, static_cast<std::uint32_t>(std::size(road_peter_ouen_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_ouen_landes_points, static_cast<std::uint32_t>(std::size(road_ouen_landes_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_peter_lawrence_points, static_cast<std::uint32_t>(std::size(road_peter_lawrence_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_lawrence_institute_points, static_cast<std::uint32_t>(std::size(road_lawrence_institute_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_lawrence_helier_points, static_cast<std::uint32_t>(std::size(road_lawrence_helier_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_peter_mary_points, static_cast<std::uint32_t>(std::size(road_peter_mary_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_mary_john_points, static_cast<std::uint32_t>(std::size(road_mary_john_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_john_quarry_points, static_cast<std::uint32_t>(std::size(road_john_quarry_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_john_trinity_points, static_cast<std::uint32_t>(std::size(road_john_trinity_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_trinity_outpost_points, static_cast<std::uint32_t>(std::size(road_trinity_outpost_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_trinity_rozel_points, static_cast<std::uint32_t>(std::size(road_trinity_rozel_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_trinity_helier_points, static_cast<std::uint32_t>(std::size(road_trinity_helier_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_rozel_martin_points, static_cast<std::uint32_t>(std::size(road_rozel_martin_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
+		{ road_martin_harbour_points, static_cast<std::uint32_t>(std::size(road_martin_harbour_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_martin_saviour_points, static_cast<std::uint32_t>(std::size(road_martin_saviour_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
+		{ road_saviour_helier_points, static_cast<std::uint32_t>(std::size(road_saviour_helier_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_helier_yard_points, static_cast<std::uint32_t>(std::size(road_helier_yard_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_helier_clement_points, static_cast<std::uint32_t>(std::size(road_helier_clement_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_clement_grouville_points, static_cast<std::uint32_t>(std::size(road_clement_grouville_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_grouville_harbour_points, static_cast<std::uint32_t>(std::size(road_grouville_harbour_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
+		{ road_ouen_mary_points, static_cast<std::uint32_t>(std::size(road_ouen_mary_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false }
 	};
 	constexpr structures::train_vehicle_s train_vehicles[structures::train_vehicle_count] =
 	{
@@ -5404,8 +5484,8 @@ namespace zp
 		{ "train_coach", 12.0f, 6.0f, 3.64f, 2.6f, 1.27f, structures::material_container_blue, 4u, { 4.0f, 2.0f, -2.0f, -4.0f } }
 	};
 	constexpr std::uint32_t train_consist[] = { structures::train_vehicle_locomotive, structures::train_vehicle_flat, structures::train_vehicle_open, structures::train_vehicle_box, structures::train_vehicle_coach };
-	constexpr std::uint32_t train_stops[] = { structures::landmark_halt, structures::landmark_harbour, structures::landmark_ouen, structures::landmark_battery, structures::landmark_portelet };
-	constexpr structures::station_kit_s station_kits[] = { { structures::landmark_ouen, true, false, true }, { structures::landmark_harbour, true, true, false }, { structures::landmark_halt, false, false, false }, { structures::landmark_battery, false, false, false }, { structures::landmark_portelet, false, true, false } };
+	constexpr std::uint32_t train_stops[] = { structures::landmark_helier, structures::landmark_halt, structures::landmark_peter, structures::landmark_ouen, structures::landmark_john, structures::landmark_martin, structures::landmark_harbour };
+	constexpr structures::station_kit_s station_kits[] = { { structures::landmark_helier, true, true, false }, { structures::landmark_halt, false, false, false }, { structures::landmark_peter, false, true, false }, { structures::landmark_ouen, true, false, true }, { structures::landmark_john, false, false, false }, { structures::landmark_martin, false, true, true }, { structures::landmark_harbour, true, true, false } };
 	constexpr auto vehicle_substep = 1.0f / 120.0f;
 	constexpr auto vehicle_gravity = 9.81f;
 	constexpr auto vehicle_mover_base = 128u;
@@ -5463,10 +5543,10 @@ namespace zp
 	constexpr structures::vec3_s rover_steering_axis = { 0.0f, 0.6f, -0.8f };
 	constexpr structures::vehicle_spawn_s vehicle_spawns[] =
 	{
-		{ structures::vehicle_rover, { 506.0f, -421.5f }, half_pi },
-		{ structures::vehicle_rover, { 461.8f, -332.0f }, pi },
-		{ structures::vehicle_rover, { 1180.0f, -318.0f }, 0.35f },
-		{ structures::vehicle_heli, { 413.0f, -450.0f }, 0.0f }
+		{ structures::vehicle_rover, { -566.0f, -1093.5f }, half_pi },
+		{ structures::vehicle_rover, { -610.2f, -1004.0f }, pi },
+		{ structures::vehicle_rover, { 1572.0f, -2464.0f }, 0.35f },
+		{ structures::vehicle_heli, { -659.0f, -1122.0f }, 0.0f }
 	};
 	constexpr auto station_crossing_reach = 3.0f;
 	constexpr auto station_crossing_search = 60.0f;
@@ -5790,8 +5870,8 @@ namespace zp
 	constexpr auto settings_file_name = "settings.ini";
 	constexpr auto save_file_name = "island.sav";
 	constexpr std::uint32_t save_magic = 0x3153505Au;
-	constexpr std::uint32_t save_version = 6u;
-	constexpr std::uint32_t save_oldest = 6u;
+	constexpr std::uint32_t save_version = 7u;
+	constexpr std::uint32_t save_oldest = 7u;
 	constexpr std::uint32_t save_tiers = 4u;
 	constexpr std::uint32_t save_recipes = 5u;
 	constexpr auto save_interval = 90.0f;
@@ -6218,7 +6298,7 @@ namespace zp
 		{ "prop_traffic_cone", { -110.4f, 2.0f }, 0.0f, structures::surface_fabric },
 		{ "prop_wreck_hatch", { 1.4f, -84.0f }, 0.25f, structures::surface_metal }
 	};
-	constexpr structures::vec2_s rig_site = { 2056.0f, 656.0f };
+	constexpr structures::vec2_s rig_site = { -5300.0f, -3600.0f };
 	constexpr auto rig_yaw = 0.55f;
 	constexpr auto rig_clearance = 70.0f;
 	constexpr const char* rig_parts[6] = { "bld_rig_jacket", "bld_rig_cellar", "bld_rig_main", "bld_rig_quarters", "bld_rig_helideck", "bld_rig_derrick" };

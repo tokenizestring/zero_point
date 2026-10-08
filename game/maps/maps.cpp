@@ -1716,10 +1716,10 @@ namespace zp
 	void maps_c::build_hamlet(const structures::world_site_s& site)
 	{
 		const structures::vec3_s center{ site.position.x, 0.0f, site.position.y };
-		const auto village{ site.landmark == structures::landmark_ouen };
-		const auto hamlet{ site.landmark == structures::landmark_portelet };
-		const auto farm{ site.landmark == structures::landmark_rozel || site.landmark == structures::landmark_landes || site.landmark == structures::landmark_trinity };
-		const auto count{ village ? 8u : (hamlet ? 4u : (farm ? 3u : 2u)) };
+		const auto village{ landmark_settlements[site.landmark] == structures::settlement_village };
+		const auto hamlet{ landmark_settlements[site.landmark] == structures::settlement_hamlet };
+		const auto farm{ landmark_settlements[site.landmark] == structures::settlement_farm };
+		const auto count{ landmark_houses[site.landmark] };
 
 		clearings.push_back({ center.x, 0.0f, center.z, site.inner + 8.0f });
 		landmarks.push_back({ site.position, site.inner * 0.8f, site.landmark });
