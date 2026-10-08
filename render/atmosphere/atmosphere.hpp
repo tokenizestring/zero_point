@@ -16,6 +16,9 @@ namespace zp
 		ID3D11Texture2D* texture = nullptr;
 		ID3D11ShaderResourceView* view = nullptr;
 		ID3D11UnorderedAccessView* access = nullptr;
+		ID3D11Texture2D* clear_texture = nullptr;
+		ID3D11ShaderResourceView* clear_view = nullptr;
+		ID3D11UnorderedAccessView* clear_access = nullptr;
 		ID3D11ComputeShader* sky_shader = nullptr;
 		ID3D11ComputeShader* sh_shader = nullptr;
 		ID3D11Buffer* constant_buffer = nullptr;

@@ -15,6 +15,7 @@ cbuffer atmosphere_constants : register(b3)
 Texture2D<float4> sky_input : register(t0);
 RWTexture2D<float4> sky_output : register(u0);
 RWStructuredBuffer<float4> sh_output : register(u1);
+RWTexture2D<float4> clear_output : register(u2);
 SamplerState linear_wrap : register(s0);
 
 static const float planet_radius = 6360000.0;
@@ -158,12 +159,13 @@ float fbm(float2 p)
 /*
 //=====================================================================================
 */
-float3 sky_color(float3 direction)
+float3 sky_color(float3 direction, out float3 clear)
 {
 	float3 horizontal = normalize(float3(direction.x, max(direction.y, 0.002), direction.z));
 	float3 bounce;
 	float3 unused;
 	float3 color = scatter(horizontal, atmosphere_sun.xyz, atmosphere_sun.w, bounce);
+	float shade = direction.y < 0.0 ? lerp(1.0, 0.3, saturate(-direction.y * 5.0)) : 1.0;
 
 	[branch] if (atmosphere_moon.w > 0.0)
 	{
@@ -173,6 +175,8 @@ float3 sky_color(float3 direction)
 	color += bounce * max(sky_sh[0].rgb, 0.0) * (0.282095 * atmosphere_zenith.w);
 
 	color += float3(0.0009, 0.0013, 0.0026) * atmosphere_clouds.w;
+
+	clear = color * shade;
 
 	[branch] if (direction.y > 0.004 && atmosphere_clouds.y > 0.0)
 	{
@@ -198,12 +202,7 @@ float3 sky_color(float3 direction)
 		}
 	}
 
-	[branch] if (direction.y < 0.0)
-	{
-		color *= lerp(1.0, 0.3, saturate(-direction.y * 5.0));
-	}
-
-	return color;
+	return color * shade;
 }
 /*
 //=====================================================================================
@@ -219,8 +218,11 @@ void cs_atmosphere(uint3 id : SV_DispatchThreadID)
 		float phi = ((texel.x + 0.5) / size.x - 0.5) * TWO_PI;
 		float theta = (texel.y + 0.5) / size.y * PI;
 		float3 direction = float3(sin(theta) * sin(phi), cos(theta), sin(theta) * cos(phi));
+		float3 clear;
+		float3 cloudy = sky_color(direction, clear);
 
-		sky_output[texel] = float4(min(sky_color(direction), 60000.0), 1.0);
+		sky_output[texel] = float4(min(cloudy, 60000.0), 1.0);
+		clear_output[texel] = float4(min(clear, 60000.0), 1.0);
 	}
 }
 /*

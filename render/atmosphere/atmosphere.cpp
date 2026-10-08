@@ -34,6 +34,16 @@ namespace zp
 			gpu.device->CreateUnorderedAccessView(texture, &output, &access);
 		}
 
+		description.MipLevels = 1u;
+		description.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		description.MiscFlags = 0u;
+
+		if (SUCCEEDED(gpu.device->CreateTexture2D(&description, nullptr, &clear_texture)))
+		{
+			gpu.device->CreateShaderResourceView(clear_texture, nullptr, &clear_view);
+			gpu.device->CreateUnorderedAccessView(clear_texture, nullptr, &clear_access);
+		}
+
 		sky_shader = gpu.create_compute_shader("atmosphere_cs");
 		sh_shader = gpu.create_compute_shader("atmosphere_sh_cs");
 		constant_buffer = gpu.create_constant_buffer(sizeof(structures::atmosphere_constants_s));
@@ -63,6 +73,9 @@ namespace zp
 		functions::release(access);
 		functions::release(view);
 		functions::release(texture);
+		functions::release(clear_access);
+		functions::release(clear_view);
+		functions::release(clear_texture);
 		functions::release(sky_shader);
 		functions::release(sh_shader);
 		functions::release(constant_buffer);
@@ -205,19 +218,20 @@ namespace zp
 	{
 		const auto rows{ atmosphere_height / atmosphere_strips };
 
-		ID3D11UnorderedAccessView* unbound{ nullptr };
+		ID3D11UnorderedAccessView* outputs[3] = { access, nullptr, clear_access };
+		ID3D11UnorderedAccessView* unbound[3]{};
 
 		constants.size.z = static_cast<std::float_t>(strip * rows);
 
 		gpu.update_buffer(constant_buffer, &constants, sizeof(constants));
 
 		gpu.context->CSSetConstantBuffers(3u, 1u, &constant_buffer);
-		gpu.context->CSSetUnorderedAccessViews(0u, 1u, &access, nullptr);
+		gpu.context->CSSetUnorderedAccessViews(0u, 3u, outputs, nullptr);
 		gpu.context->CSSetShader(sky_shader, nullptr, 0u);
 
 		gpu.context->Dispatch(atmosphere_width / compute_group_size, (rows + compute_group_size - 1u) / compute_group_size, 1u);
 
-		gpu.context->CSSetUnorderedAccessViews(0u, 1u, &unbound, nullptr);
+		gpu.context->CSSetUnorderedAccessViews(0u, 3u, unbound, nullptr);
 
 		strip++;
 
