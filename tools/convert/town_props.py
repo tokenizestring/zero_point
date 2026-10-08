@@ -1564,18 +1564,25 @@ def locker_row(b, part, center, yaw, count, rng, region="blue", height=1.85, dep
     bd.footprint(b, "metal", "lockers", base, total * 0.5, depth * 0.5, 0.0, height)
 
 
-def rifle(part, butt, muzzle, rng, wood="timber_beam", metal="rusty_metal"):
+def rifle(part, butt, muzzle, rng, wood="timber_beam", metal="rusty_metal", lying=False):
     axis = (muzzle - butt).normalized()
     side = axis.cross(up).normalized() if abs(axis.dot(up)) < 0.95 else V(1.0, 0.0, 0.0)
     normal = side.cross(axis).normalized()
-    stock_end = butt + axis * 0.75
-    emit(part, kit.geo_box(0.75, 0.04, 0.1), wood, kit.place((butt + stock_end) * 0.5, axis, normal), "box")
-    rod(part, metal, stock_end - axis * 0.1, muzzle, 0.012, 5)
-    emit(part, kit.geo_box(0.12, 0.03, 0.06), metal, kit.place(stock_end - axis * 0.05 + normal * 0.05, axis, normal), "box")
-    rod(part, metal, stock_end - axis * 0.12 + normal * 0.06, stock_end - axis * 0.12 + normal * 0.06 + side * 0.06, 0.006, 3)
+    if lying:
+        side, normal = normal, side
+    s = (muzzle - butt).length / 1.13
+    frame = kit.place(butt, axis, normal)
+    stock = [(0.0, -0.125 * s), (0.06 * s, -0.13 * s), (0.33 * s, -0.045 * s), (0.42 * s, -0.035 * s), (0.95 * s, -0.026 * s), (0.95 * s, 0.012 * s), (0.42 * s, 0.016 * s), (0.36 * s, 0.01 * s), (0.0, 0.006 * s)]
+    kit.prism(part, wood, frame, stock, -0.019, 0.019)
+    local_block(part, metal, frame, 0.36 * s, 0.52 * s, -0.016, 0.016, 0.0, 0.045 * s)
+    local_block(part, metal, frame, 0.4 * s, 0.47 * s, -0.014, 0.014, -0.1 * s, -0.03 * s)
+    rod(part, metal, frame @ V(0.48 * s, 0.0, 0.028 * s), frame @ V(1.13 * s, 0.0, 0.028 * s), 0.009, 5)
+    rod(part, metal, frame @ V(0.4 * s, 0.0, 0.035 * s), frame @ V(0.39 * s, 0.065, 0.018 * s), 0.005, 4)
+    rod(part, metal, frame @ V(0.3 * s, 0.0, -0.035 * s), frame @ V(0.35 * s, 0.0, -0.075 * s), 0.004, 3)
+    rod(part, metal, frame @ V(0.35 * s, 0.0, -0.075 * s), frame @ V(0.4 * s, 0.0, -0.035 * s), 0.004, 3)
 
 
-def gun_rack(b, part, clutter, center, yaw, rng, count=6, width=1.5):
+def gun_rack(b, part, clutter, center, yaw, rng, count=6, width=1.5, fill=0.7):
     base = kit.turned(center, yaw)
     hw = width * 0.5
     local_block(part, "timber_beam", base, -hw, hw, 0.05, 0.2, 0.0, 0.1, 0.0, "board")
@@ -1583,7 +1590,7 @@ def gun_rack(b, part, clutter, center, yaw, rng, count=6, width=1.5):
     for sx in (-hw, hw - 0.06):
         local_block(part, "timber_beam", base, sx, sx + 0.06, 0.12, 0.2, 0.0, 1.2)
     for index in range(count):
-        if rng.random() < 0.3:
+        if rng.random() < 1.0 - fill:
             continue
         x = -hw + 0.15 + (width - 0.3) * index / max(count - 1, 1)
         rifle(clutter, base @ V(x, 0.12, 0.1), base @ V(x + rng.uniform(-0.03, 0.03), 0.17, 1.28), rng)
@@ -1601,13 +1608,13 @@ def ammo_box(part, center, yaw, rng, region="green", size=(0.36, 0.2, 0.2), lid_
     return base
 
 
-def cell_front(b, part, frame, a0, a1, gate, rng, open_angle=0.0, height=2.5, z0=0.0, iron="rusty_metal"):
+def cell_front(b, part, frame, a0, a1, gate, rng, open_angle=0.0, height=2.5, z0=0.0, iron="rusty_metal", spacing=0.13):
     g0, g1 = gate
     a = a0 + 0.06
     while a < a1 - 0.03:
         if not (g0 - 0.01 < a < g1 + 0.01):
             rod(part, iron, kit.frame_point(frame, a, z0, 0.0), kit.frame_point(frame, a, z0 + height, 0.0), 0.012, 4)
-        a += 0.13
+        a += spacing
     for z in (z0 + 0.08, z0 + 1.1, z0 + height - 0.05):
         for s0, s1 in ((a0, g0), (g1, a1)):
             if s1 - s0 > 0.02:
@@ -1734,3 +1741,744 @@ def debris_field(parts, x0, x1, y0, y1, z, rng, plaster=20, glass=0, papers_coun
         tk.chips(debris, "foliage", x0, x1, y0, y1, z, leaves, rng, (0.02, 0.05), (0.002, 0.003), 0.5)
     if slate:
         tk.chips(debris, "slate_roof", x0, x1, y0, y1, z, slate, rng, (0.08, 0.17), (0.006, 0.008))
+
+
+def stove_light(b, part, position, rng, flue_to=None, name="rusty_metal"):
+    matrix = kit.turned(position, rng.uniform(0.0, tau))
+    for k in range(3):
+        angle = tau * k / 3 + 0.4
+        rod(part, name, matrix @ V(math.cos(angle) * 0.15, math.sin(angle) * 0.15, 0.17), matrix @ V(math.cos(angle) * 0.24, math.sin(angle) * 0.24, 0.0), 0.016, 4)
+    emit(part, kit.geo_lathe([(0.0, 0.15), (0.17, 0.15), (0.215, 0.24), (0.23, 0.46), (0.205, 0.68), (0.13, 0.78), (0.09, 0.82), (0.0, 0.83)], 12), "soot", matrix, "given", True)
+    emit(part, kit.geo_lathe([(0.226, 0.4), (0.25, 0.42), (0.25, 0.46), (0.226, 0.48)], 12), name, matrix, "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.075, 0.0), (0.075, 0.06), (0.0, 0.06)], 8), name, kit.Matrix.Translation(position + V(0.0, 0.0, 0.82)), "given", True)
+    local_block(part, name, matrix, 0.17, 0.25, -0.1, 0.1, 0.2, 0.38, 0.004)
+    lump(part, "soot", matrix @ V(0.4, 0.05, 0.0), (0.12, 0.09, 0.02), rng, 0.4, 1)
+    top = position + V(0.0, 0.0, 0.86)
+    if flue_to is not None:
+        bend = V(position.x, position.y, flue_to.z)
+        heading = (flue_to - bend).normalized()
+        emit(part, kit.geo_tube([top, bend - V(0.0, 0.0, 0.1), bend + heading * 0.1, flue_to], kit.circle(0.065, 8), True), name, None, "given", True)
+    tk.col(b, "metal", "stove", position.x - 0.25, position.x + 0.25, position.y - 0.25, position.y + 0.25, position.z, position.z + 0.86)
+
+
+def safe_light(b, part, center, yaw, rng, open_angle=1.3, size=(0.62, 0.56, 0.78), region="green"):
+    base = kit.turned(center, yaw)
+    sx, sy, sz = size
+    hx = sx * 0.5
+    hy = sy * 0.5
+    painted_box(part, region, base, -hx, hx, -hy + 0.05, hy, 0.0, sz)
+    local_block(part, "soot", base, -hx + 0.05, hx - 0.05, -hy + 0.045, -hy + 0.05, 0.05, sz - 0.05)
+    for z in (0.3, 0.55):
+        local_block(part, "rusty_metal", base, -hx + 0.06, hx - 0.06, -hy + 0.06, hy - 0.06, z - 0.012, z)
+    door = base @ kit.Matrix.Translation(V(-hx, -hy + 0.05, 0.0)) @ kit.Matrix.Rotation(-open_angle, 4, 'Z')
+    painted_box(part, region, door, 0.0, sx, -0.07, 0.0, 0.02, sz - 0.02)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.05, 0.0), (0.05, 0.02), (0.03, 0.03), (0.0, 0.035)], 12), "town_brass", door @ kit.Matrix.Translation(V(sx * 0.62, -0.07, sz * 0.6)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X'), "given", True)
+    rod(part, "town_brass", door @ V(sx * 0.62, -0.08, sz * 0.4), door @ V(sx * 0.62 + 0.1, -0.08, sz * 0.4), 0.01, 5)
+    bd.footprint(b, "metal", "safe", base, hx, hy, 0.0, sz)
+    return base
+
+
+def helmet(part, position, rng, yaw=None, tipped=False, name="town_paint_navy"):
+    turn = rng.uniform(0.0, tau) if yaw is None else yaw
+    matrix = kit.turned(position, turn)
+    if tipped:
+        matrix = kit.Matrix.Translation(position + V(0.0, 0.0, 0.13)) @ kit.Matrix.Rotation(turn, 4, 'Z') @ kit.Matrix.Rotation(1.75, 4, 'X') @ kit.Matrix.Translation(V(0.0, 0.0, -0.14))
+    shell = matrix @ kit.Matrix.Scale(1.2, 4, V(0.0, 1.0, 0.0))
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.125, 0.0), (0.135, 0.008), (0.112, 0.02), (0.108, 0.12), (0.095, 0.22), (0.06, 0.29), (0.025, 0.315), (0.0, 0.32)], 10), name, shell, "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.31), (0.022, 0.31), (0.02, 0.35), (0.0, 0.36)], 6), "town_brass", matrix, "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.035, 0.0), (0.03, 0.006), (0.0, 0.008)], 6), "town_brass", matrix @ kit.Matrix.Translation(V(0.0, -0.128, 0.15)) @ kit.Matrix.Rotation(math.pi * 0.5 - 0.2, 4, 'X'), "given", True)
+
+
+def notice_board(part, center, normal, width, height, rng, kinds=("notice", "poster", "letter", "police_notice", "card", "calendar", "envelope"), frame_name="timber_beam", backing="timber_planks_weathered", fill=0.8):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    hw = width * 0.5
+    hh = height * 0.5
+    local_block(part, backing, matrix, -hw, hw, -0.022, 0.0, -hh, hh)
+    for x0, x1, z0, z1 in ((-hw - 0.03, hw + 0.03, hh, hh + 0.04), (-hw - 0.03, hw + 0.03, -hh - 0.04, -hh), (-hw - 0.03, -hw, -hh, hh), (hw, hw + 0.03, -hh, hh)):
+        local_block(part, frame_name, matrix, x0, x1, -0.035, 0.0, z0, z1)
+    right = (matrix.to_3x3() @ V(1.0, 0.0, 0.0)).normalized()
+    upward = (matrix.to_3x3() @ V(0.0, 0.0, 1.0)).normalized()
+    count = max(2, int(width * height * 9.0 * fill))
+    for index in range(count):
+        kind = rng.choice(kinds)
+        w, h = paper_sizes[kind]
+        scale = min(1.0, (width - 0.1) / w, (height - 0.1) / h) * rng.uniform(0.6, 0.85)
+        w *= scale
+        h *= scale
+        px = rng.uniform(-hw + w * 0.5 + 0.03, hw - w * 0.5 - 0.03)
+        pz = rng.uniform(-hh + h * 0.5 + 0.03, hh - h * 0.5 - 0.03)
+        lift = 0.024 + index * 0.0015
+        tk.atlas_panel(part, "town_print", center + right * px + upward * pz + n * lift, n, w, h, pr(kind), rng.uniform(-0.12, 0.12), 0.0)
+        if rng.random() < 0.6:
+            pin = center + right * px + upward * (pz + h * 0.42) + n * lift
+            rod(part, "town_paint_red", pin, pin + n * 0.014, 0.005, 4)
+
+
+def pigeonholes(part, clutter, center, normal, cols, rows, rng, cell=(0.24, 0.17), depth=0.28, wood="timber_beam"):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    width = cols * cell[0]
+    height = rows * cell[1]
+    hw = width * 0.5
+    hh = height * 0.5
+    local_block(part, "timber_planks_weathered", matrix, -hw, hw, -0.012, 0.0, -hh, hh)
+    for c in range(cols + 1):
+        x = -hw + c * cell[0]
+        local_block(part, wood, matrix, x - 0.01, x + 0.01, -depth, -0.012, -hh - 0.01, hh + 0.01)
+    for r in range(rows + 1):
+        z = -hh + r * cell[1]
+        local_block(part, wood, matrix, -hw - 0.01, hw + 0.01, -depth, -0.012, z - 0.01, z + 0.01)
+    for c in range(cols):
+        for r in range(rows):
+            if rng.random() < 0.55:
+                x = -hw + (c + 0.5) * cell[0]
+                z = -hh + r * cell[1] + 0.012
+                stack = rng.uniform(0.01, cell[1] * 0.45)
+                tk.atlas_box(clutter, "town_print", matrix @ kit.Matrix.Translation(V(x, -depth * 0.5, z)) @ kit.Matrix.Rotation(rng.uniform(-0.15, 0.15), 4, 'Z'), -cell[0] * 0.36, cell[0] * 0.36, -depth * 0.38, depth * 0.38, 0.0, stack, sub_region(pr("letter"), 0.0, 1.0, 0.0, 0.08), pr(rng.choice(("letter", "notice", "police_notice"))))
+
+
+def desk_bell(part, position, rng):
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.045, 0.0), (0.045, 0.012), (0.0, 0.012)], 10), "timber_beam", kit.Matrix.Translation(position), "given", True)
+    emit(part, kit.geo_lathe([(0.0, 0.012), (0.04, 0.012), (0.038, 0.03), (0.028, 0.05), (0.0, 0.058)], 10), "town_brass", kit.Matrix.Translation(position), "given", True)
+    rod(part, "town_brass", position + V(0.0, 0.0, 0.058), position + V(0.0, 0.0, 0.072), 0.004, 4)
+
+
+def ledger(part, position, yaw, rng, opened=True):
+    matrix = kit.turned(position, yaw)
+    if opened:
+        local_block(part, "leather_brown", matrix, -0.31, 0.31, -0.2, 0.2, 0.0, 0.008)
+        for x0, x1 in ((-0.29, -0.006), (0.006, 0.29)):
+            tk.atlas_box(part, "town_print", matrix, x0, x1, -0.18, 0.18, 0.008, 0.026, sub_region(pr("letter"), 0.0, 1.0, 0.0, 0.05), pr("letter"))
+        return
+    number = rng.randint(0, 15)
+    tk.atlas_box(part, "town_print", matrix, -0.17, 0.17, -0.12, 0.12, 0.0, 0.05, pr("spine_" + str(number)), sub_region(pr("spine_" + str(number)), 0.0, 1.0, 0.0, 0.08))
+
+
+def ashtray(part, position, rng):
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.06, 0.0), (0.065, 0.025), (0.055, 0.025), (0.05, 0.008), (0.0, 0.008)], 10), "glass_dirty", kit.Matrix.Translation(position), "given", True)
+    for k in range(rng.randint(1, 3)):
+        a = rng.uniform(0.0, tau)
+        p = position + V(math.cos(a) * 0.03, math.sin(a) * 0.03, 0.012)
+        rod(part, "ceramic", p, p + V(math.cos(a + 0.3) * 0.04, math.sin(a + 0.3) * 0.04, 0.004), 0.004, 4)
+
+
+def key_cabinet(part, center, normal, rng, open_angle=1.9):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    local_block(part, "timber_planks_weathered", matrix, -0.25, 0.25, -0.012, 0.0, -0.3, 0.3)
+    for x0, x1 in ((-0.25, -0.23), (0.23, 0.25)):
+        local_block(part, "timber_beam", matrix, x0, x1, -0.09, -0.012, -0.3, 0.3)
+    for z0, z1 in ((-0.3, -0.28), (0.28, 0.3)):
+        local_block(part, "timber_beam", matrix, -0.25, 0.25, -0.09, -0.012, z0, z1)
+    door = matrix @ kit.Matrix.Translation(V(-0.25, -0.09, 0.0)) @ kit.Matrix.Rotation(-open_angle, 4, 'Z')
+    local_block(part, "timber_beam", door, 0.0, 0.5, -0.018, 0.0, -0.3, 0.3)
+    for row in range(3):
+        for column in range(5):
+            if rng.random() < 0.7:
+                x = -0.18 + column * 0.09
+                z = 0.18 - row * 0.17
+                rod(part, "town_brass", matrix @ V(x, -0.012, z), matrix @ V(x, -0.045, z), 0.003, 3)
+                rod(part, "rusty_metal", matrix @ V(x, -0.042, z), matrix @ V(x + rng.uniform(-0.01, 0.01), -0.044, z - 0.06), 0.004, 3)
+                local_block(part, "town_brass", matrix @ kit.Matrix.Translation(V(x, -0.044, z - 0.08)), -0.012, 0.012, -0.003, 0.003, -0.022, 0.0)
+
+
+def cubicles(b, part, x0, x1, y_back, y_front, z, count, rng, paint="painted_wood_green", ends=(False, True), height=1.95, door_width=0.62, seats=None):
+    outward = 1.0 if y_front > y_back else -1.0
+    span = (x1 - x0) / count
+    t = 0.035
+    y_lo = min(y_back, y_front)
+    y_hi = max(y_back, y_front)
+    for k in range(count + 1):
+        if (k == 0 and not ends[0]) or (k == count and not ends[1]):
+            continue
+        x = x0 + span * k
+        block(part, paint, V(x - t * 0.5, y_lo, z + 0.12), V(x + t * 0.5, y_hi, z + height), 0.0, "board")
+        tk.col(b, "wood", "cubicle", x - t * 0.5, x + t * 0.5, y_lo, y_hi, z, z + height)
+    for k in range(count):
+        a = x0 + span * k
+        c = a + span
+        middle = (a + c) * 0.5
+        d0 = middle - door_width * 0.5
+        d1 = middle + door_width * 0.5
+        for s0, s1 in ((a, d0), (d1, c)):
+            if s1 - s0 > 0.02:
+                block(part, paint, V(s0, y_front - t * 0.5, z + 0.12), V(s1, y_front + t * 0.5, z + height), 0.0, "board")
+                tk.col(b, "wood", "cubicle", s0, s1, y_front - t * 0.5, y_front + t * 0.5, z, z + height)
+        block(part, "timber_beam", V(a, y_front - 0.025, z + height), V(c, y_front + 0.025, z + height + 0.05))
+        leaf = kit.Matrix.Translation(V(d0 + 0.005, y_front, z + 0.12)) @ kit.Matrix.Rotation(outward * rng.uniform(1.35, 1.85), 4, 'Z')
+        local_block(part, paint, leaf, 0.0, door_width - 0.02, -0.014, 0.014, 0.0, height - 0.32, 0.0, "board")
+        local_block(part, "town_brass", leaf, door_width - 0.12, door_width - 0.06, -0.03, 0.03, 0.9, 0.93)
+        if seats is None or k in seats:
+            toilet(b, part, V(middle, y_back + outward * 0.42, z), 0.0 if outward < 0.0 else math.pi, rng, height + 0.05, rng.random() < 0.4, 8, rng.random() < 0.5)
+
+
+def aid_cabinet(part, clutter, center, normal, rng, open_angle=1.7):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    painted_box(part, "cream", matrix, -0.3, 0.3, -0.02, 0.0, -0.4, 0.4)
+    for sx in (-1.0, 1.0):
+        painted_box(part, "cream", matrix, sx * 0.3 - 0.015, sx * 0.3 + 0.015, -0.22, 0.0, -0.4, 0.4)
+    for z in (-0.4, 0.385):
+        painted_box(part, "cream", matrix, -0.3, 0.3, -0.22, 0.0, z, z + 0.015)
+    door = matrix @ kit.Matrix.Translation(V(0.3, -0.22, 0.0)) @ kit.Matrix.Rotation(open_angle, 4, 'Z')
+    painted_box(part, "cream", door, -0.6, 0.0, -0.02, 0.0, -0.4, 0.4)
+    painted_box(part, "red", door, -0.36, -0.24, -0.026, -0.02, -0.13, 0.13)
+    painted_box(part, "red", door, -0.43, -0.17, -0.026, -0.02, -0.06, 0.06)
+    for z in (-0.25, 0.05):
+        local_block(part, "timber_planks_weathered", matrix, -0.28, 0.28, -0.2, -0.02, z - 0.012, z)
+        for k in range(3):
+            if rng.random() < 0.6:
+                medicine_bottle(clutter, matrix @ V(-0.2 + k * 0.18, -0.1, z), rng)
+
+
+def examination_couch(b, part, center, yaw, rng, length=1.85, width=0.62, height=0.72, cover="leather_brown", frame="timber_beam", raise_head=0.42):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    hw = width * 0.5
+    for sx in (-1.0, 1.0):
+        for sy in (-1.0, 1.0):
+            local_block(part, frame, base, sx * (hl - 0.07) - 0.03, sx * (hl - 0.07) + 0.03, sy * (hw - 0.05) - 0.03, sy * (hw - 0.05) + 0.03, 0.0, height - 0.1)
+    local_block(part, frame, base, -hl + 0.03, hl - 0.03, -hw + 0.02, hw - 0.02, height - 0.16, height - 0.08)
+    local_block(part, frame, base, -hl + 0.08, hl - 0.08, -hw + 0.05, hw - 0.05, 0.16, 0.19, 0.0, "board")
+    emit(part, bd.cushion_geo(length - 0.52, width, 0.1, rng, 0.012, 0.01, 4, 2), cover, base @ kit.Matrix.Translation(V(0.26, 0.0, height - 0.03)), "box", True)
+    head = base @ kit.Matrix.Translation(V(-hl + 0.52, 0.0, height - 0.08)) @ kit.Matrix.Rotation(raise_head, 4, 'Y')
+    emit(part, bd.cushion_geo(0.5, width, 0.1, rng, 0.012, 0.0, 2, 2), cover, head @ kit.Matrix.Translation(V(-0.25, 0.0, 0.05)), "box", True)
+    local_block(part, frame, head, -0.5, 0.0, -0.04, 0.04, -0.02, 0.0)
+    bd.footprint(b, "wood", "couch", base, hl, hw, 0.0, height)
+    return base
+
+
+def folding_screen(part, position, yaw, rng, panels=3, width=0.52, height=1.75, frame="painted_wood_white", fabric="fabric_worn"):
+    angle = yaw
+    p = position
+    for k in range(panels):
+        direction = V(math.cos(angle), math.sin(angle), 0.0)
+        c = p + direction * width
+        for corner in (p, c):
+            rod(part, frame, corner, corner + V(0.0, 0.0, height), 0.014, 4)
+        for z in (0.12, height - 0.02):
+            rod(part, frame, p + V(0.0, 0.0, z), c + V(0.0, 0.0, z), 0.01, 4)
+        emit(part, kit.geo_box(width - 0.04, 0.008, height - 0.22), fabric, kit.place((p + c) * 0.5 + V(0.0, 0.0, height * 0.5 + 0.05), direction, up), "box")
+        p = c
+        angle += rng.uniform(0.45, 0.85) * (1.0 if k % 2 == 0 else -1.0)
+
+
+def stretcher(b, part, center, yaw, rng, trestles=True, length=2.1, width=0.56, canvas="fabric_worn", wood="timber_beam"):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    hw = width * 0.5
+    z = 0.66 if trestles else 0.08
+    for sy in (-1.0, 1.0):
+        rod(part, wood, base @ V(-hl, sy * hw, z), base @ V(hl, sy * hw, z), 0.02, 5)
+        for sx in (-1.0, 1.0):
+            local_block(part, "rusty_metal", base, sx * (hl - 0.38) - 0.015, sx * (hl - 0.38) + 0.015, sy * hw - 0.015, sy * hw + 0.015, z - 0.08, z)
+    local_block(part, canvas, base, -hl + 0.3, hl - 0.3, -hw + 0.02, hw - 0.02, z - 0.025, z - 0.012)
+    for sx in (-1.0, 1.0):
+        rod(part, "rusty_metal", base @ V(sx * (hl - 0.32), -hw, z - 0.01), base @ V(sx * (hl - 0.32), hw, z - 0.01), 0.008, 4)
+    if trestles:
+        for sx in (-hl + 0.42, hl - 0.42):
+            for sy in (-1.0, 1.0):
+                rod(part, wood, base @ V(sx - 0.18, sy * (hw + 0.06), 0.0), base @ V(sx, sy * (hw + 0.04), z - 0.08), 0.022, 4)
+                rod(part, wood, base @ V(sx + 0.18, sy * (hw + 0.06), 0.0), base @ V(sx, sy * (hw + 0.04), z - 0.08), 0.022, 4)
+            local_block(part, wood, base, sx - 0.04, sx + 0.04, -hw - 0.08, hw + 0.08, z - 0.12, z - 0.06)
+    bd.footprint(b, "wood", "stretcher", base, hl, hw + 0.08, 0.0, z + 0.03)
+    return base @ V(0.0, 0.0, z)
+
+
+def medicine_cabinet(b, part, clutter, center, yaw, rng, width=0.9, depth=0.36, height=1.85, paint="painted_wood_white", open_angle=1.9, fill=0.6):
+    base = kit.turned(center, yaw)
+    hw = width * 0.5
+    hd = depth * 0.5
+    t = 0.02
+    for x0, x1 in ((-hw, -hw + t), (hw - t, hw)):
+        local_block(part, paint, base, x0, x1, -hd, hd, 0.0, height, 0.0, "board")
+    local_block(part, paint, base, -hw, hw, hd - t, hd, 0.0, height, 0.0, "board")
+    local_block(part, paint, base, -hw - 0.02, hw + 0.02, -hd - 0.02, hd, height, height + 0.04, 0.0, "board")
+    local_block(part, paint, base, -hw, hw, -hd, hd, 0.0, 0.1, 0.0, "board")
+    shelves = (0.1, 0.55, 0.95, 1.35)
+    for z in shelves[1:]:
+        local_block(part, "glass_dirty", base, -hw + t, hw - t, -hd + 0.03, hd - t, z - 0.008, z)
+    for z in shelves:
+        x = -hw + 0.08
+        while x < hw - 0.07:
+            if rng.random() < fill:
+                medicine_bottle(clutter, base @ V(x, rng.uniform(-0.05, 0.05), z), rng)
+            x += rng.uniform(0.09, 0.14)
+    for side, angle in ((-1.0, open_angle), (1.0, 0.0)):
+        hinge = base @ kit.Matrix.Translation(V(side * hw, -hd, 0.0)) @ kit.Matrix.Rotation(side * angle, 4, 'Z')
+        x0, x1 = (0.0, hw) if side < 0.0 else (-hw, 0.0)
+        local_block(part, paint, hinge, x0, x0 + 0.04, -0.02, 0.0, 0.12, height - 0.02)
+        local_block(part, paint, hinge, x1 - 0.04, x1, -0.02, 0.0, 0.12, height - 0.02)
+        local_block(part, paint, hinge, x0, x1, -0.02, 0.0, 0.12, 0.2)
+        local_block(part, paint, hinge, x0, x1, -0.02, 0.0, height - 0.08, height - 0.02)
+        kit.pane(part, hinge, x0 + 0.04, x1 - 0.04, 0.2, height - 0.08, -0.012, rng.choice(("whole", "shard", "missing")) if angle else rng.choice(("whole", "shard")), rng)
+    bd.footprint(b, "wood", "cabinet", base, hw, hd, 0.0, height + 0.04)
+    return base
+
+
+def column_scale(b, part, position, yaw, rng, name="rusty_metal"):
+    base = kit.turned(position, yaw)
+    local_block(part, name, base, -0.24, 0.24, -0.22, 0.26, 0.0, 0.07)
+    local_block(part, "soot", base, -0.2, 0.2, -0.2, 0.16, 0.07, 0.08)
+    rod(part, name, base @ V(0.0, 0.2, 0.07), base @ V(0.0, 0.2, 1.42), 0.025, 6)
+    rod(part, name, base @ V(-0.28, 0.2, 1.32), base @ V(0.22, 0.2, 1.32), 0.012, 4)
+    local_block(part, "town_brass", base, -0.08, -0.04, 0.17, 0.23, 1.29, 1.35)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.05, 0.0), (0.04, 0.05), (0.0, 0.06)], 6), name, base @ kit.Matrix.Translation(V(0.0, 0.2, 1.42)), "given", True)
+    tk.col(b, "metal", "scale", position.x - 0.25, position.x + 0.25, position.y - 0.25, position.y + 0.25, position.z, position.z + 1.45)
+
+
+def drawer_bank(b, part, center, yaw, rng, cols=4, rows=5, width=1.2, depth=0.45, height=1.0, wood="timber_beam"):
+    base = kit.turned(center, yaw)
+    hw = width * 0.5
+    hd = depth * 0.5
+    local_block(part, wood, base, -hw, hw, -hd + 0.02, hd, 0.0, height, 0.0, "board")
+    local_block(part, wood, base, -hw - 0.02, hw + 0.02, -hd - 0.02, hd, height, height + 0.035, 0.0, "board")
+    cw = (width - 0.06) / cols
+    rh = (height - 0.1) / rows
+    for c in range(cols):
+        for r in range(rows):
+            x0 = -hw + 0.03 + c * cw + 0.006
+            x1 = x0 + cw - 0.012
+            z0 = 0.07 + r * rh + 0.006
+            z1 = z0 + rh - 0.012
+            pull = rng.uniform(0.08, 0.3) if rng.random() < 0.18 else 0.0
+            if rng.random() < 0.06:
+                local_block(part, "soot", base, x0, x1, -hd + 0.019, -hd + 0.021, z0, z1)
+                continue
+            local_block(part, "floorboards", base, x0, x1, -hd + 0.002 - pull, -hd + 0.02 - pull, z0, z1, 0.0, "board")
+            local_block(part, "town_brass", base, (x0 + x1) * 0.5 - 0.02, (x0 + x1) * 0.5 + 0.02, -hd - 0.008 - pull, -hd + 0.002 - pull, (z0 + z1) * 0.5 - 0.008, (z0 + z1) * 0.5 + 0.008)
+    bd.footprint(b, "wood", "drawers", base, hw, hd, 0.0, height + 0.035)
+    return base @ V(0.0, 0.0, height + 0.035)
+
+
+def mortar(part, position, rng):
+    emit(part, bd.plain(kit.geo_lathe([(0.0, 0.0), (0.06, 0.0), (0.075, 0.05), (0.07, 0.08), (0.055, 0.08), (0.05, 0.03), (0.0, 0.025)], 8)), "ceramic", kit.Matrix.Translation(position), "texture", True)
+    rod(part, "ceramic", position + V(0.0, 0.0, 0.04), position + V(0.05, 0.02, 0.15), 0.012, 4)
+
+
+def gas_cylinder(part, position, rng, height=1.3, radius=0.11, name="town_metal", region="cream", tipped=False):
+    profile = [(0.0, 0.0), (radius, 0.0), (radius, height * 0.86), (radius * 0.45, height * 0.97), (radius * 0.2, height), (0.0, height)]
+    geo = tk.region_geo(kit.geo_lathe(profile, 8), name, region, height)
+    if tipped:
+        matrix = kit.Matrix.Translation(position + V(0.0, 0.0, radius)) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y') @ kit.Matrix.Translation(V(0.0, 0.0, -height * 0.5))
+    else:
+        matrix = kit.Matrix.Translation(position)
+    emit(part, geo, name, matrix, "texture", True)
+    emit(part, kit.geo_lathe([(0.0, height), (0.025, height), (0.025, height + 0.07), (0.0, height + 0.08)], 6), "town_brass", matrix, "given", True)
+
+
+def tyre_light(part, matrix, rng, radius=0.32, width=0.17, name="soot", segments=12):
+    tube = width * 0.5
+    ring = radius - tube
+    profile = [(ring + tube * math.cos(tau * k / 8.0 + math.pi * 0.125), tube * math.sin(tau * k / 8.0 + math.pi * 0.125)) for k in range(9)]
+    emit(part, kit.geo_lathe(profile, segments), name, matrix, "given", True)
+
+
+def tyre_stack(b, part, position, rng, count=4, radius=0.32, width=0.17, lean=None):
+    for k in range(count):
+        offset = V(rng.uniform(-0.04, 0.04), rng.uniform(-0.04, 0.04), width * 0.5 + k * width)
+        tyre_light(part, kit.Matrix.Translation(position + offset) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z'), rng, radius, width)
+    tk.col(b, "fabric", "tyres", position.x - radius, position.x + radius, position.y - radius, position.y + radius, position.z, position.z + count * width)
+
+
+def oil_drum(b, part, position, rng, region="red", tipped=False, height=0.88, radius=0.29, collide=True):
+    profile = [(0.0, 0.0), (radius - 0.01, 0.0), (radius, 0.02), (radius, height * 0.32), (radius + 0.012, height * 0.33), (radius, height * 0.34), (radius, height * 0.66), (radius + 0.012, height * 0.67), (radius, height * 0.68), (radius, height - 0.02), (radius - 0.01, height), (0.0, height)]
+    geo = tk.region_geo(kit.geo_lathe(profile, 12), "town_metal", region, height * 1.1)
+    if tipped:
+        matrix = kit.Matrix.Translation(position + V(0.0, 0.0, radius)) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y') @ kit.Matrix.Translation(V(0.0, 0.0, -height * 0.5))
+    else:
+        matrix = kit.turned(position, rng.uniform(0.0, tau))
+    emit(part, geo, "town_metal", matrix, "texture", True)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.03, 0.0), (0.03, 0.015), (0.0, 0.02)], 6), "rusty_metal", matrix @ kit.Matrix.Translation(V(radius * 0.55, 0.0, height)), "given", True)
+    if collide:
+        if tipped:
+            tk.col(b, "metal", "drum", position.x - height * 0.5, position.x + height * 0.5, position.y - height * 0.5, position.y + height * 0.5, position.z, position.z + radius * 2.0)
+        else:
+            tk.col(b, "metal", "drum", position.x - radius, position.x + radius, position.y - radius, position.y + radius, position.z, position.z + height)
+
+
+def clip_x(polygon, x_lo, x_hi):
+    result = list(polygon)
+    for limit, sign in ((x_lo, 1.0), (x_hi, -1.0)):
+        source = result
+        result = []
+        for index, current in enumerate(source):
+            previous = source[index - 1]
+            inside_now = (current[0] - limit) * sign >= 0.0
+            inside_before = (previous[0] - limit) * sign >= 0.0
+            if inside_now != inside_before:
+                t = (limit - previous[0]) / (current[0] - previous[0])
+                result.append((limit, previous[1] + (current[1] - previous[1]) * t))
+            if inside_now:
+                result.append(current)
+    return result
+
+
+def painted_long(part, region_key, matrix, x0, x1, y0, y1, z0, z1, step=0.8):
+    spans = [(min(x0, x1), max(x0, x1)), (min(y0, y1), max(y0, y1)), (min(z0, z1), max(z0, z1))]
+    axis = max(range(3), key=lambda k: spans[k][1] - spans[k][0])
+    lo, hi = spans[axis]
+    count = max(1, int(math.ceil((hi - lo) / step - 1e-6)))
+    for index in range(count):
+        piece = list(spans)
+        piece[axis] = (lo + (hi - lo) * index / count, lo + (hi - lo) * (index + 1) / count)
+        painted_box(part, region_key, matrix, piece[0][0], piece[0][1], piece[1][0], piece[1][1], piece[2][0], piece[2][1])
+
+
+def vintage_car(b, part, center, yaw, rng, region="blue", length=3.6, width=1.36, glass=True, collide=True):
+    base = kit.turned(center, yaw)
+    s = length / 3.6
+    r = 0.33 * s
+    half = width * 0.5
+    body = half - 0.13
+    for x in (1.12 * s, -1.08 * s):
+        for side in (-1.0, 1.0):
+            hub = base @ kit.Matrix.Translation(V(x, side * (half - 0.09), r)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X')
+            tyre_light(part, hub, rng, r, 0.15, "soot", 12)
+            emit(part, kit.geo_lathe([(0.0, -0.05), (r * 0.62, -0.05), (r * 0.62, 0.04), (r * 0.25, 0.06), (0.0, 0.065)], 8), "rusty_metal", hub, "given", True)
+    for side in (-1.0, 1.0):
+        local_block(part, "rusty_metal", base, -1.62 * s, 1.62 * s, side * 0.36 - 0.04, side * 0.36 + 0.04, r - 0.06, r + 0.06)
+    for x in (1.12 * s, -1.08 * s):
+        rod(part, "rusty_metal", base @ V(x, -half + 0.12, r), base @ V(x, half - 0.12, r), 0.03, 5)
+    outline = [(1.78 * s, 0.42 * s), (1.83 * s, 0.8 * s), (1.05 * s, 0.98 * s), (0.56 * s, 1.03 * s), (0.33 * s, 1.52 * s), (-0.95 * s, 1.55 * s), (-1.42 * s, 1.36 * s), (-1.78 * s, 0.96 * s), (-1.8 * s, 0.42 * s)]
+    for x_lo, x_hi in ((-1.9, -0.62), (-0.62, 0.62), (0.62, 1.9)):
+        middle = (x_lo + x_hi) * 0.5 * s
+        piece = [(x - middle, z) for x, z in clip_x(outline, x_lo * s, x_hi * s)]
+        if len(piece) < 3:
+            continue
+        geo = kit.geo_slab(V(0.0, 0.0, 0.0), V(1.0, 0.0, 0.0), V(0.0, 0.0, 1.0), V(0.0, -1.0, 0.0), piece, [], -body, body)
+        emit(part, tk.region_geo(geo, "town_metal", region, 1.6), "town_metal", base @ kit.Matrix.Translation(V(middle, 0.0, 0.0)), "texture")
+    if glass:
+        for side in (-1.0, 1.0):
+            for window in ([(0.46 * s, 1.08 * s), (0.3 * s, 1.44 * s), (-0.3 * s, 1.46 * s), (-0.3 * s, 1.08 * s)], [(-0.38 * s, 1.08 * s), (-0.38 * s, 1.46 * s), (-0.92 * s, 1.47 * s), (-1.3 * s, 1.3 * s), (-1.3 * s, 1.08 * s)]):
+                y0 = side * body
+                kit.prism(part, "glass_dirty", base, window, min(y0, y0 + side * 0.006), max(y0, y0 + side * 0.006))
+        bottom = V(0.555 * s, 0.0, 1.04 * s)
+        top = V(0.335 * s, 0.0, 1.5 * s)
+        direction = (top - bottom).normalized()
+        normal = V(direction.z, 0.0, -direction.x)
+        emit(part, kit.geo_box(0.008, body * 1.7, (top - bottom).length), "glass_dirty", base @ kit.place((top + bottom) * 0.5 + normal * 0.006, normal, direction), "box")
+    for side in (-1.0, 1.0):
+        y = side * (half - 0.09)
+        for x, front in ((1.12 * s, True), (-1.08 * s, False)):
+            arc = []
+            for k in range(7):
+                angle = math.pi * (0.05 + 0.9 * k / 6.0)
+                arc.append(V(math.cos(angle) * (r + 0.06), 0.0, r + math.sin(angle) * (r + 0.08)))
+            if front:
+                arc.append(V(-(r + 0.3), 0.0, 0.46 * s))
+            geo = kit.geo_tube(arc, [(-0.006, -0.11), (0.006, -0.11), (0.006, 0.11), (-0.006, 0.11)], True, V(0.0, 1.0, 0.0))
+            emit(part, tk.region_geo(geo, "town_metal", region, 1.4), "town_metal", base @ kit.Matrix.Translation(V(x, y, 0.0)), "texture", True)
+        local_block(part, "rusty_metal", base, -0.72 * s, 0.68 * s, min(side * body, side * (half - 0.02)), max(side * body, side * (half - 0.02)), 0.42 * s, 0.45 * s)
+    local_block(part, "rusty_metal", base, 1.83 * s, 1.87 * s, -0.3, 0.3, 0.48 * s, 0.95 * s)
+    for k in range(7):
+        y = -0.24 + k * 0.08
+        rod(part, "town_brass", base @ V(1.875 * s, y, 0.5 * s), base @ V(1.875 * s, y, 0.92 * s), 0.006, 3)
+    for side in (-1.0, 1.0):
+        lamp = base @ kit.Matrix.Translation(V(1.82 * s, side * 0.5, 0.98 * s)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y')
+        emit(part, kit.geo_lathe([(0.0, -0.08), (0.07, -0.06), (0.09, 0.0), (0.0, 0.01)], 8), "rusty_metal", lamp, "given", True)
+    for x in (1.95 * s, -1.9 * s):
+        rod(part, "rusty_metal", base @ V(x, -half + 0.05, 0.4 * s), base @ V(x, half - 0.05, 0.4 * s), 0.025, 5)
+    if glass:
+        lump(part, "leather_brown", base @ V(-0.5 * s, 0.0, 0.85 * s), (0.25, body * 0.85, 0.12), rng, 0.15, 1)
+        emit(part, kit.geo_lathe([(0.17, -0.01), (0.19, -0.01), (0.19, 0.01), (0.17, 0.01)], 10), "soot", base @ kit.Matrix.Translation(V(0.3 * s, 0.28, 1.05 * s)) @ kit.Matrix.Rotation(1.1, 4, 'Y'), "given", True)
+    if collide:
+        bd.footprint(b, "metal", "car", base, 1.9 * s, half, 0.15, 1.55 * s)
+    return base
+
+
+def four_post_lift(b, part, center, yaw, rng, length=4.4, gauge=1.25, height=1.7, region="red"):
+    base = kit.turned(center, yaw)
+    hl = length * 0.5
+    span = gauge * 0.5 + 0.38
+    for sx in (-1.0, 1.0):
+        for sy in (-1.0, 1.0):
+            x = sx * (hl + 0.14)
+            y = sy * span
+            painted_long(part, region, base, x - 0.09, x + 0.09, y - 0.09, y + 0.09, 0.0, height + 0.55, 0.6)
+            corner = base @ V(x, y, 0.0)
+            tk.col(b, "metal", "lift", corner.x - 0.1, corner.x + 0.1, corner.y - 0.1, corner.y + 0.1, center.z, center.z + height + 0.55)
+        painted_long(part, region, base, sx * (hl + 0.14) - 0.12, sx * (hl + 0.14) + 0.12, -span, span, height - 0.16, height, 0.7)
+    for sy in (-1.0, 1.0):
+        y = sy * gauge * 0.5
+        painted_long(part, region, base, -hl, hl, y - 0.17, y + 0.17, height - 0.06, height, 0.75)
+        local_block(part, "rusty_metal", base, -hl, hl, y - 0.17, y - 0.15, height, height + 0.04)
+        local_block(part, "rusty_metal", base, -hl, hl, y + 0.15, y + 0.17, height, height + 0.04)
+        flap = base @ kit.Matrix.Translation(V(hl, y, height)) @ kit.Matrix.Rotation(-1.25, 4, 'Y')
+        painted_box(part, region, flap, 0.0, 0.5, -0.16, 0.16, 0.0, 0.02)
+    painted_box(part, "cream", base, -hl - 0.36, -hl - 0.24, -span - 0.1, -span + 0.1, 0.9, 1.25)
+    corners = [base @ V(sx * (hl + 0.26), sy * (span + 0.1), 0.0) for sx in (-1, 1) for sy in (-1, 1)]
+    tk.col(b, "metal", "runways", min(c.x for c in corners), max(c.x for c in corners), min(c.y for c in corners), max(c.y for c in corners), center.z + height - 0.16, center.z + height + 0.04)
+    return base @ V(0.0, 0.0, height + 0.04)
+
+
+def engine_block(part, position, yaw, rng, region="green"):
+    base = kit.turned(position, yaw)
+    painted_box(part, region, base, -0.32, 0.32, -0.18, 0.18, 0.0, 0.32)
+    local_block(part, "rusty_metal", base, -0.3, 0.3, -0.13, 0.13, 0.32, 0.46, 0.01)
+    local_block(part, "soot", base, -0.36, 0.36, -0.2, 0.2, -0.12, 0.0)
+    emit(part, kit.geo_lathe([(0.0, -0.03), (0.17, -0.03), (0.17, 0.03), (0.0, 0.03)], 10), "rusty_metal", base @ kit.Matrix.Translation(V(-0.38, 0.0, 0.12)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y'), "given", True)
+    for k in range(4):
+        x = -0.22 + k * 0.15
+        rod(part, "rusty_metal", base @ V(x, -0.13, 0.36), base @ V(x, -0.3, 0.3), 0.022, 4)
+    rod(part, "rusty_metal", base @ V(-0.28, -0.3, 0.3), base @ V(0.25, -0.3, 0.3), 0.03, 5)
+
+
+def engine_hoist(b, part, clutter, position, yaw, rng, name="rusty_metal"):
+    base = kit.turned(position, yaw)
+    for sy in (-1.0, 1.0):
+        rod(part, name, base @ V(-0.6, sy * 0.35, 0.08), base @ V(0.9, sy * 0.25, 0.08), 0.03, 4)
+        emit(part, kit.geo_lathe([(0.0, -0.03), (0.06, -0.03), (0.06, 0.03), (0.0, 0.03)], 8), "soot", base @ kit.Matrix.Translation(V(0.9, sy * 0.25, 0.06)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X'), "given", True)
+    rod(part, name, base @ V(-0.6, -0.35, 0.08), base @ V(-0.6, 0.35, 0.08), 0.03, 4)
+    rod(part, name, base @ V(-0.6, 0.0, 0.08), base @ V(-0.5, 0.0, 1.65), 0.04, 5)
+    rod(part, name, base @ V(-0.75, 0.0, 1.55), base @ V(0.75, 0.0, 1.85), 0.035, 5)
+    rod(part, name, base @ V(-0.55, 0.0, 0.5), base @ V(-0.2, 0.0, 1.62), 0.025, 4)
+    chain = [base @ V(0.75, 0.0, 1.83 - 0.12 * t) for t in range(6)]
+    emit(clutter, kit.geo_tube(chain, kit.circle(0.008, 4), True), name, None, "given", True)
+    rod(clutter, name, base @ V(0.75, 0.0, 1.13), base @ V(0.55, 0.0, 0.85), 0.006, 3)
+    rod(clutter, name, base @ V(0.75, 0.0, 1.13), base @ V(0.95, 0.0, 0.85), 0.006, 3)
+    engine_block(clutter, base @ V(0.75, 0.0, 0.5), yaw + 0.3, rng)
+    bd.footprint(b, "metal", "hoist", base, 0.95, 0.4, 0.0, 1.9)
+
+
+def tool_board(part, center, normal, width, height, rng, board="timber_planks_weathered", metal="rusty_metal"):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    hw = width * 0.5
+    hh = height * 0.5
+    local_block(part, board, matrix, -hw, hw, -0.02, 0.0, -hh, hh, 0.0, "board")
+    x = -hw + 0.1
+    while x < hw - 0.08:
+        z = rng.uniform(-hh + 0.15, hh - 0.2)
+        kind = rng.random()
+        if kind < 0.18:
+            x += 0.12
+            local_block(part, "soot", matrix, x - 0.03, x + 0.03, -0.021, -0.02, z - 0.12, z + 0.12)
+            continue
+        rod(part, metal, matrix @ V(x, -0.02, z + 0.16), matrix @ V(x, -0.06, z + 0.16), 0.004, 3)
+        if kind < 0.5:
+            rod(part, metal, matrix @ V(x, -0.04, z + 0.14), matrix @ V(x + rng.uniform(-0.02, 0.02), -0.04, z - 0.12), 0.008, 4)
+            local_block(part, metal, matrix, x - 0.025, x + 0.025, -0.05, -0.03, z + 0.1, z + 0.16)
+        elif kind < 0.75:
+            rod(part, "timber_beam", matrix @ V(x, -0.04, z + 0.14), matrix @ V(x, -0.04, z - 0.14), 0.014, 4)
+            local_block(part, metal, matrix, x - 0.05, x + 0.05, -0.06, -0.025, z + 0.1, z + 0.15)
+        else:
+            local_block(part, metal, matrix, x - 0.03, x + 0.03, -0.035, -0.03, z - 0.2, z + 0.14)
+            local_block(part, "timber_beam", matrix, x - 0.04, x + 0.04, -0.05, -0.02, z + 0.12, z + 0.2)
+        x += rng.uniform(0.1, 0.17)
+
+
+def axle_stand(part, position, rng, height=0.45, name="town_metal"):
+    for k in range(3):
+        angle = tau * k / 3 + 0.3
+        rod(part, "rusty_metal", position + V(math.cos(angle) * 0.18, math.sin(angle) * 0.18, 0.0), position + V(0.0, 0.0, height * 0.75), 0.014, 4)
+    rod(part, "rusty_metal", position + V(0.0, 0.0, height * 0.5), position + V(0.0, 0.0, height), 0.022, 5)
+    local_block(part, "rusty_metal", kit.Matrix.Translation(position), -0.05, 0.05, -0.03, 0.03, height, height + 0.04)
+
+
+def trolley_jack(part, position, yaw, rng):
+    base = kit.turned(position, yaw)
+    painted_box(part, "red", base, -0.35, 0.35, -0.13, 0.13, 0.04, 0.16)
+    for sx in (-0.3, 0.28):
+        for sy in (-0.13, 0.13):
+            emit(part, kit.geo_lathe([(0.0, -0.015), (0.04, -0.015), (0.04, 0.015), (0.0, 0.015)], 6), "soot", base @ kit.Matrix.Translation(V(sx, sy, 0.04)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X'), "given", True)
+    rod(part, "rusty_metal", base @ V(0.3, 0.0, 0.14), base @ V(0.38, 0.0, 0.26), 0.03, 5)
+    rod(part, "rusty_metal", base @ V(-0.35, 0.0, 0.12), base @ V(-1.0, 0.0, 0.72), 0.014, 4)
+
+
+def workshop_shade(b, part, position, rng, drop=0.9, region="green", kind="warm"):
+    bottom = position - V(rng.uniform(-0.02, 0.02), rng.uniform(-0.02, 0.02), drop)
+    rod(part, "soot", position, bottom + V(0.0, 0.0, 0.1), 0.005, 3)
+    geo = tk.region_geo(kit.geo_lathe([(0.03, 0.1), (0.06, 0.08), (0.25, -0.03), (0.24, -0.04), (0.055, 0.07)], 10), "town_metal", region, 0.5)
+    emit(part, geo, "town_metal", kit.Matrix.Translation(bottom), "texture", True)
+    emit(part, kit.geo_lathe([(0.0, 0.05), (0.025, 0.04), (0.03, -0.02), (0.0, -0.05)], 6), "glass_dirty", kit.Matrix.Translation(bottom), "given", True)
+    b.light(kind, bottom - V(0.0, 0.0, 0.12))
+
+
+def bulb(b, part, position, rng, drop=0.5, kind="warm", flex="soot"):
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.05, 0.0), (0.03, -0.025), (0.0, -0.03)], 6), "plaster_interior", kit.Matrix.Translation(position), "given", True)
+    bottom = position - V(rng.uniform(-0.015, 0.015), rng.uniform(-0.015, 0.015), drop)
+    rod(part, flex, position - V(0.0, 0.0, 0.025), bottom + V(0.0, 0.0, 0.03), 0.004, 3)
+    emit(part, kit.geo_lathe([(0.0, 0.03), (0.016, 0.03), (0.016, 0.0), (0.03, -0.035), (0.022, -0.075), (0.0, -0.085)], 6), "glass_dirty", kit.Matrix.Translation(bottom), "given", True)
+    b.light(kind, bottom - V(0.0, 0.0, 0.08))
+
+
+def cage_lamp(b, part, position, rng, kind="cold", name="rusty_metal"):
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.09, 0.0), (0.09, -0.03), (0.0, -0.03)], 8), name, kit.Matrix.Translation(position), "given", True)
+    emit(part, kit.geo_lathe([(0.075, -0.03), (0.08, -0.08), (0.06, -0.15), (0.0, -0.17)], 6), "glass_dirty", kit.Matrix.Translation(position), "given", True)
+    for k in range(4):
+        angle = tau * k / 4 + 0.4
+        rod(part, name, position + V(math.cos(angle) * 0.085, math.sin(angle) * 0.085, -0.03), position + V(math.cos(angle) * 0.02, math.sin(angle) * 0.02, -0.19), 0.004, 3)
+    b.light(kind, position - V(0.0, 0.0, 0.22))
+
+
+def axis_of(matrix, local):
+    return (matrix.to_3x3() @ local).normalized()
+
+
+def school_desk(b, part, position, yaw, rng, fallen=False, wood="timber_beam", iron="town_paint_black"):
+    base = kit.turned(position, yaw)
+    if fallen:
+        base = base @ kit.Matrix.Translation(V(0.0, -0.34, 0.0)) @ kit.Matrix.Rotation(1.42, 4, 'X') @ kit.Matrix.Translation(V(0.0, 0.34, 0.0))
+    hw = 0.55
+    for sx in (-hw + 0.05, hw - 0.05):
+        local_block(part, iron, base, sx - 0.02, sx + 0.02, -0.34, 0.42, 0.0, 0.04)
+        local_block(part, iron, base, sx - 0.015, sx + 0.015, -0.22, -0.18, 0.04, 0.68)
+        local_block(part, iron, base, sx - 0.015, sx + 0.015, 0.28, 0.32, 0.04, 0.42)
+        local_block(part, iron, base, sx - 0.015, sx + 0.015, 0.37, 0.41, 0.42, 0.76)
+    lid = base @ kit.Matrix.Translation(V(0.0, -0.17, 0.7)) @ kit.Matrix.Rotation(-0.17, 4, 'X')
+    local_block(part, wood, lid, -hw, hw, -0.2, 0.2, 0.0, 0.03, 0.0, "board")
+    local_block(part, wood, base, -hw, hw, -0.42, -0.36, 0.66, 0.76, 0.0, "board")
+    local_block(part, wood, base, -hw + 0.03, hw - 0.03, -0.36, -0.04, 0.5, 0.52, 0.0, "board")
+    local_block(part, wood, base, -hw, hw, 0.17, 0.43, 0.42, 0.45, 0.0, "board")
+    local_block(part, wood, base, -hw, hw, 0.38, 0.41, 0.56, 0.74, 0.0, "board")
+    for sx in (-0.26, 0.26):
+        emit(part, kit.geo_lathe([(0.0, 0.0), (0.022, 0.0), (0.022, 0.012), (0.0, 0.014)], 6), "ceramic", base @ kit.Matrix.Translation(V(sx, -0.39, 0.76)), "given", True)
+    if not fallen:
+        bd.footprint(b, "wood", "desk", base @ kit.Matrix.Translation(V(0.0, 0.0, 0.0)), hw, 0.42, 0.0, 0.76)
+    return base
+
+
+def chair_stack(b, part, position, yaw, rng, count=5, name="timber_beam", seat="timber_planks_weathered"):
+    for k in range(count):
+        chair_light(part, position + V(rng.uniform(-0.02, 0.02), rng.uniform(-0.02, 0.02), k * 0.12), yaw + rng.uniform(-0.07, 0.07), rng, name, seat)
+    tk.col(b, "wood", "chairs", position.x - 0.25, position.x + 0.25, position.y - 0.25, position.y + 0.25, position.z, position.z + 0.95 + (count - 1) * 0.12)
+
+
+def trestle_leaning(part, foot, direction, rng, length=1.8, width=0.7, lean=0.25, wood="timber_planks_weathered", legs="timber_beam"):
+    d = direction.normalized()
+    side = V(-d.y, d.x, 0.0)
+    matrix = kit.place(foot + side * 0.0, d, up)
+    tilt = kit.Matrix.Rotation(-lean, 4, 'X')
+    board = matrix @ tilt
+    local_block(part, wood, board, 0.0, length, -0.02, 0.02, 0.0, width, 0.0, "board")
+    for x in (0.25, length - 0.25):
+        local_block(part, legs, board, x - 0.03, x + 0.03, 0.02, 0.06, 0.08, width - 0.08)
+
+
+def tea_urn(part, position, rng, name="town_brass"):
+    matrix = kit.turned(position, rng.uniform(0.0, tau))
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.16, 0.0), (0.17, 0.04), (0.17, 0.42), (0.14, 0.47), (0.05, 0.5), (0.0, 0.52)], 10), name, matrix, "given", True)
+    rod(part, name, matrix @ V(0.15, 0.0, 0.12), matrix @ V(0.24, 0.0, 0.12), 0.015, 5)
+    rod(part, "timber_beam", matrix @ V(0.24, 0.0, 0.12), matrix @ V(0.24, 0.0, 0.17), 0.012, 4)
+    for side in (-1.0, 1.0):
+        rod(part, name, matrix @ V(0.0, side * 0.17, 0.38), matrix @ V(0.0, side * 0.22, 0.36), 0.01, 4)
+
+
+def blackboard(part, center, normal, width, height, rng, frame_name="timber_beam"):
+    n = normal.normalized()
+    matrix = wall_matrix(center, n)
+    hw = width * 0.5
+    hh = height * 0.5
+    local_block(part, frame_name, matrix, -hw - 0.05, hw + 0.05, -0.02, 0.0, -hh - 0.05, hh + 0.05)
+    tk.atlas_panel(part, "town_print", center + n * 0.021, n, width, height, pr("chalkboard"), 0.0, 0.0)
+    local_block(part, frame_name, matrix, -hw, hw, -0.08, -0.02, -hh - 0.05, -hh - 0.02)
+    for k in range(rng.randint(1, 3)):
+        local_block(part, "ceramic", matrix, -hw * 0.5 + k * 0.17, -hw * 0.5 + k * 0.17 + 0.07, -0.06, -0.05, -hh - 0.02, -hh - 0.008)
+    return matrix
+
+
+def cooker_light(b, part, position, yaw, rng, region="cream"):
+    base = kit.turned(position, yaw)
+    painted_box(part, region, base, -0.28, 0.28, -0.26, 0.26, 0.1, 0.88)
+    local_block(part, "soot", base, -0.23, 0.23, -0.268, -0.26, 0.2, 0.62)
+    local_block(part, "rusty_metal", base, -0.27, 0.27, -0.25, 0.25, 0.88, 0.9)
+    for sx in (-0.13, 0.13):
+        for sy in (-0.11, 0.11):
+            local_block(part, "soot", base, sx - 0.07, sx + 0.07, sy - 0.07, sy + 0.07, 0.9, 0.915)
+    painted_box(part, region, base, -0.28, 0.28, 0.2, 0.26, 0.9, 1.3)
+    for sx in (-0.24, 0.24):
+        local_block(part, "rusty_metal", base, sx - 0.02, sx + 0.02, -0.22, 0.22, 0.0, 0.1)
+    rod(part, "town_brass", base @ V(-0.2, -0.29, 0.66), base @ V(0.2, -0.29, 0.66), 0.008, 4)
+    bd.footprint(b, "metal", "cooker", base, 0.28, 0.26, 0.0, 1.3)
+    return base
+
+
+def petrol_pump(b, part, position, yaw, rng, region="red"):
+    base = kit.turned(position, yaw)
+    local_block(part, "concrete", base, -0.27, 0.27, -0.25, 0.25, 0.0, 0.07)
+    painted_long(part, region, base, -0.2, 0.2, -0.17, 0.17, 0.07, 1.36, 0.7)
+    painted_box(part, region, base, -0.24, 0.24, -0.2, 0.2, 1.36, 1.84)
+    local_block(part, "rusty_metal", base, -0.22, 0.22, -0.18, 0.18, 1.84, 1.88)
+    local_block(part, "rusty_metal", base, -0.04, 0.04, -0.04, 0.04, 1.88, 1.93)
+    for side in (-1.0, 1.0):
+        n = axis_of(base, V(0.0, side, 0.0))
+        face = base @ V(0.0, side * 0.2, 1.6)
+        emit(part, kit.geo_lathe([(0.0, 0.0), (0.19, 0.0), (0.19, 0.02), (0.0, 0.02)], 16), "rusty_metal", kit.place(face, n.orthogonal(), n), "given", True)
+        disc(part, "town_print", face + n * 0.021, n, 0.17, pr("clock", 2.0), 16)
+        tk.atlas_panel(part, "town_signs", base @ V(0.0, side * 0.17, 1.18), n, 0.34, 0.068, sg("pump_plate"), 0.0, 0.003)
+        local_block(part, "glass_dirty", base, -0.12, 0.12, side * 0.17 - 0.003, side * 0.17 + 0.003, 0.62, 0.98)
+    globe = base @ kit.Matrix.Translation(V(0.0, 0.0, 2.1)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X')
+    emit(part, kit.geo_lathe([(0.0, -0.06), (0.15, -0.06), (0.17, -0.04), (0.17, 0.04), (0.15, 0.06), (0.0, 0.06)], 14), "ceramic", globe, "given", True)
+    for side in (-1.0, 1.0):
+        disc(part, "town_signs", base @ V(0.0, side * 0.06, 2.1), axis_of(base, V(0.0, side, 0.0)), 0.145, sg("fuel_globe"), 14)
+    hose = [base @ V(0.2, 0.0, 1.28), base @ V(0.33, 0.02, 1.02), base @ V(0.42, 0.04, 0.62), base @ V(0.37, 0.0, 0.42), base @ V(0.29, -0.04, 0.58), base @ V(0.25, -0.07, 0.95)]
+    emit(part, kit.geo_tube(hose, kit.circle(0.018, 6), True), "soot", None, "given", True)
+    local_block(part, "rusty_metal", base, 0.2, 0.25, -0.11, -0.03, 0.95, 1.12)
+    rod(part, "town_brass", base @ V(0.25, -0.07, 0.95), base @ V(0.26, -0.07, 1.16), 0.02, 6)
+    rod(part, "town_brass", base @ V(0.26, -0.07, 1.16), base @ V(0.32, -0.09, 1.22), 0.01, 5)
+    rod(part, "rusty_metal", base @ V(-0.2, 0.0, 1.0), base @ V(-0.3, 0.0, 1.0), 0.015, 5)
+    rod(part, "rusty_metal", base @ V(-0.3, 0.0, 1.0), base @ V(-0.3, 0.0, 0.84), 0.015, 5)
+    bd.footprint(b, "metal", "pump", base, 0.27, 0.25, 0.0, 2.27)
+    return base
+
+
+def air_tower(b, part, position, yaw, rng, region="cream"):
+    base = kit.turned(position, yaw)
+    local_block(part, "concrete", base, -0.18, 0.18, -0.18, 0.18, 0.0, 0.06)
+    painted_long(part, region, base, -0.07, 0.07, -0.07, 0.07, 0.06, 1.5, 0.75)
+    n = axis_of(base, V(0.0, -1.0, 0.0))
+    head = base @ V(0.0, -0.08, 1.3)
+    emit(part, kit.geo_lathe([(0.0, 0.0), (0.13, 0.0), (0.13, 0.05), (0.0, 0.05)], 14), "rusty_metal", kit.place(head, n.orthogonal(), n), "given", True)
+    disc(part, "town_print", head + n * 0.051, n, 0.11, pr("clock", 2.0), 14)
+    tyre_light(part, base @ kit.Matrix.Translation(V(0.0, 0.1, 0.95)) @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'X'), rng, 0.17, 0.03, "soot", 10)
+    rod(part, "rusty_metal", base @ V(0.0, 0.07, 1.1), base @ V(0.0, 0.12, 1.12), 0.012, 4)
+    rod(part, "soot", base @ V(0.1, 0.1, 0.8), base @ V(0.16, 0.05, 0.35), 0.012, 5)
+    rod(part, "town_brass", base @ V(0.16, 0.05, 0.35), base @ V(0.17, 0.03, 0.25), 0.016, 5)
+    bd.footprint(b, "metal", "air", base, 0.18, 0.18, 0.0, 1.5)
+    return base
+
+
+def chest_freezer(b, part, center, yaw, rng, width=1.1, depth=0.62, height=0.86, open_angle=0.45):
+    base = kit.turned(center, yaw)
+    hw = width * 0.5
+    hd = depth * 0.5
+    local_block(part, "soot", base, -hw + 0.04, hw - 0.04, -hd + 0.04, hd - 0.04, 0.0, 0.08)
+    painted_box(part, "cream", base, -hw, hw, -hd, hd, 0.08, height)
+    local_block(part, "soot", base, -hw + 0.05, hw - 0.05, -hd + 0.05, hd - 0.05, height, height + 0.002)
+    lid = base @ kit.Matrix.Translation(V(0.0, hd, height)) @ kit.Matrix.Rotation(-open_angle, 4, 'X')
+    painted_box(part, "cream", lid, -hw, hw, -depth, 0.0, 0.0, 0.07)
+    local_block(part, "rusty_metal", base, -0.1, 0.1, -hd - 0.02, -hd, height - 0.1, height - 0.04)
+    bd.footprint(b, "metal", "freezer", base, hw, hd, 0.0, height)
+    return base @ V(0.0, 0.0, height)
+
+
+def oil_bottle(part, position, rng, lying=False):
+    h = rng.uniform(0.3, 0.34)
+    profile = [(0.0, 0.0), (0.042, 0.0), (0.045, 0.01), (0.045, h * 0.62), (0.02, h * 0.8), (0.011, h * 0.97), (0.0, h)]
+    if lying:
+        matrix = kit.Matrix.Translation(position + V(0.0, 0.0, 0.045)) @ kit.Matrix.Rotation(rng.uniform(0.0, tau), 4, 'Z') @ kit.Matrix.Rotation(math.pi * 0.5, 4, 'Y') @ kit.Matrix.Translation(V(0.0, 0.0, -h * 0.5))
+    else:
+        matrix = kit.turned(position, rng.uniform(0.0, tau))
+    emit(part, kit.geo_lathe(profile, 8), "glass_dirty", matrix, "given", True)
+    emit(part, kit.geo_lathe([(0.0, h - 0.01), (0.016, h - 0.01), (0.012, h + 0.05), (0.0, h + 0.06)], 6), "town_brass", matrix, "given", True)
+
+
+def oil_rack(b, part, clutter, position, yaw, rng, count=4, fill=0.75):
+    base = kit.turned(position, yaw)
+    hw = (0.16 * count + 0.08) * 0.5
+    for sx in (-hw, hw):
+        local_block(part, "rusty_metal", base, sx - 0.015, sx + 0.015, -0.12, 0.12, 0.0, 1.25)
+    for z in (0.35, 0.8):
+        local_block(part, "rusty_metal", base, -hw, hw, -0.12, 0.12, z - 0.02, z)
+        for k in range(count):
+            if rng.random() < fill:
+                oil_bottle(clutter, base @ V(-hw + 0.08 + 0.16 * k + rng.uniform(-0.01, 0.01), rng.uniform(-0.02, 0.02), z), rng)
+    painted_box(part, "red", base, -hw - 0.03, hw + 0.03, -0.02, 0.02, 1.0, 1.25)
+    for side in (-1.0, 1.0):
+        tk.atlas_panel(part, "town_signs", base @ V(0.0, side * 0.021, 1.125), axis_of(base, V(0.0, side, 0.0)), hw * 1.9, hw * 0.475, sg("fuel_board"), 0.0, 0.002)
+    if rng.random() < 0.8:
+        oil_bottle(clutter, base @ V(rng.uniform(-0.3, 0.3), -0.3, 0.0), rng, True)
+    bd.footprint(b, "metal", "rack", base, hw + 0.02, 0.12, 0.0, 1.25)
+    return base

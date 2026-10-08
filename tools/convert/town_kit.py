@@ -1037,6 +1037,105 @@ def weeds_line(part, a, b_point, rng, count, height=(0.15, 0.45)):
             kit.grass_tuft(part, p, rng, height, (4, 9), 0.06)
 
 
+def partition(b, parts, origin, normal, a0, a1, z0, z1, thickness, doors, tag, surface="wood", name="plaster_interior"):
+    frame = kit.plane(origin, normal)
+    notches = sorted((d[0], d[1], d[3]) for d in doors)
+    kit.wall(parts["interior"], name, frame, kit.notched(a0, a1, z0, z1, notches) if notches else kit.rect(a0, a1, z0, z1), [], thickness)
+    kit.wall_boxes(b, surface, tag, frame, a0, a1, z0, z1, thickness, doors)
+    return frame
+
+
+def quoins_light(part, name, corner, ua, ub, z0, z1, rng, protrude=0.04, joint=0.012):
+    z = z0
+    course = 0
+    while z < z1 - 0.1:
+        h = rng.uniform(0.26, 0.34)
+        if z + h > z1 - 0.12:
+            h = z1 - z
+        la = rng.uniform(0.42, 0.6) if course % 2 == 0 else rng.uniform(0.2, 0.3)
+        lb = rng.uniform(0.2, 0.3) if course % 2 == 0 else rng.uniform(0.42, 0.6)
+        p = protrude * rng.uniform(0.75, 1.2)
+        corners = [corner + ua * s + ub * t for s in (-p, la) for t in (-p, lb)]
+        block(part, name, V(min(q.x for q in corners), min(q.y for q in corners), z + joint * 0.5), V(max(q.x for q in corners), max(q.y for q in corners), z + h - joint * 0.5))
+        z += h
+        course += 1
+
+
+def corrugated_slope(part, gable, side, y0, y1, rng, sheet=0.9, missing=0.05, glazed=(), name="corrugated_rusty", waves=6.0, overhang=0.12, glass="glass_dirty"):
+    across = V(0.0, -side, 0.0)
+    along = gable.upslope(side)
+    length = gable.run + overhang
+    y = y0
+    while y < y1 - 0.05:
+        w = min(sheet, y1 - y)
+        middle = y + w * 0.5
+        if any(g0 < middle < g1 for g0, g1 in glazed):
+            center = gable.point(side, middle, length * 0.5 - overhang, 0.014)
+            emit(part, kit.geo_box(w + 0.04, length, 0.006), glass, kit.place(center, V(0.0, 1.0, 0.0), gable.normal(side)), "box")
+            y += w
+            continue
+        if rng.random() < missing:
+            y += w
+            continue
+        start = y if across.y > 0.0 else y + w + 0.04
+        origin = gable.point(side, start, -overhang, 0.012 + rng.uniform(0.0, 0.006))
+        kit.corrugated_sheet(part, origin, across, along, w + 0.04, length, rng, name, 0.012, waves, 4, 0.0015, rng.uniform(0.0, 0.03), 1, rng.uniform(0.0, 0.1), rng.uniform(-0.02, 0.02))
+        y += w
+
+
+def corrugated_ygable(b, parts, gable, rng, sides=(-1.0, 1.0), sheet=0.9, missing=0.05, glazed=None, surface="metal", purlins=3, name="corrugated_rusty"):
+    roof = parts["roof"]
+    for side in sides:
+        corrugated_slope(roof, gable, side, gable.x0, gable.x1, rng, sheet, missing, (glazed or {}).get(side, ()), name)
+        for k in range(purlins):
+            d = gable.run * (k + 0.5) / purlins
+            kit.member(roof, "rusty_metal", gable.point(side, gable.x0 + 0.05, d, -0.06), gable.point(side, gable.x1 - 0.05, d, -0.06), 0.06, 0.1, gable.normal(side), 0.0, "box")
+        if side > 0:
+            b.ramp("px", surface, "roof", V(gable.origin_x - gable.edge, gable.x0, gable.eave_top), V(gable.origin_x, gable.x1, gable.ridge_top))
+        else:
+            b.ramp("nx", surface, "roof", V(gable.origin_x, gable.x0, gable.eave_top), V(gable.origin_x + gable.edge, gable.x1, gable.ridge_top))
+    for side in sides:
+        kit.member(roof, name, gable.point(side, gable.x0, gable.run - 0.12, 0.035), gable.point(side, gable.x1, gable.run - 0.12, 0.035), 0.3, 0.02, gable.normal(side), 0.0, "box")
+
+
+def gable_skin_y(part, frame, gable, a0, a1, z_low, openings, rng, patches=4, name="render_white", thickness=0.02, depth=0.08, flip=False):
+    top = lambda a: gable.height(-a if flip else a, depth)
+    doors = sorted(o for o in openings if o[2] <= z_low + 0.05)
+    holes = [kit.rect(*o) for o in openings if o[2] > z_low + 0.05]
+    outline = [(a0, z_low)]
+    for d in doors:
+        outline += [(d[0], z_low), (d[0], d[3]), (d[1], d[3]), (d[1], z_low)]
+    apex = -gable.origin_x if flip else gable.origin_x
+    outline += [(a1, z_low), (a1, top(a1))]
+    if a0 < apex < a1:
+        outline.append((apex, top(apex)))
+    outline.append((a0, top(a0)))
+    blocked = holes + [kit.rect(d[0] - 0.08, d[1] + 0.08, z_low, d[3] + 0.08) for d in doors]
+    blobs = scatter_light((a0 + 0.1, a1 - 0.1, z_low + 0.2, min(top(a0), top(a1)) - 0.1), blocked, patches, (0.12, 0.42), rng, (0.5, 1.3), None, 11)
+    kit.skin(part, name, frame, outline, holes + blobs, thickness)
+
+
+def gable_cols_y(b, tag, y0, y1, gable, base, steps=4, surface="rock"):
+    for index in range(steps):
+        z0 = base + (gable.ridge_top - base) * index / steps
+        z1 = base + (gable.ridge_top - base) * (index + 1) / steps
+        half = (gable.ridge_top - z1 - 0.05) / gable.tan
+        if half > 0.05:
+            b.col(surface, tag, V(gable.origin_x - half, y0, z0), V(gable.origin_x + half, y1, z1))
+
+
+def gable_wall_y(gable, half, depth=0.05):
+    return [(-half, -1.5), (half, -1.5), (half, gable.height(half, depth)), (0.0, gable.height(0.0, depth)), (-half, gable.height(-half, depth))]
+
+
+def well_rail(b, part, well, z, rng, sides, wood="timber_beam", paint="painted_wood_white", height=0.92, spacing=0.12):
+    x0, x1, y0, y1 = well
+    edges = {"left": (V(x0, y0, z), V(x0, y1, z)), "right": (V(x1, y0, z), V(x1, y1, z)), "front": (V(x0, y0, z), V(x1, y0, z)), "back": (V(x0, y1, z), V(x1, y1, z))}
+    for side in sides:
+        a, c = edges[side]
+        bd.balustrade(b, part, a, c, rng, height, spacing, wood, paint, 0.1, (True, True), True, "well")
+
+
 def pendant(b, part, position, rng, shade="town_metal", drop=0.45, kind="warm", segments=10):
     rose = position
     emit(part, kit.geo_lathe([(0.0, 0.0), (0.07, 0.0), (0.03, -0.03), (0.0, -0.035)], max(6, segments - 2)), "plaster_interior", kit.Matrix.Translation(rose), "given", True)
