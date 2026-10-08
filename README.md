@@ -19,6 +19,8 @@ You wake up on the shore of a large abandoned island with nothing but your hands
 | ![A red deer stag and hinds grazing](docs/screenshots/deer_herd.jpg) | ![Wild horses on the dunes](docs/screenshots/wild_horses.jpg) |
 | ![Wild boar rooting in a woodland clearing](docs/screenshots/wild_boar.jpg) | ![Carving a stag after a heart shot](docs/screenshots/carving_stag.jpg) |
 | ![Carrying a rifle at low ready](docs/screenshots/rifle_carry.jpg) | ![A school of mackerel offshore](docs/screenshots/mackerel_school.jpg) |
+| ![Volumetric clouds over the High Street in Saint Aubin](docs/screenshots/clouds_high_street.jpg) | ![Cloud shadows drifting over the fields around Saint Aubin](docs/screenshots/cloud_shadows.jpg) |
+| ![A sandbag checkpoint at the south end of Saint Aubin](docs/screenshots/town_checkpoint.jpg) | ![Evening sun over the terraces of Saint Aubin](docs/screenshots/town_evening.jpg) |
 
 These shots still show the old placeholder train; the Blender-built locomotive, wagons and coach have replaced it in the game since. More screenshots will be added as the world fills in.
 
@@ -86,25 +88,25 @@ Counted on 8 October 2026. Build output, the portable Blender install and binary
 
 | Language | Files | Lines |
 |---|---:|---:|
-| C++ source (.cpp) | 78 | 47,906 |
-| C++ headers (.hpp) | 68 | 10,936 |
-| HLSL shaders | 18 | 3,852 |
-| Python asset tools | 88 | 52,576 |
+| C++ source (.cpp) | 79 | 48,277 |
+| C++ headers (.hpp) | 69 | 11,092 |
+| HLSL shaders | 20 | 4,352 |
+| Python asset tools | 94 | 57,323 |
 | Batch | 1 | 135 |
-| **Total** | **253** | **115,405** |
+| **Total** | **263** | **121,179** |
 
 | Part of the game | Files | Lines of C++ |
 |---|---:|---:|
-| Gameplay (`game`) | 46 | 18,982 |
-| Engine core (`core`) | 8 | 10,100 |
-| Renderer (`render`) | 48 | 9,290 |
+| Gameplay (`game`) | 46 | 19,027 |
+| Engine core (`core`) | 8 | 10,211 |
+| Renderer (`render`) | 50 | 9,602 |
 | Asset baker (`tools/baker`) | 15 | 7,215 |
-| Networking (`net`) | 12 | 6,607 |
-| Interface (`ui`) | 8 | 4,647 |
+| Networking (`net`) | 12 | 6,663 |
+| Interface (`ui`) | 8 | 4,649 |
 | Audio (`audio`) | 2 | 1,238 |
 | Utilities (`utils`) | 4 | 610 |
 
-Other numbers: about 290 texture sets, 281 sounds, 2 kinds of vehicle, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 54 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
+Other numbers: about 290 texture sets, 281 sounds, 2 kinds of vehicle, 13 landmarks, 5 stations, 4 level crossings, 10 km of railway, 8 roads and tracks, 7 kinds of tree, about 130 animals in 31 herds plus some 430 birds and fish, 55 settings and 17 rebindable keys, 60 Hz simulation, up to 500 players per server.
 
 ## Building
 
