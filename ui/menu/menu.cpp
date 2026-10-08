@@ -143,6 +143,7 @@ namespace zp
 		renderer.settings.ambient_occlusion = occlusion_levels[std::min(user.ambient_occlusion, static_cast<std::uint32_t>(std::size(occlusion_levels)) - 1u)];
 		renderer.settings.reflections = user.reflections ? static_cast<std::uint32_t>(structures::quality_high) : 0u;
 		renderer.settings.volumetrics = user.light_shafts ? static_cast<std::uint32_t>(structures::quality_high) : 0u;
+		renderer.settings.clouds = user.clouds ? (user.quality <= structures::quality_ultra ? std::max(user.quality, static_cast<std::uint32_t>(structures::quality_medium)) : static_cast<std::uint32_t>(structures::quality_high)) : 0u;
 		renderer.settings.anisotropy = 2u << std::min(user.texture_filter, 3u);
 		renderer.settings.bloom = user.bloom;
 		renderer.settings.motion_blur = user.motion_blur;
@@ -239,6 +240,7 @@ namespace zp
 		user.ambient_occlusion = std::min(step, 3u);
 		user.reflections = step >= 2u ? 1u : 0u;
 		user.light_shafts = step >= 2u ? 1u : 0u;
+		user.clouds = step >= 1u ? 1u : 0u;
 		user.texture_filter = std::min(step + 1u, 3u);
 		user.vegetation = step;
 		user.grass = step;
