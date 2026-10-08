@@ -581,7 +581,7 @@ namespace zp
 		const auto twist_pitch{ std::clamp(actor.look_pitch + actor.hurt * 0.4f, -actor_twist_pitch_limit, actor_twist_pitch_limit) };
 		const auto fallen{ actor.dead ? std::min(1.0f, actor.death * actor.death * 2.6f) : 0.0f };
 
-		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data(), actor.holding ? actor.blade : 0.0f, actor.seated ? 1.0f : 0.0f);
+		characters.palette(character, locomotion, twist_yaw, twist_pitch, actor.palette.data(), actor.holding ? actor.blade : 0.0f, actor.seated && actor.mounted == false ? 1.0f : 0.0f, actor.seated && actor.mounted ? 1.0f : 0.0f);
 
 		if (actor.holding)
 		{
