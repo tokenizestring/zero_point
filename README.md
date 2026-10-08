@@ -37,7 +37,7 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Day and night cycle with a procedural sky, weather (overcast, rain, storms with lightning), an ocean you can swim and dive in
 - Volumetric clouds that drift with the wind, glow gold at sunrise and sunset, let sunbeams through their gaps and cast moving shadows over the land and the sea
 - Buildings modelled in Blender with interiors, collision and loot spots
-- Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a war memorial, market stalls, a horse trough, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, pillar boxes, finger posts and guard railings at the crossroads, and rows of furnished Victorian terraced houses and high street shops with flats above. A church, hall, pub, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
+- Saint Aubin, a planned town: the High Street and Rue de la Mer cross at a square with a war memorial, market stalls, a horse trough, oaks in raised planters, iron bollards and benches, a ring of back lanes behind the blocks, kerbed pavements with street lamps, pillar boxes, finger posts and guard railings at the crossroads, rows of furnished Victorian terraced houses and high street shops with flats above, and a corner pub on the square with a furnished bar and rooms upstairs. A church, hall, police station, clinic, school, garage, flats and a fuel station are being modelled one by one and fill their plots as they arrive; until then plain stand-ins hold their places
 - Sandbag checkpoints with traffic cones and concrete barriers at the edges of town, burnt out hatchbacks, saloons and vans in the streets, and junk in the yards, with loot to find: crates behind the sandbags, goods left on the market stalls
 
 **Vehicles**
@@ -52,6 +52,7 @@ These shots still show the old placeholder train; the Blender-built locomotive, 
 - Farming with seeds, water and crop growth, campfire cooking, wells
 - Base building in four tiers (twig, wood, stone, metal) with doors, code locks, tool cupboards, decay and repair
 - Crafted junk guns (pipe pistol, scrap rifle, scrap assault rifle) that jam, misfire and overheat, plus a hunting bow
+- Ragdoll deaths: bodies crumple under gravity, get knocked back by the shot that killed them and come to rest over kerbs, steps and props
 - You wake up with nothing, not even clothes. A "Censor nudity" setting puts every survivor, you included, in underwear instead
 - Hunting: herds of red deer, wild boar and wild horses roam the island by biome. They graze, rest, stare when they hear you and bolt when you get close, and a cornered boar will charge. Crouching lets you stalk closer. Shot placement matters: a head or heart shot drops an animal, a gut shot sends it running until it bleeds out, leaving a blood trail to follow. Carve the carcass for meat, hide, fat and bone
 - A hand-drawn ink map with pins, and a compass

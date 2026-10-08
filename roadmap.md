@@ -99,7 +99,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 34. [ ] Detailed, fully furnished structures (Blender-built or CC0 downloads):
     - [x] Cottage, two-storey house, ruin, shed and barn built in Blender with interiors, collision and loot spots; town, villages, farms and hamlets placed across the island
     - [x] Saint Aubin laid out as a planned town: two main streets crossing at a square, back lanes, kerbed pavements, centre lines, lamps, a granite memorial, planters with oaks, bollards and benches, wrecks and barricades, building rows packed by each model's real size
-    - [ ] Furnished town buildings from Blender: terraced houses and the high street shop in; pub, church, police station, clinic, garage, fuel station, flats, school and hall still to come
+    - [ ] Furnished town buildings from Blender: terraced houses, the high street shop and the corner pub in; church, police station, clinic, garage, fuel station, flats, school and hall still to come
     - [x] Street furniture from Blender: war memorial, market stalls, horse trough, litter bins, pillar boxes, finger posts, phone box, bus shelters, benches, bollards, guard railings at the crossroads, stone churchyard walls, sandbag checkpoints with traffic cones, and burnt out hatchback, saloon and van wrecks; loot spots on the props spawn crates
     - [ ] Offshore oil rig
     - [ ] Fisherman's cottages (kitchen, table, beds, shelves, stove, clutter)
@@ -138,6 +138,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 46. [x] Storage, furnace smelting, fuel
 47. [ ] Farming polish
 48. [ ] Combat: fists, clubs, spears (throwable), bows, crossbow, junk guns, hit reactions, ragdolls, hostile scavenger AI
+    - [x] Ragdolls: fifteen verlet points with a rigid torso, hinged knees and elbows that only bend the right way, world collision with friction, a push from the killing shot, settling and sleeping; the skinned body is posed from the points on each client (--ragdolls N test)
     - [ ] Bullet holes for every surface, blood spatter, drips and pools, footprints in mud, sand and on wet floors: kept on the server, sent to nearby players by map cell, drawn in one decal pass (texture sheet done, not yet checked in game)
 49. [x] Death and respawn: dropped bag, sleeping bags, beach respawn
 50. [x] Save and load for the world and the player
