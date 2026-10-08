@@ -40,6 +40,7 @@ namespace zp
 		std::int32_t forced_spawn = -1;
 		bool forced_ride = false;
 		bool forced_herd = false;
+		std::int32_t forced_seat = -1;
 		std::float_t tick_accumulator = 0.0f;
 		std::float_t snapshot_accumulator = 0.0f;
 		std::float_t status_timer = 0.0f;

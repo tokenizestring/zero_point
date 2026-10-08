@@ -341,6 +341,21 @@ namespace zp
 
 					persist.recall(slot);
 
+					if (forced_seat >= 0 && vehicles.list.size())
+					{
+						auto& vehicle{ vehicles.list[static_cast<std::size_t>(forced_seat) % vehicles.list.size()] };
+
+						if (vehicle.riders[0] < 0)
+						{
+							vehicle.riders[0] = slot;
+							vehicle.asleep = false;
+
+							peer.state.vehicle = vehicle.id;
+							peer.state.seat = 0u;
+							peer.state.flags |= structures::movement_seated;
+						}
+					}
+
 					loot.wake(peer.name);
 
 					send_accept(slot, salt);
@@ -949,7 +964,12 @@ namespace zp
 
 			for (auto seat{ 0u }; seat < 2u; seat++)
 			{
-				if (const auto rider{ vehicle.riders[seat] }; rider >= 0 && rider < static_cast<std::int32_t>(clients.size()) && clients[rider].active && clients[rider].alive)
+				if (const auto rider{ vehicle.riders[seat] }; rider >= 0 && (rider >= static_cast<std::int32_t>(clients.size()) || clients[rider].active == false || clients[rider].state.vehicle != vehicle.id || clients[rider].state.seat != seat))
+				{
+					vehicle.riders[seat] = -1;
+				}
+
+				else if (rider >= 0 && clients[rider].alive)
 				{
 					if (vehicle.health <= 0.0f)
 					{
@@ -1830,6 +1850,7 @@ namespace zp
 		{
 			fauna.relocate(0u, peer.state.position, peer.yaw);
 		}
+
 
 		if (forced_ride && train.ready && peer.bot == false)
 		{
