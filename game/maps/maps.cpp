@@ -1567,7 +1567,42 @@ namespace zp
 			}
 		}
 
+		raise_rig();
+
 		logger.write("maps: monuments built, %zu clearings, %zu nodes, %zu brushes", clearings.size(), harvest.nodes.size(), world.brushes.size());
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::raise_rig()
+	{
+		auto raised{ 0u };
+
+		for (const auto name : rig_parts)
+		{
+			raised += place_building(name, { rig_site.x, sea_level, rig_site.y }, rig_yaw) ? 1u : 0u;
+		}
+
+		if (raised)
+		{
+			clearings.push_back({ rig_site.x, 0.0f, rig_site.y, rig_clearance });
+
+			logger.write("maps: oil rig raised from %u parts at %.0f %.0f", raised, rig_site.x, rig_site.y);
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::glow(const char* kind, structures::vec3_s position, bool powered)
+	{
+		const auto fire{ std::strncmp(kind, "fire", 4u) == 0 };
+		const auto cold{ std::strncmp(kind, "cold", 4u) == 0 };
+		const auto luck{ mathematics.hash_float(static_cast<std::uint32_t>(static_cast<std::int32_t>(position.x * 7.0f)) * 73856093u ^ static_cast<std::uint32_t>(static_cast<std::int32_t>(position.z * 7.0f)) * 19349663u ^ static_cast<std::uint32_t>(static_cast<std::int32_t>(position.y * 7.0f)) * 83492791u) };
+
+		if (powered || fire || (cold == false && luck < building_lamp_chance))
+		{
+			lights.push_back({ position, fire ? building_fire_radius : (cold ? building_cold_radius : building_warm_radius), fire ? building_fire_light : (cold ? building_cold_light : building_warm_light), -1.0f, { 0.0f, -1.0f, 0.0f }, 0u });
+		}
 	}
 	/*
 	//=====================================================================================
@@ -2714,6 +2749,11 @@ namespace zp
 				else if (std::strncmp(part.name, "loot_", 5u) == 0)
 				{
 					container_node(loot_named(part.name + 5), mathematics.transform_point({ center.x, part.bounds_min.y, center.z }, placement), yaw);
+				}
+
+				else if (std::strncmp(part.name, "light_", 6u) == 0)
+				{
+					glow(part.name + 6, mathematics.transform_point(center, placement), std::strncmp(model_name, rig_prefix, std::strlen(rig_prefix)) == 0);
 				}
 
 				else if (part.index_count)

@@ -6082,7 +6082,20 @@ namespace zp
 		{ "prop_traffic_cone", { -110.4f, 2.0f }, 0.0f, structures::surface_fabric },
 		{ "prop_wreck_hatch", { 1.4f, -84.0f }, 0.25f, structures::surface_metal }
 	};
-	constexpr const char* roadside_wrecks[4] = { "prop_wreck_hatch", "prop_wreck_saloon", "prop_wreck_van", "covered_car" };
+	constexpr structures::vec2_s rig_site = { 2056.0f, 656.0f };
+	constexpr auto rig_yaw = 0.55f;
+	constexpr auto rig_clearance = 70.0f;
+	constexpr const char* rig_parts[6] = { "bld_rig_jacket", "bld_rig_cellar", "bld_rig_main", "bld_rig_quarters", "bld_rig_helideck", "bld_rig_derrick" };
+	constexpr const char* rig_prefix = "bld_rig_";
+	constexpr structures::vec3_s building_warm_light = { 2.4f, 1.55f, 0.75f };
+	constexpr structures::vec3_s building_cold_light = { 1.5f, 1.85f, 2.2f };
+	constexpr structures::vec3_s building_fire_light = { 3.0f, 1.3f, 0.35f };
+	constexpr auto building_warm_radius = 6.0f;
+	constexpr auto building_cold_radius = 7.5f;
+	constexpr auto building_fire_radius = 5.0f;
+	constexpr auto building_lamp_chance = 0.3f;
+	constexpr auto light_cull_distance = 150.0f;
+	constexpr const char* roadside_wrecks[4] ={ "prop_wreck_hatch", "prop_wreck_saloon", "prop_wreck_van", "covered_car" };
 	constexpr auto roadside_gap_min = 220.0f;
 	constexpr auto roadside_gap_max = 560.0f;
 	constexpr auto roadside_shoulder = 1.6f;

@@ -59,6 +59,8 @@ namespace zp
 		void light_streets(structures::vec3_s center);
 		void litter_town(structures::vec3_s center);
 		void scatter_roadside();
+		void raise_rig();
+		void glow(const char* kind, structures::vec3_s position, bool powered);
 		void dress_square(structures::vec3_s center);
 		std::float_t paving_top(structures::vec2_s spot);
 		void build_memorial(structures::vec3_s spot);
