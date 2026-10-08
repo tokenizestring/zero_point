@@ -14,9 +14,10 @@ Zero Point uses a small set of free third-party assets next to the ones made for
 | Forest clearing, alley and bunker impulse responses used for the gunshot tails | [IR-Library by itsmusician](https://github.com/itsmusician/IR-Library) | MIT, see `assets/raw/audio/LICENSE_ir_library.txt` |
 | Bedroom and basement impulse responses | [Reverb.js library](https://github.com/andigamesandmusic/Reverb.js) | Public domain |
 | Bone break and wet impact sounds behind the flesh hits | [OpenGameArt.org](https://opengameart.org) (Zane Little, Independent.nu) | CC0 |
+| Elevation data behind the island's shape in `assets/source/terrain/copernicus` | Copernicus DEM GLO-30, produced using Copernicus WorldDEM-30 (c) DLR e.V. 2010-2014 and (c) Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA; all rights reserved | Copernicus DEM licence, free use with this attribution |
 | Kalam typeface | Indian Type Foundry | SIL Open Font License, see `assets/source/fonts/OFL_kalam.txt` |
 | IM Fell English typeface | Igino Marini | SIL Open Font License, see `assets/source/fonts/OFL_imfell.txt` |
 
 The download list for the Poly Haven files is kept in `assets/raw/downloads.tsv`.
 
-Everything else (the code, the terrain, guns, trees, grass, buildings, the train, synthesized sounds and the interface art) was made for this project.
+Everything else (the code, the terrain detail, biomes and roads, guns, vehicles, trees, grass, buildings, monuments, the train, synthesized sounds and the interface art) was made for this project.
