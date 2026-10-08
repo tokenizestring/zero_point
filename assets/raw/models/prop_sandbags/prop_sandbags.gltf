@@ -146,7 +146,7 @@
   {
    "bufferView": 0,
    "componentType": 5126,
-   "count": 16226,
+   "count": 16170,
    "max": [
     1.5399999618530273,
     0.9553920030593872,
@@ -162,13 +162,13 @@
   {
    "bufferView": 1,
    "componentType": 5126,
-   "count": 16226,
+   "count": 16170,
    "type": "VEC3"
   },
   {
    "bufferView": 2,
    "componentType": 5126,
-   "count": 16226,
+   "count": 16170,
    "type": "VEC2"
   },
   {
@@ -271,86 +271,86 @@
  "bufferViews": [
   {
    "buffer": 0,
-   "byteLength": 194712,
+   "byteLength": 194040,
    "byteOffset": 0,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 194712,
-   "byteOffset": 194712,
+   "byteLength": 194040,
+   "byteOffset": 194040,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 129808,
-   "byteOffset": 389424,
+   "byteLength": 129360,
+   "byteOffset": 388080,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 99528,
-   "byteOffset": 519232,
+   "byteOffset": 517440,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 618760,
+   "byteOffset": 616968,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 619048,
+   "byteOffset": 617256,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 192,
-   "byteOffset": 619336,
+   "byteOffset": 617544,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 72,
-   "byteOffset": 619528,
+   "byteOffset": 617736,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 619600,
+   "byteOffset": 617808,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 619888,
+   "byteOffset": 618096,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 192,
-   "byteOffset": 620176,
+   "byteOffset": 618384,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 620368,
+   "byteOffset": 618576,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 620656,
+   "byteOffset": 618864,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 192,
-   "byteOffset": 620944,
+   "byteOffset": 619152,
    "target": 34962
   }
  ],
@@ -362,7 +362,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 621136,
+   "byteLength": 619344,
    "uri": "prop_sandbags.bin"
   }
  ]

@@ -10,7 +10,8 @@
    "nodes": [
     0,
     1,
-    2
+    2,
+    3
    ]
   }
  ],
@@ -21,10 +22,14 @@
   },
   {
    "mesh": 1,
-   "name": "col_rock_1"
+   "name": "prop_railing_kerb"
   },
   {
    "mesh": 2,
+   "name": "col_rock_1"
+  },
+  {
+   "mesh": 3,
    "name": "col_metal_1"
   }
  ],
@@ -46,6 +51,24 @@
      "index": 1
     }
    }
+  },
+  {
+   "doubleSided": true,
+   "name": "granite_ashlar",
+   "normalTexture": {
+    "index": 3
+   },
+   "occlusionTexture": {
+    "index": 4
+   },
+   "pbrMetallicRoughness": {
+    "baseColorTexture": {
+     "index": 5
+    },
+    "metallicRoughnessTexture": {
+     "index": 4
+    }
+   }
   }
  ],
  "meshes": [
@@ -64,7 +87,7 @@
    ]
   },
   {
-   "name": "col_rock_1",
+   "name": "prop_railing_kerb",
    "primitives": [
     {
      "attributes": {
@@ -73,6 +96,20 @@
       "TEXCOORD_0": 6
      },
      "indices": 7,
+     "material": 1
+    }
+   ]
+  },
+  {
+   "name": "col_rock_1",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11,
      "material": 0
     }
    ]
@@ -82,11 +119,11 @@
    "primitives": [
     {
      "attributes": {
-      "POSITION": 8,
-      "NORMAL": 9,
-      "TEXCOORD_0": 10
+      "POSITION": 12,
+      "NORMAL": 13,
+      "TEXCOORD_0": 14
      },
-     "indices": 7,
+     "indices": 11,
      "material": 0
     }
    ]
@@ -104,6 +141,18 @@
   {
    "sampler": 0,
    "source": 2
+  },
+  {
+   "sampler": 0,
+   "source": 3
+  },
+  {
+   "sampler": 0,
+   "source": 4
+  },
+  {
+   "sampler": 0,
+   "source": 5
   }
  ],
  "images": [
@@ -121,21 +170,36 @@
    "mimeType": "image/png",
    "name": "prop_railing_albedo",
    "uri": "prop_railing_albedo.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_normal.png",
+   "uri": "../_library/granite_ashlar_normal.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_orm.png",
+   "uri": "../_library/granite_ashlar_orm.png"
+  },
+  {
+   "mimeType": "image/png",
+   "name": "granite_ashlar_albedo.png",
+   "uri": "../_library/granite_ashlar_albedo.png"
   }
  ],
  "accessors": [
   {
    "bufferView": 0,
    "componentType": 5126,
-   "count": 6357,
+   "count": 5958,
    "max": [
     1.5,
     1.3300000429153442,
-    0.12999999523162842
+    0.14719566702842712
    ],
    "min": [
     -1.5499999523162842,
-    -0.07999999821186066,
+    -0.0037036901339888573,
     -0.5568982362747192
    ],
    "type": "VEC3"
@@ -143,23 +207,57 @@
   {
    "bufferView": 1,
    "componentType": 5126,
-   "count": 6357,
+   "count": 5958,
    "type": "VEC3"
   },
   {
    "bufferView": 2,
    "componentType": 5126,
-   "count": 6357,
+   "count": 5958,
    "type": "VEC2"
   },
   {
    "bufferView": 3,
    "componentType": 5123,
-   "count": 12864,
+   "count": 12336,
    "type": "SCALAR"
   },
   {
    "bufferView": 4,
+   "componentType": 5126,
+   "count": 384,
+   "max": [
+    1.496999979019165,
+    0.14000000059604645,
+    0.12999999523162842
+   ],
+   "min": [
+    -1.496999979019165,
+    -0.07999999821186066,
+    -0.12999999523162842
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 384,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 384,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 528,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
    "componentType": 5126,
    "count": 24,
    "max": [
@@ -175,25 +273,25 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 5,
+   "bufferView": 9,
    "componentType": 5126,
    "count": 24,
    "type": "VEC3"
   },
   {
-   "bufferView": 6,
+   "bufferView": 10,
    "componentType": 5126,
    "count": 24,
    "type": "VEC2"
   },
   {
-   "bufferView": 7,
+   "bufferView": 11,
    "componentType": 5123,
    "count": 36,
    "type": "SCALAR"
   },
   {
-   "bufferView": 8,
+   "bufferView": 12,
    "componentType": 5126,
    "count": 24,
    "max": [
@@ -209,13 +307,13 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 9,
+   "bufferView": 13,
    "componentType": 5126,
    "count": 24,
    "type": "VEC3"
   },
   {
-   "bufferView": 10,
+   "bufferView": 14,
    "componentType": 5126,
    "count": 24,
    "type": "VEC2"
@@ -224,68 +322,92 @@
  "bufferViews": [
   {
    "buffer": 0,
-   "byteLength": 76284,
+   "byteLength": 71496,
    "byteOffset": 0,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 76284,
-   "byteOffset": 76284,
+   "byteLength": 71496,
+   "byteOffset": 71496,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 50856,
-   "byteOffset": 152568,
+   "byteLength": 47664,
+   "byteOffset": 142992,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 25728,
-   "byteOffset": 203424,
+   "byteLength": 24672,
+   "byteOffset": 190656,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 4608,
+   "byteOffset": 215328,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 4608,
+   "byteOffset": 219936,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 3072,
+   "byteOffset": 224544,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1056,
+   "byteOffset": 227616,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 229152,
+   "byteOffset": 228672,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 229440,
+   "byteOffset": 228960,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 192,
-   "byteOffset": 229728,
+   "byteOffset": 229248,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 72,
-   "byteOffset": 229920,
+   "byteOffset": 229440,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 229992,
+   "byteOffset": 229512,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 288,
-   "byteOffset": 230280,
+   "byteOffset": 229800,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 192,
-   "byteOffset": 230568,
+   "byteOffset": 230088,
    "target": 34962
   }
  ],
@@ -297,7 +419,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 230760,
+   "byteLength": 230280,
    "uri": "prop_railing.bin"
   }
  ]
