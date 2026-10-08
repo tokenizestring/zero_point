@@ -90,6 +90,8 @@ namespace zp
 				character.twist_shares.assign(character.bones.size(), 0.0f);
 				character.blade_shares.assign(character.bones.size(), 0.0f);
 				character.sit_shares.assign(character.bones.size(), 0.0f);
+				character.ride_shares.assign(character.bones.size(), 0.0f);
+				character.spread_shares.assign(character.bones.size(), 0.0f);
 
 				for (auto twist{ 0u }; twist < std::size(character_twist_bones); twist++)
 				{
@@ -105,6 +107,8 @@ namespace zp
 					if (const auto found{ bone(character, character_sit_bones[limb]) }; found >= 0)
 					{
 						character.sit_shares[found] = character_sit_angles[limb];
+						character.ride_shares[found] = character_ride_angles[limb];
+						character.spread_shares[found] = character_spread_angles[limb];
 					}
 				}
 
@@ -291,7 +295,7 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade, std::float_t sit)
+	void characters_c::palette(const structures::character_s& character, const structures::pose_s& pose, std::float_t twist_yaw, std::float_t twist_pitch, structures::mat4_s* out, std::float_t blade, std::float_t sit, std::float_t straddle)
 	{
 		for (auto index{ 0u }; index < character.bones.size(); index++)
 		{
@@ -300,11 +304,13 @@ namespace zp
 
 			globals[index] = bone_data.parent >= 0 ? mathematics.multiply(local, globals[bone_data.parent]) : local;
 
-			if (sit > 0.0f && index < character.sit_shares.size() && character.sit_shares[index] != 0.0f)
+			if ((sit > 0.0f || straddle > 0.0f) && index < character.spread_shares.size() && (character.sit_shares[index] != 0.0f || character.spread_shares[index] != 0.0f))
 			{
 				const auto joint{ globals[index].row3(3u) };
+				const auto bend{ mathematics.quat_axis_angle({ 1.0f, 0.0f, 0.0f }, mathematics.lerp(character.sit_shares[index], character.ride_shares[index], straddle) * std::max(sit, straddle)) };
+				const auto spread{ mathematics.quat_axis_angle({ 0.0f, 0.0f, 1.0f }, character.spread_shares[index] * straddle) };
 
-				globals[index] = mathematics.multiply(mathematics.multiply(mathematics.multiply(globals[index], mathematics.translation(-joint)), mathematics.rotation(mathematics.quat_axis_angle({ 1.0f, 0.0f, 0.0f }, character.sit_shares[index] * sit))), mathematics.translation(joint));
+				globals[index] = mathematics.multiply(mathematics.multiply(mathematics.multiply(globals[index], mathematics.translation(-joint)), mathematics.rotation(mathematics.quat_multiply(bend, spread))), mathematics.translation(joint));
 			}
 
 			if (character.twist_shares[index] > 0.0f)
