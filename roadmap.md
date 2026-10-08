@@ -42,7 +42,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 16. [x] Real trees: continuous trunk (no segment cracks), root flare, bark detail, dense branch sprays, LODs
     - [x] Six Blender-built firs with near, far, impostor (8-view billboard) and shadow-proxy LODs, dithered crossfades
     - [x] Dead snags rebuilt in Blender (drooping dead branches, forked twigs, broken tops)
-17. [ ] Wind: trunk sway, branch flutter, needle shimmer
+17. [x] Wind: trunk sway, branch flutter, needle shimmer
+    - [x] One wind for the whole island: gusts roll across the forest and the grass together, trees lean with the wind (length kept, so tops dip as they bend), branches bob and leaves shimmer, far impostors lean too, and storms whip everything harder
 18. [ ] Chopping: a notch that deepens with every hit (visible wedge), bark and wood chips, the whole tree shakes
 19. [ ] Felling: creak, lean, fall pivoting on the notch, ground impact and bounce, branches snap off
     - [x] Trees creak, topple away from whoever chopped them (same direction for every player), crash down in a burst of dust, then sink away
@@ -70,6 +71,8 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
     - [x] Volumetric clouds: raymarched at half resolution through generated Perlin-Worley noise, lit by the sun with multiple scattering and the sky, temporal smoothing, weather-driven cover, a cloud shadow map that darkens the ground and the sea glitter, and sun shafts that only break through gaps (Volumetric clouds setting)
     - [ ] Puddle ripples
 28. [ ] Lighting: contact shadows, better ambient occlusion, specular occlusion, interior light probes, shadowed local lights
+    - [x] Contact shadows: a short screen-space ray toward the sun on every lit pixel within 50 m, so grass tufts, kerbs, props and characters keep the fine shadows the shadow map is too coarse for (medium shadows and up)
+    - [x] Lit buildings at night: window, lamp and fire markers in the Blender buildings become point lights (about a third of the town houses lit, hearths always glowing, the oil rig fully powered), culled to the camera's neighbourhood every frame
 29. [ ] Post: time-of-day colour grading, lens effects, subtle grain, optional motion blur
 30. [ ] Materials pass: every surface checked (albedo range, roughness, normal strength), grime, moss and leak decals
 31. [ ] Performance: LODs everywhere, occlusion culling, streaming, 60+ fps at 1440p ultra
@@ -112,6 +115,7 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 35. [ ] Interiors: furniture, props, debris, broken windows, doors that open, lootable cupboards and drawers
 36. [ ] Monuments with loot tiers and hazards
 37. [ ] Scattered points of interest: campsites, wrecks, cabins, caves
+    - [x] Roadside wrecks: burnt out cars and vans on the verges with fuel drums and loot crates, kept clear of towns and level crossings
 38. [ ] Ambient life: birds, gulls, fish, insects
     - [x] Gull and crow flocks (flap and glide in the vertex shader, bank into turns, scatter at gunshots), mackerel and sea bass schools (tail wave, scatter when you swim close)
     - [ ] Insects, birdsong from the birds you can see, fish you can catch
@@ -186,5 +190,5 @@ Every step works the same way: build, capture, inspect every shot up close, fix,
 57. [ ] Vehicles: armoured rover and scrap helicopter
     - [x] Server physics (sprung wheels, tyre grip, anti-roll, handbrake; rotor spool-up, hover, climb rate, tilt to fly), seats with enter and exit, driver prediction replayed on every snapshot, smooth interpolation for everyone else, collision with players and the world
     - [x] Hull damage from bullets and crashes, injured occupants, smoke, burning wrecks that respawn, headlights at dusk, exhaust and dust, engine and rotor sounds
-    - [ ] Blender models (rover with separate wheels and steering wheel, helicopter with separate rotors) checked in game
+    - [x] Blender models (rover with separate wheels and steering wheel, helicopter with separate rotors) checked in game
     - [ ] Fuel, seated poses for drivers and passengers, rotor blur
