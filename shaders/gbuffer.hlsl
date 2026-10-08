@@ -318,6 +318,43 @@ void lod_dither(float fade, float2 pixel)
 /*
 //=====================================================================================
 */
+float2 spin(float2 value, uint turns)
+{
+	return turns == 1u ? float2(-value.y, value.x) : (turns == 2u ? -value : (turns == 3u ? float2(value.y, -value.x) : value));
+}
+/*
+//=====================================================================================
+*/
+float value_noise(float2 position)
+{
+	float2 cell = floor(position);
+	float2 fraction = position - cell;
+	float2 ease = fraction * fraction * (3.0 - 2.0 * fraction);
+
+	return lerp(lerp(grass_hash(cell), grass_hash(cell + float2(1.0, 0.0)), ease.x), lerp(grass_hash(cell + float2(0.0, 1.0)), grass_hash(cell + float2(1.0, 1.0)), ease.x), ease.y);
+}
+/*
+//=====================================================================================
+*/
+float4 layered(Texture2DArray map, float2 first, float2 first_dx, float2 first_dy, float2 second, float2 second_dx, float2 second_dy, float blend, uint layer)
+{
+	float4 result = 0.0;
+
+	[branch] if (blend < 1.0)
+	{
+		result = map.SampleGrad(anisotropic_wrap, float3(first, layer), first_dx, first_dy);
+	}
+
+	[branch] if (blend > 0.0)
+	{
+		result = lerp(result, map.SampleGrad(anisotropic_wrap, float3(second, layer), second_dx, second_dy), blend);
+	}
+
+	return result;
+}
+/*
+//=====================================================================================
+*/
 float2 parallax(float2 uv, float2 dx, float2 dy, float3 view_tangent, uint layer, float2 amount)
 {
 	float steps = lerp(28.0, 10.0, saturate(view_tangent.z));
@@ -358,9 +395,33 @@ gbuffer_output shade(pixel_input input, bool front, bool alpha_test)
 	float3 tangent = normalize(input.tangent.xyz - geometric * dot(geometric, input.tangent.xyz));
 	float3 bitangent = cross(geometric, tangent) * input.tangent.w;
 	float2 uv_scale = float2(1.0, material.aspect) * material.uv_scale;
-	float2 uv = input.uv * uv_scale;
-	float2 dx = ddx(uv);
-	float2 dy = ddy(uv);
+	float2 base = input.uv * uv_scale;
+	float2 base_dx = ddx(base);
+	float2 base_dy = ddy(base);
+	uint turn_a = 0u;
+	uint turn_b = 0u;
+	float2 shift_a = 0.0;
+	float2 shift_b = 0.0;
+	float bias = 0.0;
+
+	[branch] if (material.flags & 128u)
+	{
+		float variation = value_noise(base * 0.2) * 8.0;
+		float index = floor(variation);
+
+		turn_a = (uint)index & 3u;
+		turn_b = (uint)(index + 1.0) & 3u;
+		shift_a = floor(sin(float2(3.0, 7.0) * index) * 6.0) / 6.0;
+		shift_b = floor(sin(float2(3.0, 7.0) * (index + 1.0)) * 6.0) / 6.0;
+		bias = smoothstep(0.3, 0.7, variation - index);
+	}
+
+	float2 uv = spin(base, turn_a) + shift_a;
+	float2 dx = spin(base_dx, turn_a);
+	float2 dy = spin(base_dy, turn_a);
+	float2 other = spin(base, turn_b) + shift_b;
+	float2 other_dx = spin(base_dx, turn_b);
+	float2 other_dy = spin(base_dy, turn_b);
 	float3 geometric_dx = ddx(geometric);
 	float3 geometric_dy = ddy(geometric);
 	float curvature = min(2.0 * 0.25 * (dot(geometric_dx, geometric_dx) + dot(geometric_dy, geometric_dy)), 0.2);
@@ -369,11 +430,22 @@ gbuffer_output shade(pixel_input input, bool front, bool alpha_test)
 	{
 		float3 view_direction = normalize(camera_position.xyz - input.world_position);
 		float3 view_tangent = float3(dot(view_direction, tangent), dot(view_direction, bitangent), dot(view_direction, geometric));
+		float2 moved = parallax(uv, dx, dy, float3(spin(view_tangent.xy, turn_a), view_tangent.z), material.layer, uv_scale * material.height_scale) - uv;
 
-		uv = parallax(uv, dx, dy, view_tangent, material.layer, uv_scale * material.height_scale);
+		uv += moved;
+		other += spin(moved, (turn_b - turn_a) & 3u);
 	}
 
-	float4 albedo = albedo_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy);
+	float blend = bias;
+
+	[branch] if (bias > 0.0 && bias < 1.0)
+	{
+		float rise = height_metal_array.SampleGrad(anisotropic_wrap, float3(other, material.layer), other_dx, other_dy).r - height_metal_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy).r;
+
+		blend = saturate(rise * 4.0 + (bias - 0.5) * 3.0 + 0.5);
+	}
+
+	float4 albedo = layered(albedo_array, uv, dx, dy, other, other_dx, other_dy, blend, material.layer);
 
 	[branch] if (skin_params.w > 0.0)
 	{
@@ -389,9 +461,22 @@ gbuffer_output shade(pixel_input input, bool front, bool alpha_test)
 		lod_dither(input.fade, input.position.xy);
 	}
 
-	float2 normal_xy = (normal_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy).rg * 2.0 - 1.0) * material.normal_strength;
-	float2 rough_ao = rough_ao_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy).rg;
-	float2 height_metal = height_metal_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy).rg;
+	float2 normal_xy = 0.0;
+
+	[branch] if (blend < 1.0)
+	{
+		normal_xy = spin(normal_array.SampleGrad(anisotropic_wrap, float3(uv, material.layer), dx, dy).rg * 2.0 - 1.0, (4u - turn_a) & 3u);
+	}
+
+	[branch] if (blend > 0.0)
+	{
+		normal_xy = lerp(normal_xy, spin(normal_array.SampleGrad(anisotropic_wrap, float3(other, material.layer), other_dx, other_dy).rg * 2.0 - 1.0, (4u - turn_b) & 3u), blend);
+	}
+
+	normal_xy *= material.normal_strength;
+
+	float2 rough_ao = layered(rough_ao_array, uv, dx, dy, other, other_dx, other_dy, blend, material.layer).rg;
+	float2 height_metal = layered(height_metal_array, uv, dx, dy, other, other_dx, other_dy, blend, material.layer).rg;
 
 	float3 normal_tangent = normalize(float3(normal_xy, sqrt(saturate(1.0 - dot(normal_xy, normal_xy)))));
 	float3 normal = normalize(tangent * normal_tangent.x + bitangent * normal_tangent.y + geometric * normal_tangent.z);

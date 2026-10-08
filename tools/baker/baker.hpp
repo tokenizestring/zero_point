@@ -112,7 +112,13 @@ namespace zp
 			"ground_soil",
 			"ground_dune",
 			"ground_shingle",
-			"ground_marsh"
+			"ground_marsh",
+			"cobblestone_floor_08",
+			"cobblestone_large_01",
+			"asphalt_02",
+			"road_damaged",
+			"road_damaged_2",
+			"concrete_pavement_02"
 		};
 
 		constexpr const char* detailed_models[] =
