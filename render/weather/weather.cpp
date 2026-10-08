@@ -168,6 +168,10 @@ namespace zp
 		wetness = rain_now > 0.05f ? std::min(1.0f, wetness + weather_wet_rate * rain_now * delta) : std::max(0.0f, wetness - weather_dry_rate * delta);
 		flash = std::max(0.0f, flash - delta * 5.0f);
 		wind = mathematics.flat_forward(0.6f + std::sin(clock * 0.03f) * 0.4f) * (1.0f + storm_now * 5.0f + rain_now * 1.5f);
+		bearing = mathematics.normalize(wind);
+		strength = mathematics.saturate(wind_strength_floor + mathematics.length(wind) * wind_strength_scale);
+		previous_scroll = scroll;
+		scroll = { std::fmod(scroll.x + bearing.x * (wind_drift_base + mathematics.length(wind) * wind_drift_scale) * delta, wind_scroll_period), std::fmod(scroll.y + bearing.z * (wind_drift_base + mathematics.length(wind) * wind_drift_scale) * delta, wind_scroll_period) };
 		bolt_timer -= delta * storm_now;
 
 		if (bolt_timer <= 0.0f)

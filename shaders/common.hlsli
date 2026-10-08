@@ -38,6 +38,8 @@ cbuffer frame_constants : register(b0)
 	float4 water_extinction;
 	float4 water_scatter;
 	float4 weather_params;
+	float4 wind_params;
+	float4 wind_scroll;
 };
 
 static const float roof_cell = 0.75;
@@ -64,7 +66,39 @@ float foliage_turn(float3 position, float4 params)
 	return params.z < -0.5 ? params.y * position.z * params.x : 0.0;
 }
 
-float3 foliage_transform(float3 position, float4 placement, float4 params, float time_value)
+float wind_gust(float2 spot, float2 scroll)
+{
+	float2 phase = (spot - scroll) * TWO_PI;
+	float first = sin(phase.x / 96.0 + 1.7 * sin(phase.y / 160.0));
+	float second = sin(phase.y / 64.0 + 1.3 * sin(phase.x / 120.0));
+
+	return saturate(0.5 + 0.3 * (first + second) + 0.25 * first * second);
+}
+
+float3 tree_bend(float3 local, float gust, float4 params, float time_value)
+{
+	float strength = wind_params.z;
+	float height = max(local.y, 0.0);
+	float lean = strength * (0.35 + 0.65 * gust) + sin(time_value * (1.1 + saturate(params.z * 20.0) * 1.5) + params.y) * strength * (0.15 + 0.3 * gust);
+
+	return float3(wind_params.x, 0.0, wind_params.y) * min(height * height * params.z * 3.5 * lean, height * 0.35);
+}
+
+float3 tree_flutter(float3 local, float gust, float4 params, float time_value)
+{
+	float strength = wind_params.z;
+	float height = max(local.y, 0.0);
+	float reach = length(local.xz);
+	float leafy = saturate(params.z * 2500.0);
+	float limb = reach * saturate(height * 0.5) * (0.3 + 0.7 * strength) * (0.5 + gust) * leafy;
+	float wave = params.y + local.x * 0.31 + local.z * 0.23 + local.y * 0.17;
+	float flutter = saturate(reach * 0.5) * saturate(height * 0.3) * (0.5 + strength) * (0.6 + 0.8 * gust) * 0.018 * leafy;
+	float3 shimmer = float3(sin(time_value * 11.3 + local.x * 3.1 + local.z * 1.7), sin(time_value * 13.9 + local.y * 2.9 + local.x * 2.3), sin(time_value * 9.7 + local.z * 3.7 + local.y * 1.9));
+
+	return float3(wind_params.x, 0.0, wind_params.y) * (sin(time_value * 1.6 + wave * 1.3) * limb * 0.02) + float3(0.0, sin(time_value * 2.2 + wave) * limb * 0.035, 0.0) + shimmer * flutter;
+}
+
+float3 foliage_transform(float3 position, float4 placement, float4 params, float time_value, float2 scroll)
 {
 	float3 local = position * params.x;
 	float3 result;
@@ -82,10 +116,11 @@ float3 foliage_transform(float3 position, float4 placement, float4 params, float
 
 	else
 	{
-		float bend = local.y * local.y * params.z;
-		float3 sway = float3(sin(time_value * 1.3 + params.y) + 0.35 * sin(time_value * 3.1 + params.y * 2.3), 0.0, cos(time_value * 0.97 + params.y * 1.7)) * bend;
+		float gust = wind_gust(placement.xz, scroll);
+		float3 turned = foliage_rotate(local, placement.w);
+		float3 bent = turned + tree_bend(local, gust, params, time_value);
 
-		result = foliage_rotate(local, placement.w) + sway + placement.xyz;
+		result = bent * (length(turned) / max(length(bent), 0.0001)) + tree_flutter(local, gust, params, time_value) + placement.xyz;
 	}
 
 	return result;

@@ -588,6 +588,11 @@ namespace zp
 	constexpr auto weather_dry_rate = 0.004f;
 	constexpr auto weather_exposure_cloud = 0.3f;
 	constexpr auto weather_exposure_storm = 0.55f;
+	constexpr auto wind_scroll_period = 9600.0f;
+	constexpr auto wind_drift_base = 5.0f;
+	constexpr auto wind_drift_scale = 3.0f;
+	constexpr auto wind_strength_floor = 0.15f;
+	constexpr auto wind_strength_scale = 0.11f;
 	constexpr auto roof_grid = 64u;
 	constexpr auto roof_cell = 0.75f;
 	constexpr auto roof_budget = 256u;
@@ -3488,6 +3493,8 @@ namespace zp
 			vec4_s water_extinction;
 			vec4_s water_scatter;
 			vec4_s weather_params;
+			vec4_s wind_params;
+			vec4_s wind_scroll;
 		};
 		/*
 		//=====================================================================================

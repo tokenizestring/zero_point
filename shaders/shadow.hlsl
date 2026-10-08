@@ -66,7 +66,7 @@ float4 vs_skinned(skinned_input input) : SV_Position
 */
 float4 vs_instanced(instanced_shadow_input input) : SV_Position
 {
-	return mul(float4(foliage_transform(input.position, input.placement, input.params, time_params.x), 1.0), cascade_matrices[(uint)shadow_params.w]);
+	return mul(float4(foliage_transform(input.position, input.placement, input.params, time_params.x, wind_scroll.xy), 1.0), cascade_matrices[(uint)shadow_params.w]);
 }
 /*
 //=====================================================================================
@@ -75,7 +75,7 @@ alpha_output vs_instanced_alpha(instanced_alpha_input input)
 {
 	alpha_output output;
 
-	output.position = mul(float4(foliage_transform(input.position, input.placement, input.params, time_params.x), 1.0), cascade_matrices[(uint)shadow_params.w]);
+	output.position = mul(float4(foliage_transform(input.position, input.placement, input.params, time_params.x, wind_scroll.xy), 1.0), cascade_matrices[(uint)shadow_params.w]);
 	output.uv = input.uv;
 	output.material = input.material;
 

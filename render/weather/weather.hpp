@@ -30,6 +30,10 @@ namespace zp
 		std::uint32_t roof_cursor = 0u;
 		bool roof_dirty = false;
 		structures::vec3_s wind{};
+		structures::vec3_s bearing{ 0.0f, 0.0f, 1.0f };
+		structures::vec2_s scroll{};
+		structures::vec2_s previous_scroll{};
+		std::float_t strength = wind_strength_floor;
 		std::float_t cloud = 0.08f;
 		std::float_t rain = 0.0f;
 		std::float_t storm = 0.0f;

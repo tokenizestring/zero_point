@@ -353,6 +353,8 @@ namespace zp
 		frame.exposure_params = { exposure, static_cast<std::float_t>(debug_view), time, static_cast<std::float_t>(frame_index % 1024u) };
 		frame.fog_params = { fog.x * (1.0f + weather.cloud_now * 1.5f + weather.rain_now * 3.5f), fog.y, fog.z, fog.w * overcast };
 		frame.weather_params = weather.params();
+		frame.wind_params = { weather.bearing.x, weather.bearing.z, weather.strength, 0.0f };
+		frame.wind_scroll = { weather.scroll.x, weather.scroll.y, weather.previous_scroll.x, weather.previous_scroll.y };
 		post_process.compensation = -(weather.cloud_now * weather_exposure_cloud + weather.storm_now * weather_exposure_storm);
 		frame.quality_params = { static_cast<std::float_t>(settings.shadows), static_cast<std::float_t>(settings.ambient_occlusion), static_cast<std::float_t>(settings.reflections), settings.textures >= 2u ? 1.0f : 0.0f };
 		frame.viewmodel_params = { viewmodel_depth_min, viewmodel_near, 0.0f, 0.0f };

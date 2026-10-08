@@ -169,8 +169,8 @@ pixel_input vs_instanced(instanced_input input)
 {
 	pixel_input output;
 
-	float3 world_position = foliage_transform(input.position, input.placement, input.params, time_params.x);
-	float3 previous_position = foliage_transform(input.position, input.placement, input.params, time_params.y);
+	float3 world_position = foliage_transform(input.position, input.placement, input.params, time_params.x, wind_scroll.xy);
+	float3 previous_position = foliage_transform(input.position, input.placement, input.params, time_params.y, wind_scroll.zw);
 
 	output.position = mul(float4(world_position, 1.0), view_projection);
 	output.current_clip = output.position;
@@ -206,10 +206,14 @@ impostor_input vs_impostor(instanced_input input)
 	float frame = frac(atan2(local.x, local.z) / TWO_PI + 1.0) * impostor_frames;
 	float first = floor(frame);
 	float3 world_position = base + (right * input.position.x + float3(0.0, input.position.y, 0.0)) * input.params.x;
+	float3 upright = float3(0.0, input.position.y * input.params.x, 0.0);
+	float3 previous_position = world_position + tree_bend(upright, wind_gust(base.xz, wind_scroll.zw), input.params, time_params.y);
+
+	world_position += tree_bend(upright, wind_gust(base.xz, wind_scroll.xy), input.params, time_params.x);
 
 	output.position = mul(float4(world_position, 1.0), view_projection);
 	output.current_clip = output.position;
-	output.previous_clip = mul(float4(world_position, 1.0), previous_view_projection);
+	output.previous_clip = mul(float4(previous_position, 1.0), previous_view_projection);
 	output.right = right;
 	output.facing = facing;
 	output.uv = float4(impostor_cell(first, input.uv), impostor_cell(fmod(first + 1.0, impostor_frames), input.uv));
@@ -229,12 +233,14 @@ float grass_hash(float2 value)
 /*
 //=====================================================================================
 */
-float3 grass_wind(float height, float2 world_xz, float seed, float scale, float time_value)
+float3 grass_wind(float height, float2 world_xz, float seed, float scale, float time_value, float2 scroll)
 {
-	float2 direction = float2(0.8, 0.6);
-	float gust = sin(dot(world_xz, direction) * 0.16 - time_value * 1.5) * 0.5 + 0.5;
+	float2 direction = wind_params.xy;
+	float2 phase = (world_xz - scroll) * TWO_PI;
+	float ripple = sin(phase.x / 64.0 + phase.y / 40.0) * 0.5 + 0.5;
+	float gust = wind_gust(world_xz, scroll);
 	float flutter = sin(time_value * 5.3 + seed * 17.0 + world_xz.x * 0.7) * 0.6 + sin(time_value * 3.4 + seed * 9.0 + world_xz.y * 0.9) * 0.4;
-	float sway = (0.06 + 0.22 * gust * gust + 0.04 * flutter) * height * height * scale;
+	float sway = (0.06 + 0.22 * ripple * ripple * (0.4 + 0.6 * gust) + 0.04 * flutter) * height * height * scale * (0.5 + wind_params.z * 1.5);
 
 	return float3(direction.x * sway, 0.0, direction.y * sway);
 }
@@ -281,8 +287,8 @@ pixel_input vs_grass(grass_input input)
 	float3 local_position = input.position * float3(extent.x, extent.y * 0.94, extent.x) + input.normal * (input.position.y * extent.y * 0.36);
 	float3 base = float3(world_xz.x, height - 0.03, world_xz.y);
 	float3 pushed = grass_push(base, input.position.y, extent.y);
-	float3 world_position = base + foliage_rotate(local_position, yaw) + grass_wind(input.position.y, world_xz, seed, extent.y, time_params.x) + pushed;
-	float3 previous_position = base + foliage_rotate(local_position, yaw) + grass_wind(input.position.y, world_xz, seed, extent.y, time_params.y) + pushed;
+	float3 world_position = base + foliage_rotate(local_position, yaw) + grass_wind(input.position.y, world_xz, seed, extent.y, time_params.x, wind_scroll.xy) + pushed;
+	float3 previous_position = base + foliage_rotate(local_position, yaw) + grass_wind(input.position.y, world_xz, seed, extent.y, time_params.y, wind_scroll.zw) + pushed;
 	float3 outward = foliage_rotate(input.normal, yaw);
 
 	output.position = mul(float4(world_position, 1.0), view_projection);
