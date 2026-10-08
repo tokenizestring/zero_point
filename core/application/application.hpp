@@ -21,6 +21,7 @@ namespace zp
 		std::float_t fps = 0.0f;
 		std::float_t frame_cap = 0.0f;
 		std::uint64_t frame_index = 0u;
+		std::uint64_t seated_frame = UINT64_MAX;
 		bool running = false;
 
 		structures::vec3_s fly_position{ 0.0f, 1.7f, -6.0f };

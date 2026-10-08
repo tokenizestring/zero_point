@@ -1529,16 +1529,20 @@ namespace zp
 			const auto vehicle{ vehicles.find(player.state.vehicle) };
 			const auto flying{ vehicle && vehicle_kinds[vehicle->kind].wheel_count == 0u };
 
+			seated_frame = std::min(seated_frame, frame_index);
+
+			const auto tick{ frame_index - seated_frame };
+
 			platform.input.mouse_delta = {};
-			platform.simulate(structures::bind_forward, flying ? frame_index > 560u && frame_index < 760u : frame_index > 40u && frame_index < 330u);
-			platform.simulate(structures::bind_right, flying ? frame_index > 640u && frame_index < 700u : frame_index > 190u && frame_index < 250u);
-			platform.simulate(structures::bind_jump, flying ? frame_index > 380u && frame_index < 560u : frame_index > 340u);
+			platform.simulate(structures::bind_forward, flying ? tick > 560u && tick < 760u : tick > 40u && tick < 330u);
+			platform.simulate(structures::bind_right, flying ? tick > 640u && tick < 700u : tick > 190u && tick < 250u);
+			platform.simulate(structures::bind_jump, flying ? tick > 380u && tick < 560u : tick > 340u);
 
 			player.update(delta, true);
 
-			if (frame_index % 30u == 0u && vehicle)
+			if (tick % 30u == 0u && vehicle)
 			{
-				logger.write("drive: frame %llu vehicle %u at %.2f %.2f %.2f speed %.2f up %.2f rotor %.2f engine %.2f health %.0f compression %.2f %.2f %.2f %.2f", frame_index, vehicle->id, vehicle->position.x, vehicle->position.y, vehicle->position.z, mathematics.length(vehicle->velocity), mathematics.quat_rotate(vehicle->orientation, { 0.0f, 1.0f, 0.0f }).y, vehicle->rotor_speed, vehicle->engine, vehicle->health, vehicle->compression[0], vehicle->compression[1], vehicle->compression[2], vehicle->compression[3]);
+				logger.write("drive: frame %llu vehicle %u at %.2f %.2f %.2f speed %.2f up %.2f rotor %.2f engine %.2f health %.0f compression %.2f %.2f %.2f %.2f", tick, vehicle->id, vehicle->position.x, vehicle->position.y, vehicle->position.z, mathematics.length(vehicle->velocity), mathematics.quat_rotate(vehicle->orientation, { 0.0f, 1.0f, 0.0f }).y, vehicle->rotor_speed, vehicle->engine, vehicle->health, vehicle->compression[0], vehicle->compression[1], vehicle->compression[2], vehicle->compression[3]);
 			}
 		}
 
@@ -2194,7 +2198,15 @@ namespace zp
 			body.look_pitch = player.pitch;
 			body.crouched = (player.state.flags & structures::movement_crouched) != 0u;
 			body.grounded = (player.state.flags & structures::movement_on_ground) != 0u;
-			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead || (player.state.flags & structures::movement_seated) != 0u;
+			body.seated = (player.state.flags & structures::movement_seated) != 0u;
+			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead || (body.seated && options.third_person == false);
+
+			if (const auto vehicle{ body.seated ? vehicles.find(player.state.vehicle) : nullptr }; vehicle)
+			{
+				const auto ahead{ mathematics.quat_rotate(vehicle->shown_orientation, { 0.0f, 0.0f, 1.0f }) };
+
+				body.body_yaw = std::atan2(ahead.x, ahead.z);
+			}
 			body.first_person = options.third_person == false;
 			body.held = survival.slots[inventory_slots + survival.active_slot].item;
 		}
