@@ -2967,6 +2967,64 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
+		enum ragdoll_point_e : std::uint32_t
+		{
+			ragdoll_pelvis,
+			ragdoll_chest,
+			ragdoll_head,
+			ragdoll_left_shoulder,
+			ragdoll_left_elbow,
+			ragdoll_left_wrist,
+			ragdoll_right_shoulder,
+			ragdoll_right_elbow,
+			ragdoll_right_wrist,
+			ragdoll_left_hip,
+			ragdoll_left_knee,
+			ragdoll_left_ankle,
+			ragdoll_right_hip,
+			ragdoll_right_knee,
+			ragdoll_right_ankle,
+			ragdoll_point_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct ragdoll_link_s
+		{
+			std::uint32_t from;
+			std::uint32_t to;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct ragdoll_joint_s
+		{
+			std::uint32_t root;
+			std::uint32_t middle;
+			std::uint32_t end;
+			std::float_t facing;
+			std::float_t fold;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct ragdoll_s
+		{
+			vec3_s points[ragdoll_point_count];
+			vec3_s previous[ragdoll_point_count];
+			std::float_t lengths[26];
+			std::float_t spans[4];
+			std::int32_t bones[ragdoll_point_count];
+			mat4_s frame;
+			std::float_t carry;
+			std::float_t clock;
+			std::float_t calm;
+			bool active;
+			bool asleep;
+		};
+		/*
+		//=====================================================================================
+		*/
 		enum actor_rig_e : std::uint32_t
 		{
 			actor_rig_right_upper,
@@ -3042,6 +3100,8 @@ namespace zp
 			std::vector<mat4_s> view_palette;
 			std::vector<mat4_s> previous_view_palette;
 			std::vector<std::int32_t> collapse;
+			ragdoll_s ragdoll;
+			vec3_s shove;
 		};
 		/*
 		//=====================================================================================
@@ -4382,6 +4442,7 @@ namespace zp
 			bool marks_test;
 			bool keypad_test;
 			bool dead_test;
+			std::uint32_t ragdoll_test;
 			bool title_test;
 			bool wake_test;
 			bool pause_test;
@@ -5062,6 +5123,61 @@ namespace zp
 	};
 	constexpr structures::vec3_s hold_right_pole{ -1.0f, -0.5f, 0.35f };
 	constexpr structures::vec3_s hold_left_pole{ 1.0f, -0.5f, 0.35f };
+	constexpr const char* ragdoll_bones[structures::ragdoll_point_count] = { "Bip01 Pelvis", "Bip01 Neck", "Bip01 Head", "Bip01 L UpperArm", "Bip01 L Forearm", "Bip01 L Hand", "Bip01 R UpperArm", "Bip01 R Forearm", "Bip01 R Hand", "Bip01 L Thigh", "Bip01 L Calf", "Bip01 L Foot", "Bip01 R Thigh", "Bip01 R Calf", "Bip01 R Foot" };
+	constexpr std::uint32_t ragdoll_aims[structures::ragdoll_point_count] = { structures::ragdoll_point_count, structures::ragdoll_point_count, structures::ragdoll_head, structures::ragdoll_left_elbow, structures::ragdoll_left_wrist, structures::ragdoll_point_count, structures::ragdoll_right_elbow, structures::ragdoll_right_wrist, structures::ragdoll_point_count, structures::ragdoll_left_knee, structures::ragdoll_left_ankle, structures::ragdoll_point_count, structures::ragdoll_right_knee, structures::ragdoll_right_ankle, structures::ragdoll_point_count };
+	constexpr std::float_t ragdoll_weights[structures::ragdoll_point_count] = { 0.55f, 0.65f, 1.1f, 0.8f, 1.0f, 1.3f, 0.8f, 1.0f, 1.3f, 0.7f, 0.9f, 1.2f, 0.7f, 0.9f, 1.2f };
+	constexpr std::float_t ragdoll_push[structures::ragdoll_point_count] = { 0.45f, 1.0f, 1.1f, 0.9f, 0.8f, 0.7f, 0.9f, 0.8f, 0.7f, 0.3f, 0.12f, 0.04f, 0.3f, 0.12f, 0.04f };
+	constexpr structures::ragdoll_link_s ragdoll_links[26] =
+	{
+		{ structures::ragdoll_pelvis, structures::ragdoll_chest },
+		{ structures::ragdoll_pelvis, structures::ragdoll_left_shoulder },
+		{ structures::ragdoll_pelvis, structures::ragdoll_right_shoulder },
+		{ structures::ragdoll_pelvis, structures::ragdoll_left_hip },
+		{ structures::ragdoll_pelvis, structures::ragdoll_right_hip },
+		{ structures::ragdoll_chest, structures::ragdoll_left_shoulder },
+		{ structures::ragdoll_chest, structures::ragdoll_right_shoulder },
+		{ structures::ragdoll_chest, structures::ragdoll_left_hip },
+		{ structures::ragdoll_chest, structures::ragdoll_right_hip },
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_right_shoulder },
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_left_hip },
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_right_hip },
+		{ structures::ragdoll_right_shoulder, structures::ragdoll_left_hip },
+		{ structures::ragdoll_right_shoulder, structures::ragdoll_right_hip },
+		{ structures::ragdoll_left_hip, structures::ragdoll_right_hip },
+		{ structures::ragdoll_chest, structures::ragdoll_head },
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_head },
+		{ structures::ragdoll_right_shoulder, structures::ragdoll_head },
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_left_elbow },
+		{ structures::ragdoll_left_elbow, structures::ragdoll_left_wrist },
+		{ structures::ragdoll_right_shoulder, structures::ragdoll_right_elbow },
+		{ structures::ragdoll_right_elbow, structures::ragdoll_right_wrist },
+		{ structures::ragdoll_left_hip, structures::ragdoll_left_knee },
+		{ structures::ragdoll_left_knee, structures::ragdoll_left_ankle },
+		{ structures::ragdoll_right_hip, structures::ragdoll_right_knee },
+		{ structures::ragdoll_right_knee, structures::ragdoll_right_ankle }
+	};
+	constexpr structures::ragdoll_joint_s ragdoll_joints[4] =
+	{
+		{ structures::ragdoll_left_shoulder, structures::ragdoll_left_elbow, structures::ragdoll_left_wrist, -1.0f, 0.42f },
+		{ structures::ragdoll_right_shoulder, structures::ragdoll_right_elbow, structures::ragdoll_right_wrist, -1.0f, 0.42f },
+		{ structures::ragdoll_left_hip, structures::ragdoll_left_knee, structures::ragdoll_left_ankle, 1.0f, 0.55f },
+		{ structures::ragdoll_right_hip, structures::ragdoll_right_knee, structures::ragdoll_right_ankle, 1.0f, 0.55f }
+	};
+	constexpr auto ragdoll_step = 1.0f / 120.0f;
+	constexpr auto ragdoll_substeps = 6u;
+	constexpr auto ragdoll_iterations = 8u;
+	constexpr auto ragdoll_damping = 0.996f;
+	constexpr auto ragdoll_gravity = 9.81f;
+	constexpr auto ragdoll_radius = 0.07f;
+	constexpr auto ragdoll_friction = 0.6f;
+	constexpr auto ragdoll_head_reach = 0.11f;
+	constexpr auto ragdoll_rest_speed = 0.06f;
+	constexpr auto ragdoll_rest_time = 0.8f;
+	constexpr auto ragdoll_lifetime = 9.0f;
+	constexpr auto ragdoll_shove = 1.4f;
+	constexpr auto ragdoll_shot_shove = 2.6f;
+	constexpr auto ragdoll_top_speed = 9.0f;
+	constexpr auto ragdoll_test_frame = 150u;
 
 	constexpr structures::viewmodel_key_s reload_poses[structures::weapon_count] =
 	{
