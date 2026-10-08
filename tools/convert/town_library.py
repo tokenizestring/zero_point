@@ -30,6 +30,13 @@ town_catalog = {
 }
 rail_sets = {"leather_brown": {"tile": 0.6, "kind": "local"}, "rust_iron": {"tile": 1.0, "kind": "local"}, "chequer_plate": {"tile": 1.0, "kind": "local"}}
 painted_seeds = {"painted_wood_white": 1720, "painted_wood_bauxite": 1740}
+town_paints = {
+    "town_paint_green": (linear(34, 62, 44), linear(150, 140, 118), 1760),
+    "town_paint_navy": (linear(30, 40, 72), linear(150, 146, 136), 1770),
+    "town_paint_black": (linear(28, 28, 27), linear(130, 124, 116), 1780),
+    "town_paint_cream": (linear(214, 198, 156), linear(150, 140, 120), 1790),
+    "town_paint_red": (linear(128, 32, 26), linear(150, 130, 116), 1810),
+}
 
 prints = {
     "newspaper": (0, 672, 256, 1024),
@@ -101,6 +108,8 @@ def register():
     for name, entry in rail_sets.items():
         kit.catalog.setdefault(name, entry)
     for name, seed in painted_seeds.items():
+        kit.catalog.setdefault(name, {"tile": 1.0, "kind": "boards", "boards": kit.board_layout(np.random.default_rng(seed), 1.0, 0.09, 0.16)})
+    for name, (paint, primer, seed) in town_paints.items():
         kit.catalog.setdefault(name, {"tile": 1.0, "kind": "boards", "boards": kit.board_layout(np.random.default_rng(seed), 1.0, 0.09, 0.16)})
     return kit.catalog
 
@@ -1114,7 +1123,13 @@ def make_lino():
     kit.save("town_lino", albedo, np.clip(rough, 0.1, 1.0), occlusion, height, tile, 1.0, extra=town_catalog["town_lino"])
 
 
+def make_paints():
+    for name, (paint, primer, seed) in town_paints.items():
+        kit.make_painted(name, paint, primer, seed)
+
+
 makers = {
+    "town_paints": make_paints,
     "town_print": make_print,
     "town_signs": make_signs,
     "town_tiles": make_tiles,
