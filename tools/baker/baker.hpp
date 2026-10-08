@@ -135,7 +135,9 @@ namespace zp
 			"fauna_",
 			"flora_",
 			"bird_",
-			"fish_"
+			"fish_",
+			"prop_",
+			"veh_"
 		};
 
 		constexpr const char* neutralized_sets[] =
