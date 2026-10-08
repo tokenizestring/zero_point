@@ -304,6 +304,8 @@ namespace zp
 	constexpr auto character_strafe_limit = 1.3f;
 	constexpr auto character_backpedal_angle = 1.95f;
 	constexpr const char* character_twist_bones[] = { "Bip01 Spine", "Bip01 Spine1", "Bip01 Spine2", "Bip01 Neck", "Bip01 Head" };
+	constexpr const char* character_sit_bones[] = { "Bip01 L Thigh", "Bip01 R Thigh", "Bip01 L Calf", "Bip01 R Calf", "Bip01 L UpperArm", "Bip01 R UpperArm", "Bip01 L Forearm", "Bip01 R Forearm" };
+	constexpr std::float_t character_sit_angles[] = { 1.45f, 1.45f, -1.5f, -1.5f, 0.55f, 0.55f, 0.75f, 0.75f };
 	constexpr std::float_t character_twist_shares[] = { 0.15f, 0.2f, 0.25f, 0.2f, 0.2f };
 	constexpr std::float_t character_blade_shares[] = { 0.25f, 0.35f, 0.4f, 0.0f, -1.0f };
 	constexpr const char* character_roster[] = { "military_male_01", "military_male_04", "police_male_02", "male_adult_05", "construction_male_01" };
@@ -2906,6 +2908,7 @@ namespace zp
 			std::vector<std::vector<std::int32_t>> clip_tracks;
 			std::vector<std::float_t> twist_shares;
 			std::vector<std::float_t> blade_shares;
+			std::vector<std::float_t> sit_shares;
 			std::uint32_t alpha_first_index;
 			vec3_s bounds_min;
 			vec3_s bounds_max;
@@ -2986,6 +2989,7 @@ namespace zp
 			std::int32_t held_bone;
 			std::float_t blade;
 			bool holding;
+			bool seated;
 			bool crouched;
 			bool grounded;
 			bool turning;
@@ -5838,6 +5842,11 @@ namespace zp
 		{ "prop_bench", { 20.0f, 47.0f }, 0.0f, structures::surface_wood },
 		{ "prop_bench", { 44.0f, 47.0f }, 0.0f, structures::surface_wood },
 		{ "prop_phone_box", { 8.0f, 8.5f }, half_pi, structures::surface_metal },
+		{ "prop_post_box", { 4.6f, 53.0f }, half_pi, structures::surface_metal },
+		{ "prop_post_box", { -4.7f, -40.0f }, -half_pi, structures::surface_metal },
+		{ "prop_street_sign", { -5.2f, -6.8f }, 0.0f, structures::surface_metal },
+		{ "prop_street_sign", { 4.8f, 82.0f }, 0.0f, structures::surface_metal },
+		{ "prop_street_sign", { -4.8f, -78.0f }, pi, structures::surface_metal },
 		{ "prop_bus_shelter", { 5.0f, 96.0f }, half_pi, structures::surface_metal },
 		{ "prop_bus_shelter", { -95.0f, -5.0f }, pi, structures::surface_metal }
 	};
