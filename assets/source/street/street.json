@@ -350,11 +350,233 @@
    "markers": [
     "col_rock_1"
    ],
+   "footprint_min": [
+    -2.0,
+    -0.24,
+    0.0
+   ],
+   "footprint_max": [
+    2.0,
+    0.24,
+    1.1
+   ],
+   "footprint_size": [
+    4.0,
+    0.48,
+    1.1
+   ],
    "kind": "tile",
    "tile_axis": "X",
    "tile_length": 4.0,
    "height": 1.1,
    "front": "both faces dressed"
+  },
+  "prop_railing": {
+   "model": "prop_railing",
+   "far_model": "prop_railing_far",
+   "size": [
+    3.05,
+    0.687,
+    1.41
+   ],
+   "bounds_min": [
+    -1.55,
+    -0.13,
+    -0.08
+   ],
+   "bounds_max": [
+    1.5,
+    0.557,
+    1.33
+   ],
+   "triangles": 4288,
+   "triangles_far": 336,
+   "markers": [
+    "col_rock_1",
+    "col_metal_1"
+   ],
+   "kind": "tile",
+   "tile_axis": "X",
+   "tile_length": 3.0,
+   "height": 1.33,
+   "post": "single standard at x = -1.5; tile at 3.0 m pitch"
+  },
+  "prop_picket_fence": {
+   "model": "prop_picket_fence",
+   "far_model": "prop_picket_fence_far",
+   "size": [
+    3.042,
+    1.164,
+    1.25
+   ],
+   "bounds_min": [
+    -1.542,
+    -0.75,
+    -0.08
+   ],
+   "bounds_max": [
+    1.5,
+    0.414,
+    1.17
+   ],
+   "triangles": 3586,
+   "triangles_far": 388,
+   "markers": [
+    "col_wood_1"
+   ],
+   "kind": "tile",
+   "tile_axis": "X",
+   "tile_length": 3.0,
+   "height": 1.17,
+   "post": "single post at x = -1.5; tile at 3.0 m pitch",
+   "front": "-Y (pickets), rails on +Y"
+  },
+  "prop_traffic_cone": {
+   "model": "prop_traffic_cone",
+   "far_model": "prop_traffic_cone_far",
+   "size": [
+    0.38,
+    0.38,
+    0.75
+   ],
+   "bounds_min": [
+    -0.19,
+    -0.19,
+    -0.0
+   ],
+   "bounds_max": [
+    0.19,
+    0.19,
+    0.75
+   ],
+   "triangles": 884,
+   "triangles_far": 44,
+   "markers": [
+    "col_fabric_1"
+   ],
+   "kind": "point",
+   "footprint": [
+    0.38,
+    0.38
+   ]
+  },
+  "prop_sandbags": {
+   "model": "prop_sandbags",
+   "far_model": "prop_sandbags_far",
+   "size": [
+    3.201,
+    1.607,
+    0.965
+   ],
+   "bounds_min": [
+    -1.661,
+    -1.243,
+    -0.01
+   ],
+   "bounds_max": [
+    1.54,
+    0.364,
+    0.955
+   ],
+   "triangles": 16588,
+   "triangles_far": 28,
+   "markers": [
+    "loot_military_1",
+    "col_fabric_1",
+    "col_fabric_2"
+   ],
+   "kind": "tile",
+   "tile_axis": "X",
+   "tile_length": 3.0,
+   "height": 0.95,
+   "front": "-Y (enemy side); loot behind on +Y"
+  },
+  "prop_wreck_hatch": {
+   "model": "prop_wreck_hatch",
+   "far_model": "prop_wreck_hatch_far",
+   "size": [
+    4.107,
+    4.016,
+    1.543
+   ],
+   "bounds_min": [
+    -2.01,
+    -1.958,
+    -0.003
+   ],
+   "bounds_max": [
+    2.097,
+    2.058,
+    1.54
+   ],
+   "triangles": 17274,
+   "triangles_far": 312,
+   "markers": [
+    "loot_box_1",
+    "col_metal_1",
+    "col_metal_2"
+   ],
+   "kind": "point",
+   "front": "-Y (car nose)",
+   "wheelbase": 2.4
+  },
+  "prop_wreck_saloon": {
+   "model": "prop_wreck_saloon",
+   "far_model": "prop_wreck_saloon_far",
+   "size": [
+    4.153,
+    4.634,
+    1.525
+   ],
+   "bounds_min": [
+    -2.143,
+    -2.317,
+    -0.003
+   ],
+   "bounds_max": [
+    2.01,
+    2.317,
+    1.522
+   ],
+   "triangles": 16146,
+   "triangles_far": 312,
+   "markers": [
+    "loot_box_1",
+    "col_metal_1",
+    "col_metal_2"
+   ],
+   "kind": "point",
+   "front": "-Y (car nose)",
+   "wheelbase": 2.58
+  },
+  "prop_wreck_van": {
+   "model": "prop_wreck_van",
+   "far_model": "prop_wreck_van_far",
+   "size": [
+    3.977,
+    5.624,
+    2.136
+   ],
+   "bounds_min": [
+    -1.958,
+    -2.413,
+    -0.003
+   ],
+   "bounds_max": [
+    2.019,
+    3.211,
+    2.133
+   ],
+   "triangles": 18148,
+   "triangles_far": 300,
+   "markers": [
+    "loot_toolbox_1",
+    "col_metal_1",
+    "col_metal_2"
+   ],
+   "kind": "point",
+   "front": "-Y (car nose)",
+   "wheelbase": 2.69
   }
  }
 }

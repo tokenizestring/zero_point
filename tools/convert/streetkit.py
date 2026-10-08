@@ -34,6 +34,8 @@ class model:
         self.info = {}
         self.counters = {}
         self.band = None
+        self.boost = 2.6
+        self.library_parts = []
 
     def part(self, key, sharp=38.0, origin=None):
         if key not in self.parts:
@@ -407,10 +409,12 @@ def merge(target, other):
     base = len(target.coords)
     target.coords.extend(other.coords)
     target.colors.extend(other.colors)
-    for face, slot, uvs in zip(other.faces, other.face_slot, other.face_label):
+    for face, slot, uvs, box, flag in zip(other.faces, other.face_slot, other.face_label, other.face_uv, other.face_boost):
         target.faces.append(tuple(base + index for index in face))
         target.face_slot.append(target.slot(other.slots[slot]))
         target.face_label.append(uvs)
+        target.face_uv.append(box)
+        target.face_boost.append(flag)
 
 
 def post_box():
@@ -851,11 +855,11 @@ def war_memorial():
     m = model("prop_war_memorial", 91)
     body = m.part("prop_war_memorial", 35.0)
     rng = m.rng
-    vk.register("memorial_granite", "stone", kind="granite", lichen=0.55, moss=0.35, dirt=0.45, streaks=0.4, tooled=0.2)
+    vk.register("memorial_granite", "stone", kind="library", library="granite_ashlar", tint=(0.92, 0.92, 0.92), lichen=0.55, moss=0.35, dirt=0.45, streaks=0.4, tooled=0.2)
     vk.mask_image("verdigris", verdigris_mask())
-    vk.register("memorial_die", "stone", kind="granite", lichen=0.45, moss=0.25, dirt=0.45, streaks=0.4, tooled=0.2, text=("verdigris", (0.07, 0.15, 0.11), 0.0))
+    vk.register("memorial_die", "stone", kind="library", library="granite_ashlar", tint=(0.92, 0.92, 0.92), lichen=0.45, moss=0.25, dirt=0.45, streaks=0.4, tooled=0.2, text=("verdigris", (0.07, 0.15, 0.11), 0.0))
     vk.text_mask("lest", 0.62, [("LEST", 0.14, 0.8, "timesbd.ttf", 0.31, 0.55, 1.0, 1.2), ("WE", 0.14, 0.55, "timesbd.ttf", 0.31, 0.55, 1.0, 1.2), ("FORGET", 0.14, 0.3, "timesbd.ttf", 0.31, 0.57, 1.0, 1.1)])
-    vk.register("memorial_shaft", "stone", kind="granite", lichen=0.6, moss=0.2, dirt=0.4, streaks=0.5, tooled=0.15, text=("lest", (0.045, 0.04, 0.035), -4.0))
+    vk.register("memorial_shaft", "stone", kind="library", library="granite_ashlar", tint=(0.92, 0.92, 0.92), lichen=0.6, moss=0.2, dirt=0.4, streaks=0.5, tooled=0.15, text=("lest", (0.045, 0.04, 0.035), -4.0))
     for width, z0, z1 in ((2.6, -0.08, 0.22), (2.1, 0.22, 0.44), (1.6, 0.44, 0.66)):
         w = width * 0.5
         d = 0.38
@@ -952,7 +956,7 @@ def horse_trough():
     body = m.part("prop_horse_trough", 35.0)
     rng = m.rng
     vk.text_mask("trough", 7.0, [("ST BRELADE 1894", 0.52, 0.5, "timesbd.ttf", 3.5, 6.0, 1.0, 1.25)])
-    vk.register("trough_granite", "stone", kind="granite", tint=(0.25, 0.24, 0.23), minerals=[(0.0, (0.26, 0.25, 0.24)), (0.35, (0.34, 0.33, 0.31)), (0.6, (0.44, 0.43, 0.41)), (0.82, (0.14, 0.135, 0.13)), (0.94, (0.025, 0.024, 0.024))], lichen=0.6, moss=0.45, dirt=0.5, streaks=0.4, tooled=0.25, text=("trough", (0.04, 0.04, 0.035), -4.0))
+    vk.register("trough_granite", "stone", kind="library", library="granite_ashlar", tint=(0.8, 0.82, 0.84), tile_scale=0.8, lichen=0.6, moss=0.45, dirt=0.5, streaks=0.4, tooled=0.25, text=("trough", (0.04, 0.04, 0.035), -4.0))
     outer = vk.slab(vk.rounded(2.2, 0.72, 0.09, 3), 0.74)
     vk.bevelled(outer, 0.025, 1, 30.0)
     g.shifted(outer, 0.0, 0.0, 0.32)
@@ -976,12 +980,11 @@ def horse_trough():
 def garden_wall():
     m = model("prop_garden_wall", 121)
     body = m.part("prop_garden_wall", 30.0)
+    m.library_parts = ["prop_garden_wall"]
     rng = m.rng
-    vk.register("wall_stone", "stone", kind="granite", lichen=0.55, moss=0.4, dirt=0.5, streaks=0.35, blend=0.3)
-    vk.register("mortar", "stone", kind="concrete", tint=(0.16, 0.15, 0.13), lichen=0.2, moss=0.7, dirt=0.7, streaks=0.3)
     half = 2.0
     top = 0.97
-    body.add(vk.block(v(-half, -0.2, -0.06), v(half, 0.2, top)), "mortar", None)
+    body.add(vk.block(v(-half, -0.2, -0.06), v(half, 0.2, top)), "lib_concrete", None)
     for side in (-1.0, 1.0):
         z = -0.06
         while z < top - 0.06:
@@ -1003,12 +1006,12 @@ def garden_wall():
                 stone = vk.rubble(sx, depth, sz, rng)
                 if side > 0.0:
                     bmesh.ops.transform(stone, matrix=Matrix.Rotation(math.pi, 4, 'Z'), verts=stone.verts)
-                body.add(stone, "wall_stone", Matrix.Translation((x + sx * 0.5, side * (0.2 + bulge - depth * 0.5), z + gap * 0.5 + lift + sz * 0.5)) @ Matrix.Rotation(rng.uniform(-0.04, 0.04), 4, 'Y'), tint=hue)
+                body.add(stone, "lib_granite_ashlar", Matrix.Translation((x + sx * 0.5, side * (0.2 + bulge - depth * 0.5), z + gap * 0.5 + lift + sz * 0.5)) @ Matrix.Rotation(rng.uniform(-0.04, 0.04), 4, 'Y'), tint=hue)
                 if course - gap - sz > 0.07 and rng.random() < 0.7:
                     pin = vk.rubble(min(sx * 0.6, 0.18), depth * 0.7, (course - gap - sz) * 0.7, rng, 0.25, 0.012)
                     if side > 0.0:
                         bmesh.ops.transform(pin, matrix=Matrix.Rotation(math.pi, 4, 'Z'), verts=pin.verts)
-                    body.add(pin, "wall_stone", Matrix.Translation((x + sx * rng.uniform(0.3, 0.7), side * (0.2 + bulge * 0.5 - depth * 0.35), z + gap * 0.5 + (lift + sz + (course - gap)) * 0.5 if lift < (course - gap - sz) * 0.5 else z + gap * 0.5 + lift * 0.5)), tint=(tone * 0.9,) * 3)
+                    body.add(pin, "lib_granite_ashlar", Matrix.Translation((x + sx * rng.uniform(0.3, 0.7), side * (0.2 + bulge * 0.5 - depth * 0.35), z + gap * 0.5 + (lift + sz + (course - gap)) * 0.5 if lift < (course - gap - sz) * 0.5 else z + gap * 0.5 + lift * 0.5)), tint=(tone * 0.9,) * 3)
                 x = x1
             z += course
     x = -half
@@ -1018,11 +1021,11 @@ def garden_wall():
         coping = vk.prism(outline, -length * 0.5 + 0.004, length * 0.5 - 0.004)
         bmesh.ops.transform(coping, matrix=Matrix.Rotation(math.pi * 0.5, 4, 'Z'), verts=coping.verts)
         tone = rng.uniform(0.75, 1.2)
-        body.add(coping, "wall_stone", Matrix.Translation((x + length * 0.5, 0.0, top)) @ Matrix.Rotation(rng.uniform(-0.01, 0.01), 4, 'X'), tint=(tone, tone, tone))
+        body.add(coping, "lib_granite_ashlar", Matrix.Translation((x + length * 0.5, 0.0, top)) @ Matrix.Rotation(rng.uniform(-0.01, 0.01), 4, 'X'), tint=(tone, tone, tone))
         x += length
     far = m.far("prop_garden_wall_far")
-    far.add(vk.block(v(-half, -0.23, -0.04), v(half, 0.23, top)), "steel")
-    far.add(vk.prism([(-0.235, 0.0), (0.235, 0.0), (0.17, 0.09), (0.0, 0.13), (-0.17, 0.09)], -half, half), "steel", Matrix.Translation((0.0, 0.0, top)) @ Matrix.Rotation(math.pi * 0.5, 4, 'Z'))
+    far.add(vk.block(v(-half, -0.23, -0.04), v(half, 0.23, top)), "lib_granite_rubble")
+    far.add(vk.prism([(-0.235, 0.0), (0.235, 0.0), (0.17, 0.09), (0.0, 0.13), (-0.17, 0.09)], -half, half), "lib_granite_ashlar", Matrix.Translation((0.0, 0.0, top)) @ Matrix.Rotation(math.pi * 0.5, 4, 'Z'))
     m.col("rock", (-half, -0.24, 0.0), (half, 0.24, top + 0.13))
     m.close(v(0.6, -1.6, 1.3), v(-0.2, 0.0, 0.6), 40.0)
     m.close(v(-1.4, -0.9, 1.4), v(-1.9, 0.0, 0.95), 45.0)
@@ -1033,13 +1036,14 @@ def garden_wall():
 def railing():
     m = model("prop_railing", 131)
     body = m.part("prop_railing", 40.0)
+    kerb = m.part("prop_railing_kerb", 30.0)
+    m.library_parts = ["prop_railing_kerb"]
     rng = m.rng
     half = 1.5
-    vk.register("kerb", "stone", kind="granite", tint=(0.25, 0.24, 0.23), minerals=[(0.0, (0.26, 0.25, 0.24)), (0.35, (0.34, 0.33, 0.31)), (0.6, (0.44, 0.43, 0.41)), (0.82, (0.14, 0.135, 0.13)), (0.94, (0.025, 0.024, 0.024))], lichen=0.4, moss=0.5, dirt=0.6, tooled=0.3)
     x = -half
     while x < half - 0.01:
         length = min(rng.uniform(0.9, 1.1), half - x)
-        body.add(vk.block(v(x + 0.003, -0.13, -0.08), v(x + length - 0.003, 0.13, 0.14)), "kerb", None, 0.015, 1, tint=(rng.uniform(0.85, 1.15),) * 3)
+        kerb.add(vk.block(v(x + 0.003, -0.13, -0.08), v(x + length - 0.003, 0.13, 0.14)), "lib_granite_ashlar", None, 0.015, 1)
         x += length
     rail_low = 0.24
     rail_high = 1.05
@@ -1158,7 +1162,7 @@ def sandbags():
     body = m.part("prop_sandbags", 40.0)
     rng = m.rng
     vk.register("sandbag", "fabric", kind="hessian", tint=(0.5, 0.42, 0.3), weave=11.0, stains=0.8, mildew=0.55, dirt=0.75, moss=0.3)
-    vk.register("sand", "organic", kind="paper", tint=(0.34, 0.29, 0.2), dirt=0.3)
+    vk.register("sand", "organic", kind="paper", tint=(0.2, 0.16, 0.11), dirt=0.5)
     half = 1.5
     courses = [(0.0, 2, 0.0), (0.13, 2, 0.5), (0.26, 2, 0.0), (0.39, 1, 0.5), (0.52, 1, 0.0), (0.65, 1, 0.5), (0.78, 1, 0.0)]
     length = 0.6
@@ -1180,8 +1184,8 @@ def sandbags():
                 burst = level == 6 and count == 2
                 if burst:
                     for vert in bag.verts:
-                        if vert.co.z > 0.02 and abs(vert.co.x) < 0.15:
-                            vert.co.z -= 0.04 * (1.0 - abs(vert.co.x) / 0.15)
+                        if vert.co.z > 0.0:
+                            vert.co.z -= 0.022 * max(0.0, 1.0 - abs(vert.co.x) / 0.25) * (vert.co.z / (squash * 0.5))
                 tone = rng.uniform(0.8, 1.15)
                 body.add(bag, "sandbag", Matrix.Translation((cx + rng.uniform(-0.02, 0.02), y + rng.uniform(-0.02, 0.02), z + squash * 0.5)) @ Matrix.Rotation(rng.uniform(-0.05, 0.05), 4, 'Z') @ Matrix.Rotation(rng.uniform(-0.04, 0.04), 4, 'X'), tint=(tone, tone * rng.uniform(0.95, 1.02), tone * rng.uniform(0.9, 1.0)))
                 neck = v(cx + length * 0.5 - 0.025, y, z + squash * 0.5)
@@ -1727,6 +1731,7 @@ def car_wreck(kind):
     cabin_part = m.part(name + "_cabin", 45.0)
     m.sets = [(name + "_body", [name + "_body"]), (name + "_cabin", [name + "_cabin"])]
     m.band = 0.11
+    m.boost = 4.5
     length = spec["length"]
     half = length * 0.5
     widest = max(row[3] for row in spec["stations"])
@@ -1792,7 +1797,8 @@ def car_wreck(kind):
         hinge = v(open_side * (body_x(spec, y0, spec["belt"] - 0.1) - 0.02), y0, 0.0)
         swing = vk.about(hinge, Z, -open_side * open_angle)
         door_look = "primer_door" if spec["odd"] == ("primer_door", open_index) else paint
-        shell_part.add(door_piece, door_look, drop @ swing, label=labels_low, chooser=lambda face: "trim_dark" if face.normal.x * open_side < -0.5 else None)
+        closed_space = drop @ swing.inverted() @ drop.inverted()
+        shell_part.add(door_piece, door_look, drop @ swing, label=labels_low, chooser=lambda face: "trim_dark" if (closed_space.to_3x3() @ face.normal).x * open_side < -0.5 else None, label_space=closed_space)
         door_parts = (swing, y0, y1)
     else:
         door_parts = None
@@ -1807,7 +1813,7 @@ def car_wreck(kind):
             center = v(side * spec["track"], axle, spec["tyre"] - sink)
             car_wheel(cabin_part, spec, center, side, rng, cap=(rng.random() < 0.5 and kind != "van"))
     leaf_litter(shell_part, rng, v(0.0, (spec["roof_y"][0] + spec["roof_y"][1]) * 0.5 if kind != "van" else 0.5, roof + 0.02 - sink), 0.5, 26, 0.0)
-    leaf_litter(cabin_part, rng, v(0.0, 0.0, 0.0), 2.2, 40)
+    leaf_litter(cabin_part, rng, v(0.0, 0.0, 0.0), 1.25, 34)
     car_far(m, spec, name)
     loot_kind, spot = spec["loot"]
     m.loot(loot_kind, v(spot[0], spot[1], spot[2] - sink))
@@ -1917,15 +1923,19 @@ def bake(name):
     built = {key: p.build() for key, p in m.parts.items()}
     objects = list(built.values())
     far_objects = [p.build() for p in m.far_parts.values()]
-    sets = m.sets if m.sets else [(name, list(built.keys()))]
+    bake_keys = [key for key in built if key not in m.library_parts]
+    sets = m.sets if m.sets else ([(name, bake_keys)] if bake_keys else [])
     texture_sets = []
     for index, (key, members) in enumerate(sets):
-        tset = vk.texture_set(key, name, band=m.band)
+        tset = vk.texture_set(key, name, band=m.band, boost=m.boost)
         tset.bake_near([built[member] for member in members], with_far=(index == 0 and bool(far_objects)))
         texture_sets.append(tset)
-    if far_objects:
+    if far_objects and texture_sets:
         texture_sets[0].bake_far(far_objects, objects)
-    markers = [vk.marker(marker_name, low, high, texture_sets[0].material) for marker_name, low, high in m.markers]
+    for obj in objects + far_objects:
+        vk.clean(obj)
+    marker_look = texture_sets[0].material if texture_sets else objects[0].data.materials[0]
+    markers = [vk.marker(marker_name, low, high, marker_look) for marker_name, low, high in m.markers]
     path, document = vk.export(name, objects + markers)
     near = vk.audit(path, document)
     far = None
@@ -1944,6 +1954,13 @@ def record(name, m, near, far):
             document = json.load(handle)
     document["space"] = "Blender model space in metres: X right, Y back (front faces -Y), Z up; origin at ground contact, bottom centre"
     entry = {"model": name, "far_model": name + "_far" if far else None, "size": [round(near["high"][i] - near["low"][i], 3) for i in range(3)], "bounds_min": list(near["low"]), "bounds_max": list(near["high"]), "triangles": near["triangles"], "triangles_far": far["triangles"] if far else 0, "markers": near["markers"]}
+    boxes = [(low, high) for marker_name, low, high in m.markers if marker_name.startswith("col_")]
+    if boxes:
+        low = [round(min(box[0][i] for box in boxes), 3) for i in range(3)]
+        high = [round(max(box[1][i] for box in boxes), 3) for i in range(3)]
+        entry["footprint_min"] = low
+        entry["footprint_max"] = high
+        entry["footprint_size"] = [round(high[i] - low[i], 3) for i in range(3)]
     entry.update(m.info)
     document.setdefault("props", {})[name] = entry
     vk.write_json(manifest_path, document)

@@ -37,6 +37,8 @@ materials_cache = {}
 labels = {}
 specs = {}
 templates = {}
+library_root = os.path.join(models_root, "_library")
+library_catalog = {}
 settings = {"bake_size": 2048, "output_size": 1024, "samples": 24, "ao_samples": 32, "margin": 16, "ao_distance": 0.45, "band": 0.12}
 
 
@@ -330,7 +332,7 @@ def rivets(target, a, b, spacing, normal, radius=0.008, look="steel", ends=True)
 def weld(target, points, normal, radius=0.005, seed=0, look="weld"):
     path = [Vector(p) for p in points]
     dense, length = g.resample(g.spline(path, 6) if len(path) > 2 else path, max(radius * 2.4, 0.01))
-    wobble = g.smooth_noise(len(dense), seed, 3)
+    wobble = g.smooth_noise(len(dense), abs(int(seed)) % 2147483647, 3)
     normal = Vector(normal).normalized()
     bm = bmesh.new()
     rings = []
@@ -429,6 +431,59 @@ def hose_clamp(target, center, axis, radius, look="zinc", width=0.012):
     target.add(g.transformed(g.box(0.018, 0.014, width), frame(lug, side, axis)), look)
 
 
+def library_tile(name):
+    if not library_catalog:
+        path = os.path.join(library_root, "library.json")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as handle:
+                library_catalog.update(json.load(handle))
+    return library_catalog.get(name, {}).get("tile", 1.0)
+
+
+def box_uv(points, normal, tile, offset):
+    ax = abs(normal.x)
+    ay = abs(normal.y)
+    az = abs(normal.z)
+    ou, ov = offset
+    if az >= ax and az >= ay:
+        s = 1.0 if normal.z >= 0.0 else -1.0
+        return [(p.x / tile + ou, s * p.y / tile + ov) for p in points]
+    if ax >= ay:
+        s = 1.0 if normal.x >= 0.0 else -1.0
+        return [(s * p.y / tile + ou, p.z / tile + ov) for p in points]
+    s = -1.0 if normal.y >= 0.0 else 1.0
+    return [(s * p.x / tile + ou, p.z / tile + ov) for p in points]
+
+
+def library_material(look):
+    name = look[4:]
+    result = bpy.data.materials.new(name)
+    result.use_nodes = True
+    tree = result.node_tree
+    shader = next(node for node in tree.nodes if node.type == 'BSDF_PRINCIPLED')
+    color = tree.nodes.new('ShaderNodeTexImage')
+    color.image = bpy.data.images.load(os.path.join(library_root, name + "_albedo.png"), check_existing=True)
+    color.image.colorspace_settings.name = 'sRGB'
+    tree.links.new(color.outputs['Color'], shader.inputs['Base Color'])
+    packed = tree.nodes.new('ShaderNodeTexImage')
+    packed.image = bpy.data.images.load(os.path.join(library_root, name + "_orm.png"), check_existing=True)
+    packed.image.colorspace_settings.name = 'Non-Color'
+    split = tree.nodes.new('ShaderNodeSeparateColor')
+    tree.links.new(packed.outputs['Color'], split.inputs['Color'])
+    tree.links.new(split.outputs['Green'], shader.inputs['Roughness'])
+    tree.links.new(split.outputs['Blue'], shader.inputs['Metallic'])
+    settings_node = tree.nodes.new('ShaderNodeGroup')
+    settings_node.node_tree = g.gltf_group()
+    tree.links.new(split.outputs['Red'], settings_node.inputs['Occlusion'])
+    bumps = tree.nodes.new('ShaderNodeTexImage')
+    bumps.image = bpy.data.images.load(os.path.join(library_root, name + "_normal.png"), check_existing=True)
+    bumps.image.colorspace_settings.name = 'Non-Color'
+    mapping = tree.nodes.new('ShaderNodeNormalMap')
+    tree.links.new(bumps.outputs['Color'], mapping.inputs['Color'])
+    tree.links.new(mapping.outputs['Normal'], shader.inputs['Normal'])
+    return result
+
+
 class part:
     def __init__(self, name, sharp=38.0, origin=None):
         self.name = name
@@ -439,8 +494,11 @@ class part:
         self.faces = []
         self.face_slot = []
         self.face_label = []
+        self.face_boost = []
+        self.face_uv = []
         self.slots = []
         self.lookup = {}
+        self.pieces = 0
 
     def slot(self, look):
         if look not in self.lookup:
@@ -448,7 +506,7 @@ class part:
             self.slots.append(look)
         return self.lookup[look]
 
-    def add(self, bm, look, matrix=None, bevel=0.0, segments=1, angle=30.0, label=None, profile=0.5, tint=None, chooser=None):
+    def add(self, bm, look, matrix=None, bevel=0.0, segments=1, angle=30.0, label=None, profile=0.5, tint=None, chooser=None, label_space=None):
         if bevel > 0.0:
             bevelled(bm, bevel, segments, angle, profile)
         if matrix is not None:
@@ -460,17 +518,29 @@ class part:
         shade = tuple(tint) if tint is not None else (1.0, 1.0, 1.0)
         self.colors.extend([shade] * len(bm.verts))
         index = self.slot(look)
+        self.pieces += 1
+        offset = ((self.pieces * 0.6180339) % 1.0, (self.pieces * 0.4142136) % 1.0)
         for face in bm.faces:
             self.faces.append(tuple(base + vert.index for vert in face.verts))
             chosen = chooser(face) if chooser is not None else None
             self.face_slot.append(self.slot(chosen) if chosen else index)
+            face_look = chosen if chosen else look
+            if face_look.startswith("lib_"):
+                self.face_uv.append(box_uv([vert.co for vert in face.verts], face.normal, library_tile(face_look[4:]), offset))
+            else:
+                self.face_uv.append(None)
             uvs = None
+            boosted = False
             if label is not None:
+                normal = face.normal if label_space is None else (label_space.to_3x3() @ face.normal).normalized()
+                points = [vert.co for vert in face.verts] if label_space is None else [label_space @ vert.co for vert in face.verts]
                 for projection in (label if isinstance(label, list) else [label]):
-                    if face.normal.dot(projection["facing"]) > projection["limit"]:
-                        uvs = [((vert.co - projection["origin"]).dot(projection["u"]) / projection["width"] + 0.5, (vert.co - projection["origin"]).dot(projection["v"]) / projection["height"] + 0.5) for vert in face.verts]
+                    if normal.dot(projection["facing"]) > projection["limit"]:
+                        uvs = [((p - projection["origin"]).dot(projection["u"]) / projection["width"] + 0.5, (p - projection["origin"]).dot(projection["v"]) / projection["height"] + 0.5) for p in points]
+                        boosted = projection.get("boost", True)
                         break
             self.face_label.append(uvs)
+            self.face_boost.append(boosted)
         bm.free()
 
     def add_many(self, pieces, look, matrix=None):
@@ -486,6 +556,15 @@ class part:
         mesh.from_pydata([(x - shift.x, y - shift.y, z - shift.z) for x, y, z in self.coords], [], self.faces)
         mesh.polygons.foreach_set("material_index", self.face_slot)
         layer = mesh.uv_layers.new(name="UVMap")
+        if any(uvs is not None for uvs in self.face_uv):
+            flat = []
+            for face, uvs in zip(self.faces, self.face_uv):
+                if uvs is None:
+                    flat.extend((0.0, 0.0) * len(face))
+                else:
+                    for u, w in uvs:
+                        flat.extend((u, w))
+            layer.data.foreach_set("uv", flat)
         if any(uvs is not None for uvs in self.face_label):
             text_layer = mesh.uv_layers.new(name="TextMap")
             flat = []
@@ -500,7 +579,7 @@ class part:
         layer.active_render = True
         attribute = mesh.color_attributes.new("tint", 'FLOAT_COLOR', 'POINT')
         attribute.data.foreach_set("color", [value for r, g_value, b in self.colors for value in (r, g_value, b, 1.0)])
-        boost = [1 if uvs is not None and any(-0.05 <= u <= 1.05 and -0.05 <= w <= 1.05 for u, w in uvs) else 0 for uvs in self.face_label]
+        boost = [1 if flag and uvs is not None and any(-0.05 <= u <= 1.05 and -0.05 <= w <= 1.05 for u, w in uvs) else 0 for uvs, flag in zip(self.face_label, self.face_boost)]
         if any(boost):
             mesh.attributes.new("boost", 'INT', 'FACE').data.foreach_set("value", boost)
         mesh.validate(clean_customdata=False)
@@ -688,10 +767,10 @@ def text_mask(key, aspect, lines, resolution=1024, borders=(), shapes=()):
     return image
 
 
-def label(origin, u_axis, v_axis, width, height, limit=0.55, facing=None):
+def label(origin, u_axis, v_axis, width, height, limit=0.55, facing=None, boost=True):
     u_axis = Vector(u_axis).normalized()
     v_axis = Vector(v_axis).normalized()
-    return {"origin": Vector(origin), "u": u_axis, "v": v_axis, "width": width, "height": height, "facing": Vector(facing).normalized() if facing is not None else u_axis.cross(v_axis).normalized(), "limit": limit}
+    return {"origin": Vector(origin), "u": u_axis, "v": v_axis, "width": width, "height": height, "facing": Vector(facing).normalized() if facing is not None else u_axis.cross(v_axis).normalized(), "limit": limit, "boost": boost}
 
 
 def atlas_label(center, u_axis, v_axis, width, height, cell, limit=0.35, facing=None):
@@ -701,7 +780,7 @@ def atlas_label(center, u_axis, v_axis, width, height, cell, limit=0.35, facing=
     width_label = width / (u1 - u0)
     height_label = height / (v1 - v0)
     origin = Vector(center) - u_axis * width_label * ((u0 + u1) * 0.5 - 0.5) - v_axis * height_label * ((v0 + v1) * 0.5 - 0.5)
-    return label(origin, u_axis, v_axis, width_label, height_label, limit, facing)
+    return label(origin, u_axis, v_axis, width_label, height_label, limit, facing, False)
 
 
 def line_mask(key, size, strokes, rects=(), extra=None):
@@ -742,6 +821,10 @@ def material(look):
             return cached
         except ReferenceError:
             pass
+    if look.startswith("lib_"):
+        result = library_material(look)
+        materials_cache[look] = result
+        return result
     result = bpy.data.materials.new(look)
     result.use_nodes = True
     kind, params = specs.get(look, (look, {}))
@@ -1135,6 +1218,18 @@ def look_stone(gr, p):
         tool = p.get("tooled", 0.0)
         if tool > 0.0:
             height = gr.add(height, gr.mul(gr.noise(1.0, 2.0, 0.5, stretch=(160.0 / s, 9.0 / s, 160.0 / s)), tool))
+    elif kind == "library":
+        name = p.get("library", "granite_ashlar")
+        tile = library_tile(name) * p.get("tile_scale", 1.0)
+        photo = gr.photo(os.path.join(library_root, name + "_albedo.png"), 1.0 / tile, 'sRGB')
+        packed = gr.photo(os.path.join(library_root, name + "_orm.png"), 1.0 / tile, 'Non-Color')
+        color = gr.mix(1.0, photo, scaled(p.get("tint", (1.0, 1.0, 1.0)), 1.0), 'MULTIPLY')
+        rough = gr.chan(packed, 'Green')
+        height = gr.mul(gr.add(gr.chan(photo, 'Red'), gr.chan(photo, 'Green')), 1.2)
+        tool = p.get("tooled", 0.0)
+        if tool > 0.0:
+            height = gr.add(height, gr.mul(gr.noise(1.0, 2.0, 0.5, stretch=(160.0 / s, 9.0 / s, 160.0 / s)), tool))
+        color = gr.tint(color)
     elif kind == "concrete":
         photo = gr.photo(os.path.join(acg_textures, "Concrete046", "Concrete046_2K-JPG_Color.jpg"), 0.8 / s)
         color = gr.mix(1.0, photo, scaled(p.get("tint", (0.34, 0.33, 0.3)), 2.2), 'MULTIPLY')
@@ -1195,9 +1290,9 @@ def look_wood(gr, p):
     height = gr.sub(gr.mul(gr.ramp(fibres, 0.3, 0.8), 0.4), gr.mul(cracks, 1.0))
     paint = p.get("paint")
     if paint is not None:
-        peel = gr.add(gr.mul(edge, 1.6), gr.mul(gr.ramp(gr.noise(3.0 / s, 6.0, 0.62), 0.45, 0.72), p.get("peel", 0.6)))
+        peel = gr.add(gr.mul(edge, 1.6), gr.mul(gr.ramp(gr.noise(3.0 / s, 6.0, 0.62), 0.4, 0.7), p.get("peel", 0.6) * 1.4))
         peel = gr.add(peel, gr.mul(gr.sub(gr.noise(40.0 / s, 5.0, 0.7), 0.5), 0.8))
-        bare = gr.ramp(peel, 0.62, 0.68)
+        bare = gr.ramp(peel, 0.55, 0.6)
         coat = gr.mix(gr.ramp(gr.noise(1.5 / s, 3.0, 0.5), 0.3, 0.7), scaled(paint, 0.9), blend(paint, (0.6, 0.6, 0.58), 0.3))
         coat = gr.mix(gr.mul(gr.ramp(fibres, 0.5, 0.8), 0.25), coat, scaled(paint, 0.75))
         color = gr.mix(bare, coat, color)
@@ -1702,11 +1797,12 @@ def shrink(data, factor):
 
 
 class texture_set:
-    def __init__(self, key, folder, size=None, band=None):
+    def __init__(self, key, folder, size=None, band=None, boost=2.6):
         self.key = key
         self.folder = folder
         self.size = size if size is not None else settings["bake_size"]
         self.band = band if band is not None else settings["band"]
+        self.boost = boost
         self.maps = None
         self.images = None
         self.material = None
@@ -1721,7 +1817,7 @@ class texture_set:
         return int((1.0 - self.band + 0.006) * self.size)
 
     def bake_near(self, objects, with_far=False, hide=()):
-        unwrap(objects, self.region_near(with_far))
+        unwrap(objects, self.region_near(with_far), boost=self.boost)
         self.maps = bake_maps(objects, self.size, hide=hide)
         self.write()
         self.apply(objects)
@@ -1792,6 +1888,17 @@ class texture_set:
             boost = obj.data.attributes.get("boost")
             if boost is not None:
                 obj.data.attributes.remove(boost)
+
+
+def clean(obj):
+    for layer_name in ("TextMap",):
+        layer = obj.data.uv_layers.get(layer_name)
+        if layer is not None:
+            obj.data.uv_layers.remove(layer)
+    for attribute_name in ("tint", "boost"):
+        attribute = obj.data.attributes.get(attribute_name)
+        if attribute is not None:
+            obj.data.attributes.remove(attribute)
 
 
 def baked_material(name, images):
