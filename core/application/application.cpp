@@ -163,6 +163,13 @@ namespace zp
 					index++;
 				}
 
+				else if (std::strcmp(current, "--arms") == 0 && next[0])
+				{
+					std::snprintf(options.arms, sizeof(options.arms), "%s", next);
+
+					index++;
+				}
+
 				else if (std::strcmp(current, "--quality") == 0 && next[0])
 				{
 					options.quality = std::atoi(next);
@@ -460,6 +467,11 @@ namespace zp
 					index++;
 				}
 
+				else if (std::strcmp(current, "--horse") == 0)
+				{
+					options.horse_test = true;
+				}
+
 				else if (std::strcmp(current, "--ragdolls") == 0 && next[0])
 				{
 					options.ragdoll_test = static_cast<std::uint32_t>(std::clamp(std::atoi(next), 0, 8));
@@ -582,6 +594,8 @@ namespace zp
 			{
 				logger.write("application: character clips missing, actors disabled");
 			}
+
+			viewmodel.arms_source = options.arms[0] ? options.arms : viewmodel_character;
 
 			if (viewmodel.create() == false)
 			{
@@ -874,6 +888,25 @@ namespace zp
 			player.state.seat = 0u;
 			player.state.flags |= structures::movement_seated;
 			player.previous = player.state;
+		}
+
+		for (auto index{ 0u }; options.horse_test && index < fauna.animals.size() && (player.state.flags & structures::movement_seated) == 0u; index++)
+		{
+			if (const auto& animal{ fauna.animals[index] }; animal.alive && animal.species == structures::species_horse)
+			{
+				const auto chest{ animal.position + structures::vec3_s{ 0.0f, species_table[animal.species].center, 0.0f } };
+				const auto eye{ chest + mathematics.flat_forward(animal.yaw + half_pi) * 1.4f };
+
+				player.yaw = animal.yaw;
+
+				if (vehicles.tame(player.state, 0, eye, mathematics.normalize(chest - eye)))
+				{
+					player.previous = player.state;
+					options.drive_test = 0;
+
+					logger.write("ride: tamed horse %u at %.1f %.1f %.1f", index, animal.position.x, animal.position.y, animal.position.z);
+				}
+			}
 		}
 
 		if (options.flock_view >= 0 && wildlife.flocks.size())
@@ -1559,7 +1592,8 @@ namespace zp
 		else if (options.drive_test >= 0 && (player.state.flags & structures::movement_seated))
 		{
 			const auto vehicle{ vehicles.find(player.state.vehicle) };
-			const auto flying{ vehicle && vehicle_kinds[vehicle->kind].wheel_count == 0u };
+			const auto flying{ vehicle && vehicle_kinds[vehicle->kind].mode == structures::vehicle_mode_rotor };
+			const auto riding{ vehicle && vehicle_kinds[vehicle->kind].mode == structures::vehicle_mode_hooves };
 
 			seated_frame = std::min(seated_frame, frame_index);
 
@@ -1568,7 +1602,8 @@ namespace zp
 			platform.input.mouse_delta = {};
 			platform.simulate(structures::bind_forward, flying ? tick > 560u && tick < 760u : tick > 40u && tick < 330u);
 			platform.simulate(structures::bind_right, flying ? tick > 640u && tick < 700u : tick > 190u && tick < 250u);
-			platform.simulate(structures::bind_jump, flying ? tick > 380u && tick < 560u : tick > 340u);
+			platform.simulate(structures::bind_jump, flying ? tick > 380u && tick < 560u : (riding ? tick > 300u && tick < 306u : tick > 340u));
+			platform.simulate(structures::bind_sprint, riding && tick > 110u && tick < 280u);
 
 			player.update(delta, true);
 
@@ -2231,13 +2266,16 @@ namespace zp
 			body.crouched = (player.state.flags & structures::movement_crouched) != 0u;
 			body.grounded = (player.state.flags & structures::movement_on_ground) != 0u;
 			body.seated = (player.state.flags & structures::movement_seated) != 0u;
-			body.hidden = options.camera_set || state != structures::app_playing || survival.vitals.dead || (body.seated && options.third_person == false);
+			body.hidden = (options.camera_set && options.horse_test == false) || state != structures::app_playing || survival.vitals.dead || (body.seated && options.third_person == false);
+
+			body.mounted = false;
 
 			if (const auto vehicle{ body.seated ? vehicles.find(player.state.vehicle) : nullptr }; vehicle)
 			{
 				const auto ahead{ mathematics.quat_rotate(vehicle->shown_orientation, { 0.0f, 0.0f, 1.0f }) };
 
 				body.body_yaw = std::atan2(ahead.x, ahead.z);
+				body.mounted = vehicle_kinds[vehicle->kind].mode == structures::vehicle_mode_hooves;
 			}
 			body.first_person = options.third_person == false;
 			body.held = survival.slots[inventory_slots + survival.active_slot].item;
