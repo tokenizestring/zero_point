@@ -1659,6 +1659,7 @@ namespace zp
 			track_material_ballast,
 			track_material_sleeper,
 			track_material_rail,
+			track_material_setts,
 			track_material_count
 		};
 		/*
@@ -1705,7 +1706,33 @@ namespace zp
 			town_house,
 			town_cottage,
 			town_ruin,
+			town_barn,
+			town_shed,
+			town_home,
+			town_plaza,
 			town_building_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum town_style_e : std::uint32_t
+		{
+			town_style_capital,
+			town_style_harbour,
+			town_style_village,
+			town_style_resort,
+			town_style_estate,
+			town_style_count
+		};
+		/*
+		//=====================================================================================
+		*/
+		enum town_zone_e : std::uint32_t
+		{
+			town_zone_core,
+			town_zone_middle,
+			town_zone_edge,
+			town_zone_count
 		};
 		/*
 		//=====================================================================================
@@ -1742,61 +1769,56 @@ namespace zp
 		/*
 		//=====================================================================================
 		*/
-		struct town_patch_s
+		struct town_profile_s
 		{
-			vec2_s minimum;
-			vec2_s maximum;
-			std::uint32_t paving;
+			std::uint32_t landmark;
+			std::uint32_t style;
+			std::float_t radius;
+			std::float_t core;
+			std::uint32_t streets;
+			std::uint32_t loops;
+			std::uint32_t seed;
 		};
 		/*
 		//=====================================================================================
 		*/
-		struct town_row_s
+		struct town_mix_s
 		{
-			vec2_s from;
-			vec2_s to;
-			std::float_t gap;
+			std::uint32_t style;
+			std::uint32_t zone;
+			std::uint32_t role;
+			std::float_t weight;
+		};
+		/*
+		//=====================================================================================
+		*/
+		struct town_special_s
+		{
+			std::uint32_t style;
+			std::uint32_t role;
 			std::uint32_t count;
-			std::uint32_t buildings[10];
+			bool outskirts;
 		};
 		/*
 		//=====================================================================================
 		*/
-		struct town_site_s
+		struct town_plot_s
 		{
-			std::uint32_t building;
 			vec2_s position;
+			vec2_s size;
 			std::float_t yaw;
+			std::float_t floor;
+			std::uint32_t role;
+			std::uint32_t landmark;
 		};
 		/*
 		//=====================================================================================
 		*/
-		struct town_yard_s
-		{
-			vec2_s minimum;
-			vec2_s maximum;
-			std::uint32_t clutter;
-		};
-		/*
-		//=====================================================================================
-		*/
-		struct town_prop_s
+		struct town_dressing_s
 		{
 			const char* model;
-			vec2_s position;
-			std::float_t yaw;
 			std::uint32_t surface;
-		};
-		/*
-		//=====================================================================================
-		*/
-		struct town_run_s
-		{
-			const char* model;
-			vec2_s from;
-			vec2_s to;
-			std::float_t piece;
-			std::uint32_t surface;
+			std::float_t chance;
 		};
 		/*
 		//=====================================================================================
@@ -1804,9 +1826,11 @@ namespace zp
 		struct route_path_s
 		{
 			std::uint32_t kind;
+			std::uint32_t paving;
 			std::float_t width;
 			bool closed;
 			std::vector<vec3_s> points;
+			std::vector<std::float_t> walks;
 		};
 		/*
 		//=====================================================================================
@@ -5392,7 +5416,7 @@ namespace zp
 		{ { -612.0f, -1092.0f }, 150.0f, 240.0f, 0.0f, structures::landmark_town },
 		{ { 1668.0f, 1972.0f }, 35.0f, 70.0f, 0.0f, structures::landmark_outpost },
 		{ { 1572.0f, -2476.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_yard },
-		{ { 4916.0f, -1172.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_harbour },
+		{ { 4470.0f, -1150.0f }, 90.0f, 150.0f, 0.0f, structures::landmark_harbour },
 		{ { -3420.0f, 1172.0f }, 110.0f, 180.0f, 0.0f, structures::landmark_ouen },
 		{ { -2372.0f, -2764.0f }, 80.0f, 140.0f, 0.0f, structures::landmark_portelet },
 		{ { -1716.0f, -2900.0f }, 70.0f, 120.0f, 0.0f, structures::landmark_battery },
@@ -5416,7 +5440,6 @@ namespace zp
 	};
 	constexpr structures::vec2_s railway_points[] = { { 1060.0f, -1676.0f }, { 980.0f, -1720.0f }, { 900.0f, -1764.0f }, { 780.0f, -1756.0f }, { 704.0f, -1784.0f }, { 628.0f, -1812.0f }, { 535.0f, -1721.0f }, { 442.0f, -1630.0f }, { 350.0f, -1538.0f }, { 257.0f, -1447.0f }, { 164.0f, -1356.0f }, { 76.0f, -1356.0f }, { 20.0f, -1312.0f }, { -36.0f, -1268.0f }, { -92.0f, -1268.0f }, { -156.0f, -1156.0f }, { -204.0f, -1164.0f }, { -236.0f, -1116.0f }, { -300.0f, -1140.0f }, { -368.0f, -1112.0f }, { -436.0f, -1084.0f }, { -476.0f, -1172.0f }, { -524.0f, -1124.0f }, { -548.0f, -1164.0f }, { -636.0f, -1164.0f }, { -748.0f, -1096.0f }, { -860.0f, -1028.0f }, { -972.0f, -1092.0f }, { -1044.0f, -1188.0f }, { -1084.0f, -1164.0f }, { -1156.0f, -1204.0f }, { -1164.0f, -1148.0f }, { -1296.0f, -1152.0f }, { -1428.0f, -1156.0f }, { -1412.0f, -1092.0f }, { -1364.0f, -1084.0f }, { -1388.0f, -1004.0f }, { -1332.0f, -932.0f }, { -1420.0f, -868.0f }, { -1500.0f, -908.0f }, { -1476.0f, -836.0f }, { -1516.0f, -804.0f }, { -1468.0f, -732.0f }, { -1516.0f, -660.0f }, { -1580.0f, -668.0f }, { -1640.0f, -568.0f }, { -1700.0f, -468.0f }, { -1796.0f, -412.0f }, { -1892.0f, -356.0f }, { -1988.0f, -300.0f }, { -2016.0f, -208.0f }, { -2044.0f, -116.0f }, { -2100.0f, -60.0f }, { -2180.0f, -52.0f }, { -2180.0f, 12.0f }, { -2244.0f, 76.0f }, { -2380.0f, 84.0f }, { -2452.0f, 36.0f }, { -2524.0f, -12.0f }, { -2564.0f, 28.0f }, { -2580.0f, 76.0f }, { -2516.0f, 164.0f }, { -2524.0f, 244.0f }, { -2532.0f, 324.0f }, { -2460.0f, 388.0f }, { -2436.0f, 500.0f }, { -2412.0f, 612.0f }, { -2388.0f, 724.0f }, { -2464.0f, 820.0f }, { -2540.0f, 916.0f }, { -2524.0f, 964.0f }, { -2632.0f, 908.0f }, { -2740.0f, 852.0f }, { -2796.0f, 860.0f }, { -2884.0f, 936.0f }, { -2972.0f, 1012.0f }, { -3068.0f, 992.0f }, { -3164.0f, 972.0f }, { -3264.0f, 1004.0f }, { -3364.0f, 1036.0f }, { -3388.0f, 1012.0f }, { -3384.0f, 1092.0f }, { -3380.0f, 1172.0f }, { -3332.0f, 1180.0f }, { -3284.0f, 1108.0f }, { -3236.0f, 1124.0f }, { -3212.0f, 1092.0f }, { -3100.0f, 1084.0f }, { -3076.0f, 1132.0f }, { -3004.0f, 1108.0f }, { -2980.0f, 1188.0f }, { -2896.0f, 1244.0f }, { -2812.0f, 1300.0f }, { -2712.0f, 1304.0f }, { -2612.0f, 1308.0f }, { -2556.0f, 1364.0f }, { -2457.0f, 1396.0f }, { -2359.0f, 1428.0f }, { -2260.0f, 1460.0f }, { -2164.0f, 1412.0f }, { -2108.0f, 1484.0f }, { -2060.0f, 1452.0f }, { -1996.0f, 1492.0f }, { -1876.0f, 1484.0f }, { -1844.0f, 1532.0f }, { -1852.0f, 1644.0f }, { -1772.0f, 1580.0f }, { -1740.0f, 1492.0f }, { -1676.0f, 1492.0f }, { -1652.0f, 1452.0f }, { -1576.0f, 1520.0f }, { -1500.0f, 1588.0f }, { -1404.0f, 1588.0f }, { -1336.0f, 1556.0f }, { -1268.0f, 1524.0f }, { -1204.0f, 1608.0f }, { -1140.0f, 1692.0f }, { -1052.0f, 1684.0f }, { -956.0f, 1732.0f }, { -860.0f, 1780.0f }, { -852.0f, 1836.0f }, { -756.0f, 1884.0f }, { -724.0f, 1964.0f }, { -692.0f, 2044.0f }, { -616.0f, 2064.0f }, { -540.0f, 2084.0f }, { -504.0f, 2156.0f }, { -468.0f, 2228.0f }, { -408.0f, 2272.0f }, { -348.0f, 2316.0f }, { -228.0f, 2268.0f }, { -236.0f, 2148.0f }, { -156.0f, 2108.0f }, { -100.0f, 1988.0f }, { -20.0f, 1980.0f }, { 84.0f, 1900.0f }, { 164.0f, 1920.0f }, { 244.0f, 1940.0f }, { 284.0f, 1908.0f }, { 380.0f, 1916.0f }, { 460.0f, 1956.0f }, { 452.0f, 2076.0f }, { 492.0f, 2068.0f }, { 556.0f, 2140.0f }, { 684.0f, 2120.0f }, { 812.0f, 2100.0f }, { 876.0f, 2156.0f }, { 916.0f, 2092.0f }, { 996.0f, 2188.0f }, { 1036.0f, 2156.0f }, { 1068.0f, 2204.0f }, { 1172.0f, 2124.0f }, { 1276.0f, 2044.0f }, { 1292.0f, 1980.0f }, { 1324.0f, 1996.0f }, { 1312.0f, 1920.0f }, { 1300.0f, 1844.0f }, { 1384.0f, 1748.0f }, { 1468.0f, 1652.0f }, { 1564.0f, 1652.0f }, { 1596.0f, 1692.0f }, { 1652.0f, 1668.0f }, { 1708.0f, 1600.0f }, { 1764.0f, 1532.0f }, { 1884.0f, 1516.0f }, { 1916.0f, 1428.0f }, { 1980.0f, 1436.0f }, { 1988.0f, 1372.0f }, { 2116.0f, 1356.0f }, { 2236.0f, 1412.0f }, { 2236.0f, 1364.0f }, { 2292.0f, 1348.0f }, { 2260.0f, 1236.0f }, { 2308.0f, 1184.0f }, { 2356.0f, 1132.0f }, { 2452.0f, 1220.0f }, { 2468.0f, 1172.0f }, { 2556.0f, 1212.0f }, { 2692.0f, 1204.0f }, { 2783.0f, 1169.0f }, { 2873.0f, 1135.0f }, { 2964.0f, 1100.0f }, { 3028.0f, 1020.0f }, { 3028.0f, 884.0f }, { 2980.0f, 756.0f }, { 3044.0f, 724.0f }, { 3108.0f, 692.0f }, { 3116.0f, 620.0f }, { 3188.0f, 548.0f }, { 3200.0f, 472.0f }, { 3212.0f, 396.0f }, { 3292.0f, 340.0f }, { 3388.0f, 356.0f }, { 3460.0f, 308.0f }, { 3460.0f, 196.0f }, { 3380.0f, 236.0f }, { 3340.0f, 148.0f }, { 3300.0f, 60.0f }, { 3180.0f, -4.0f }, { 3188.0f, -140.0f }, { 3137.0f, -220.0f }, { 3087.0f, -300.0f }, { 3036.0f, -380.0f }, { 3100.0f, -428.0f }, { 3052.0f, -532.0f }, { 3056.0f, -604.0f }, { 3060.0f, -676.0f }, { 3028.0f, -764.0f }, { 2972.0f, -808.0f }, { 2916.0f, -852.0f }, { 2924.0f, -972.0f }, { 2932.0f, -1092.0f }, { 2864.0f, -1172.0f }, { 2796.0f, -1252.0f }, { 2780.0f, -1352.0f }, { 2764.0f, -1452.0f }, { 2804.0f, -1484.0f }, { 2876.0f, -1444.0f }, { 2868.0f, -1476.0f }, { 2916.0f, -1492.0f }, { 2896.0f, -1560.0f }, { 2876.0f, -1628.0f }, { 2908.0f, -1684.0f }, { 3036.0f, -1668.0f }, { 3052.0f, -1796.0f }, { 3100.0f, -1780.0f }, { 3212.0f, -1860.0f }, { 3252.0f, -1836.0f }, { 3268.0f, -1932.0f }, { 3336.0f, -1880.0f }, { 3404.0f, -1828.0f }, { 3508.0f, -1876.0f }, { 3540.0f, -1740.0f }, { 3612.0f, -1696.0f }, { 3684.0f, -1652.0f }, { 3700.0f, -1596.0f }, { 3836.0f, -1572.0f }, { 3972.0f, -1548.0f }, { 4060.0f, -1500.0f }, { 4092.0f, -1412.0f }, { 4148.0f, -1404.0f }, { 4236.0f, -1312.0f }, { 4324.0f, -1220.0f }, { 4420.0f, -1228.0f }, { 4420.0f, -1312.0f }, { 4420.0f, -1396.0f }, { 4372.0f, -1436.0f }, { 4340.0f, -1564.0f }, { 4364.0f, -1628.0f }, { 4308.0f, -1660.0f }, { 4316.0f, -1748.0f }, { 4260.0f, -1828.0f }, { 4304.0f, -1944.0f }, { 4348.0f, -2060.0f }, { 4348.0f, -2164.0f }, { 4288.0f, -2248.0f }, { 4228.0f, -2332.0f }, { 4240.0f, -2456.0f }, { 4252.0f, -2580.0f }, { 4196.0f, -2620.0f }, { 4196.0f, -2700.0f }, { 4112.0f, -2720.0f }, { 4028.0f, -2740.0f }, { 3960.0f, -2800.0f }, { 3892.0f, -2860.0f }, { 3816.0f, -2852.0f }, { 3740.0f, -2844.0f }, { 3660.0f, -2892.0f }, { 3540.0f, -2852.0f }, { 3472.0f, -2876.0f }, { 3404.0f, -2900.0f }, { 3356.0f, -2948.0f }, { 3336.0f, -3024.0f }, { 3316.0f, -3100.0f }, { 3248.0f, -3140.0f }, { 3180.0f, -3180.0f }, { 3092.0f, -3140.0f }, { 3052.0f, -3204.0f }, { 2996.0f, -3212.0f }, { 2924.0f, -3140.0f }, { 2836.0f, -3128.0f }, { 2748.0f, -3116.0f }, { 2668.0f, -3148.0f }, { 2564.0f, -3084.0f }, { 2548.0f, -2996.0f }, { 2476.0f, -3004.0f }, { 2428.0f, -2944.0f }, { 2380.0f, -2884.0f }, { 2292.0f, -2872.0f }, { 2204.0f, -2860.0f }, { 2172.0f, -2812.0f }, { 2132.0f, -2828.0f }, { 2060.0f, -2756.0f }, { 1988.0f, -2684.0f }, { 1916.0f, -2644.0f }, { 1844.0f, -2660.0f }, { 1776.0f, -2600.0f }, { 1708.0f, -2540.0f }, { 1580.0f, -2516.0f }, { 1532.0f, -2556.0f }, { 1532.0f, -2472.0f }, { 1532.0f, -2388.0f }, { 1452.0f, -2356.0f }, { 1372.0f, -2324.0f }, { 1348.0f, -2244.0f }, { 1400.0f, -2184.0f }, { 1452.0f, -2124.0f }, { 1420.0f, -2108.0f }, { 1460.0f, -2068.0f }, { 1412.0f, -2020.0f }, { 1428.0f, -1916.0f }, { 1324.0f, -1880.0f }, { 1220.0f, -1844.0f }, { 1180.0f, -1764.0f }, { 1132.0f, -1772.0f }, { 1124.0f, -1676.0f }, { 1076.0f, -1644.0f } };
 	constexpr structures::vec2_s road_helier_halt_points[] = { { 1060.0f, -1932.0f }, { 1036.0f, -1892.0f }, { 1004.0f, -1892.0f }, { 944.0f, -1820.0f }, { 884.0f, -1748.0f }, { 832.0f, -1752.0f }, { 780.0f, -1756.0f }, { 748.0f, -1788.0f }, { 672.0f, -1784.0f }, { 596.0f, -1780.0f }, { 540.0f, -1724.0f }, { 484.0f, -1668.0f }, { 428.0f, -1612.0f }, { 364.0f, -1580.0f }, { 305.0f, -1521.0f }, { 247.0f, -1463.0f }, { 188.0f, -1404.0f }, { 148.0f, -1404.0f }, { 100.0f, -1356.0f }, { 28.0f, -1340.0f }, { -36.0f, -1276.0f }, { -132.0f, -1268.0f }, { -176.0f, -1240.0f }, { -220.0f, -1212.0f }, { -280.0f, -1212.0f }, { -340.0f, -1212.0f }, { -420.0f, -1188.0f }, { -508.0f, -1188.0f }, { -572.0f, -1176.0f }, { -636.0f, -1164.0f }, { -668.0f, -1132.0f }, { -740.0f, -1100.0f }, { -788.0f, -1100.0f }, { -832.0f, -1136.0f }, { -876.0f, -1172.0f }, { -932.0f, -1180.0f }, { -1020.0f, -1176.0f }, { -1108.0f, -1172.0f }, { -1124.0f, -1124.0f } };
-	constexpr structures::vec2_s road_town_portelet_points[] = { { -612.0f, -1236.0f }, { -652.0f, -1236.0f }, { -684.0f, -1204.0f }, { -652.0f, -1212.0f }, { -668.0f, -1188.0f }, { -660.0f, -1156.0f } };
 	constexpr structures::vec2_s road_town_portelet_1_points[] = { { -1124.0f, -1172.0f }, { -1164.0f, -1196.0f }, { -1236.0f, -1180.0f }, { -1284.0f, -1132.0f }, { -1292.0f, -1100.0f }, { -1372.0f, -1044.0f }, { -1356.0f, -1012.0f }, { -1388.0f, -996.0f }, { -1356.0f, -956.0f }, { -1324.0f, -916.0f }, { -1340.0f, -868.0f }, { -1340.0f, -900.0f }, { -1380.0f, -900.0f }, { -1380.0f, -860.0f }, { -1412.0f, -876.0f }, { -1444.0f, -836.0f }, { -1492.0f, -836.0f }, { -1551.0f, -780.0f }, { -1609.0f, -724.0f }, { -1668.0f, -668.0f }, { -1732.0f, -668.0f }, { -1804.0f, -604.0f }, { -1848.0f, -644.0f }, { -1892.0f, -684.0f }, { -1932.0f, -684.0f }, { -1940.0f, -716.0f }, { -1972.0f, -748.0f }, { -1956.0f, -772.0f }, { -1956.0f, -852.0f }, { -1980.0f, -900.0f }, { -2004.0f, -948.0f }, { -1996.0f, -1028.0f }, { -2020.0f, -1060.0f }, { -2068.0f, -1120.0f }, { -2116.0f, -1180.0f }, { -2169.0f, -1236.0f }, { -2223.0f, -1292.0f }, { -2276.0f, -1348.0f }, { -2328.0f, -1376.0f }, { -2380.0f, -1404.0f }, { -2436.0f, -1460.0f }, { -2476.0f, -1468.0f }, { -2508.0f, -1508.0f }, { -2596.0f, -1508.0f }, { -2580.0f, -1556.0f }, { -2628.0f, -1604.0f }, { -2628.0f, -1680.0f }, { -2628.0f, -1756.0f }, { -2580.0f, -1804.0f }, { -2516.0f, -1804.0f }, { -2484.0f, -1836.0f }, { -2452.0f, -1836.0f }, { -2420.0f, -1860.0f }, { -2348.0f, -1927.0f }, { -2276.0f, -1994.0f }, { -2204.0f, -2062.0f }, { -2132.0f, -2129.0f }, { -2060.0f, -2196.0f }, { -2084.0f, -2236.0f }, { -2084.0f, -2316.0f }, { -2016.0f, -2380.0f }, { -1948.0f, -2444.0f }, { -1916.0f, -2452.0f }, { -1916.0f, -2508.0f }, { -1900.0f, -2580.0f }, { -1944.0f, -2624.0f }, { -1988.0f, -2668.0f }, { -2044.0f, -2668.0f }, { -2076.0f, -2692.0f }, { -2148.0f, -2684.0f }, { -2220.0f, -2700.0f }, { -2252.0f, -2732.0f }, { -2300.0f, -2732.0f }, { -2332.0f, -2764.0f }, { -2372.0f, -2764.0f } };
 	constexpr structures::vec2_s road_portelet_battery_points[] = { { -2004.0f, -2676.0f }, { -1940.0f, -2740.0f }, { -1864.0f, -2804.0f }, { -1788.0f, -2868.0f }, { -1748.0f, -2868.0f }, { -1716.0f, -2900.0f } };
 	constexpr structures::vec2_s road_town_brelade_points[] = { { -2516.0f, -1820.0f }, { -2516.0f, -1872.0f }, { -2516.0f, -1924.0f }, { -2476.0f, -1964.0f }, { -2476.0f, -1996.0f }, { -2516.0f, -2036.0f }, { -2580.0f, -2028.0f }, { -2604.0f, -2052.0f }, { -2620.0f, -2028.0f }, { -2652.0f, -2052.0f }, { -2716.0f, -2004.0f }, { -2748.0f, -2004.0f }, { -2844.0f, -1988.0f }, { -2912.0f, -1988.0f }, { -2980.0f, -1988.0f } };
@@ -5447,7 +5470,6 @@ namespace zp
 	{
 		{ railway_points, static_cast<std::uint32_t>(std::size(railway_points)), structures::route_rail, 5.2f, 0.025f, 100.0f, 0.65f, true },
 		{ road_helier_halt_points, static_cast<std::uint32_t>(std::size(road_helier_halt_points)), structures::route_road, 7.0f, 0.1f, 20.0f, 0.5f, false },
-		{ road_town_portelet_points, static_cast<std::uint32_t>(std::size(road_town_portelet_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
 		{ road_town_portelet_1_points, static_cast<std::uint32_t>(std::size(road_town_portelet_1_points)), structures::route_road, 6.0f, 0.1f, 20.0f, 0.5f, false },
 		{ road_portelet_battery_points, static_cast<std::uint32_t>(std::size(road_portelet_battery_points)), structures::route_road, 5.6f, 0.1f, 20.0f, 0.5f, false },
 		{ road_town_brelade_points, static_cast<std::uint32_t>(std::size(road_town_brelade_points)), structures::route_road, 6.4f, 0.1f, 20.0f, 0.5f, false },
@@ -5558,6 +5580,10 @@ namespace zp
 	constexpr auto station_clearing = 15.0f;
 	constexpr auto station_clearing_step = 10.0f;
 	constexpr auto station_limit = 64u;
+	constexpr auto plot_limit = 16384u;
+	constexpr auto segment_cell = 32.0f;
+	constexpr auto clearing_cell = 64.0f;
+	constexpr auto path_lift_orders = 12u;
 	constexpr auto platform_offset = 3.5f;
 	constexpr auto platform_module = 12.0f;
 	constexpr auto platform_modules = 4u;
@@ -6111,12 +6137,32 @@ namespace zp
 	constexpr const char* farm_models[3] = { "bld_house", "bld_barn", "bld_shed" };
 	constexpr const char* hamlet_models[4] = { "bld_cottage", "bld_shed", "bld_ruin", "bld_cottage" };
 	constexpr const char* outlier_models[2] = { "bld_shed", "bld_ruin" };
-	constexpr auto town_clear_radius = 165.0f;
 	constexpr auto town_grid = 2.0f;
 	constexpr auto town_tile = 4.0f;
 	constexpr auto town_footing = 0.3f;
 	constexpr auto town_kerb_drop = 0.08f;
-	constexpr auto town_route_margin = 2.0f;
+	constexpr auto town_spine_walk = 2.2f;
+	constexpr auto town_street_width = 5.6f;
+	constexpr auto town_street_walk = 1.8f;
+	constexpr auto town_lane_width = 3.8f;
+	constexpr auto town_walk_top = 0.15f;
+	constexpr auto town_walk_tile = 3.6f;
+	constexpr auto town_walk_cut = 0.04f;
+	constexpr auto town_kerb_width = 0.28f;
+	constexpr auto town_plot_setback = 0.4f;
+	constexpr auto town_lane_verge = 1.2f;
+	constexpr auto town_clearing_margin = 3.0f;
+	constexpr auto town_square_rim = 0.25f;
+	constexpr auto town_wall_piece = 4.0f;
+	constexpr auto town_wall_inset = 0.35f;
+	constexpr auto town_bench_ring = 6.0f;
+	constexpr auto town_stall_spacing = 4.6f;
+	constexpr auto town_sign_reach = 9.0f;
+	constexpr auto town_wreck_gap = 22.0f;
+	constexpr auto town_barricade_chance = 0.5f;
+	constexpr const char* town_home_prefix = "bld_home_";
+	constexpr const char* town_home_fallbacks[3] = { "bld_house", "bld_cottage", "bld_house" };
+	constexpr auto town_home_models = 24u;
 	constexpr auto town_dash_length = 1.8f;
 	constexpr auto town_dash_spacing = 5.0f;
 	constexpr auto town_dash_width = 0.12f;
@@ -6129,28 +6175,154 @@ namespace zp
 	constexpr auto town_prop_far = 420.0f;
 	constexpr auto town_prop_shadow = 90.0f;
 	constexpr auto town_wrecks = 12u;
-	constexpr auto town_junction_clear = 9.0f;
 	constexpr const char* town_lamp_model = "street_lamp_01";
 	constexpr const char* town_wreck_models[4] = { "covered_car", "prop_wreck_hatch", "prop_wreck_saloon", "prop_wreck_van" };
 	constexpr auto town_loot_chance = 0.45f;
 	constexpr const char* town_barrier_models[2] = { "concrete_road_barrier", "concrete_road_barrier_02" };
 	constexpr structures::town_building_s town_buildings[structures::town_building_count] =
 	{
-		{ "bld_terrace", { 5.5f, 9.0f }, 2u },
-		{ "bld_shop", { 7.0f, 10.0f }, 2u },
-		{ "bld_pub", { 12.0f, 11.0f }, 2u },
-		{ "bld_church", { 12.0f, 26.0f }, 1u },
-		{ "bld_police", { 12.0f, 14.0f }, 2u },
-		{ "bld_clinic", { 10.0f, 12.0f }, 1u },
-		{ "bld_garage", { 14.0f, 12.0f }, 1u },
-		{ "bld_fuel", { 20.0f, 14.0f }, 1u },
-		{ "bld_flats", { 16.0f, 11.0f }, 3u },
-		{ "bld_school", { 16.0f, 10.0f }, 1u },
-		{ "bld_hall", { 14.0f, 20.0f }, 1u },
-		{ "bld_house", { 9.0f, 8.0f }, 2u },
-		{ "bld_cottage", { 8.0f, 7.0f }, 1u },
-		{ "bld_ruin", { 8.0f, 7.0f }, 1u }
+		{ "bld_terrace", { 5.6f, 14.0f }, 2u },
+		{ "bld_shop", { 7.2f, 12.6f }, 2u },
+		{ "bld_pub", { 12.8f, 14.0f }, 2u },
+		{ "bld_church", { 15.0f, 30.0f }, 1u },
+		{ "bld_police", { 13.0f, 17.0f }, 2u },
+		{ "bld_clinic", { 11.8f, 14.6f }, 1u },
+		{ "bld_garage", { 15.2f, 14.6f }, 1u },
+		{ "bld_fuel", { 21.0f, 15.6f }, 1u },
+		{ "bld_flats", { 17.2f, 14.4f }, 3u },
+		{ "bld_school", { 17.0f, 13.0f }, 1u },
+		{ "bld_hall", { 15.4f, 22.4f }, 1u },
+		{ "bld_house", { 10.2f, 13.2f }, 2u },
+		{ "bld_cottage", { 10.8f, 10.4f }, 1u },
+		{ "bld_ruin", { 10.8f, 9.2f }, 1u },
+		{ "bld_barn", { 18.6f, 13.8f }, 1u },
+		{ "bld_shed", { 6.2f, 7.0f }, 1u },
+		{ "bld_house", { 11.6f, 14.0f }, 2u },
+		{ "", { 26.0f, 20.0f }, 0u }
 	};
+	constexpr structures::town_profile_s town_profiles[] =
+	{
+		{ structures::landmark_helier, structures::town_style_capital, 330.0f, 0.5f, 60u, 26u, 101u },
+		{ structures::landmark_town, structures::town_style_harbour, 175.0f, 0.45f, 18u, 7u, 102u },
+		{ structures::landmark_harbour, structures::town_style_harbour, 120.0f, 0.4f, 6u, 2u, 103u },
+		{ structures::landmark_ouen, structures::town_style_village, 125.0f, 0.35f, 7u, 2u, 104u },
+		{ structures::landmark_brelade, structures::town_style_resort, 120.0f, 0.4f, 6u, 2u, 105u },
+		{ structures::landmark_quennevais, structures::town_style_estate, 135.0f, 0.3f, 10u, 4u, 106u },
+		{ structures::landmark_peter, structures::town_style_village, 115.0f, 0.35f, 6u, 2u, 107u },
+		{ structures::landmark_lawrence, structures::town_style_village, 105.0f, 0.35f, 5u, 1u, 108u },
+		{ structures::landmark_mary, structures::town_style_village, 100.0f, 0.35f, 5u, 1u, 109u },
+		{ structures::landmark_john, structures::town_style_village, 110.0f, 0.35f, 6u, 2u, 110u },
+		{ structures::landmark_martin, structures::town_style_village, 110.0f, 0.35f, 6u, 2u, 111u },
+		{ structures::landmark_grouville, structures::town_style_village, 110.0f, 0.35f, 6u, 2u, 112u },
+		{ structures::landmark_clement, structures::town_style_village, 105.0f, 0.35f, 5u, 1u, 113u },
+		{ structures::landmark_saviour, structures::town_style_village, 110.0f, 0.35f, 6u, 2u, 114u }
+	};
+	constexpr structures::town_mix_s town_mixes[] =
+	{
+		{ structures::town_style_capital, structures::town_zone_core, structures::town_terrace, 0.4f },
+		{ structures::town_style_capital, structures::town_zone_core, structures::town_shop, 0.42f },
+		{ structures::town_style_capital, structures::town_zone_core, structures::town_pub, 0.05f },
+		{ structures::town_style_capital, structures::town_zone_core, structures::town_flats, 0.13f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_terrace, 0.46f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_home, 0.2f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_flats, 0.12f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_shop, 0.1f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_garage, 0.04f },
+		{ structures::town_style_capital, structures::town_zone_middle, structures::town_ruin, 0.08f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_home, 0.5f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_cottage, 0.16f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_terrace, 0.16f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_garage, 0.04f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_ruin, 0.08f },
+		{ structures::town_style_capital, structures::town_zone_edge, structures::town_shed, 0.06f },
+		{ structures::town_style_harbour, structures::town_zone_core, structures::town_terrace, 0.45f },
+		{ structures::town_style_harbour, structures::town_zone_core, structures::town_shop, 0.35f },
+		{ structures::town_style_harbour, structures::town_zone_core, structures::town_pub, 0.08f },
+		{ structures::town_style_harbour, structures::town_zone_core, structures::town_home, 0.12f },
+		{ structures::town_style_harbour, structures::town_zone_middle, structures::town_terrace, 0.38f },
+		{ structures::town_style_harbour, structures::town_zone_middle, structures::town_home, 0.36f },
+		{ structures::town_style_harbour, structures::town_zone_middle, structures::town_cottage, 0.14f },
+		{ structures::town_style_harbour, structures::town_zone_middle, structures::town_ruin, 0.12f },
+		{ structures::town_style_harbour, structures::town_zone_edge, structures::town_home, 0.46f },
+		{ structures::town_style_harbour, structures::town_zone_edge, structures::town_cottage, 0.3f },
+		{ structures::town_style_harbour, structures::town_zone_edge, structures::town_shed, 0.12f },
+		{ structures::town_style_harbour, structures::town_zone_edge, structures::town_ruin, 0.12f },
+		{ structures::town_style_village, structures::town_zone_core, structures::town_terrace, 0.3f },
+		{ structures::town_style_village, structures::town_zone_core, structures::town_shop, 0.2f },
+		{ structures::town_style_village, structures::town_zone_core, structures::town_home, 0.4f },
+		{ structures::town_style_village, structures::town_zone_core, structures::town_cottage, 0.1f },
+		{ structures::town_style_village, structures::town_zone_middle, structures::town_home, 0.55f },
+		{ structures::town_style_village, structures::town_zone_middle, structures::town_cottage, 0.25f },
+		{ structures::town_style_village, structures::town_zone_middle, structures::town_ruin, 0.1f },
+		{ structures::town_style_village, structures::town_zone_middle, structures::town_shed, 0.1f },
+		{ structures::town_style_village, structures::town_zone_edge, structures::town_home, 0.35f },
+		{ structures::town_style_village, structures::town_zone_edge, structures::town_cottage, 0.25f },
+		{ structures::town_style_village, structures::town_zone_edge, structures::town_barn, 0.2f },
+		{ structures::town_style_village, structures::town_zone_edge, structures::town_shed, 0.12f },
+		{ structures::town_style_village, structures::town_zone_edge, structures::town_ruin, 0.08f },
+		{ structures::town_style_resort, structures::town_zone_core, structures::town_flats, 0.3f },
+		{ structures::town_style_resort, structures::town_zone_core, structures::town_shop, 0.3f },
+		{ structures::town_style_resort, structures::town_zone_core, structures::town_pub, 0.15f },
+		{ structures::town_style_resort, structures::town_zone_core, structures::town_home, 0.25f },
+		{ structures::town_style_resort, structures::town_zone_middle, structures::town_home, 0.6f },
+		{ structures::town_style_resort, structures::town_zone_middle, structures::town_flats, 0.2f },
+		{ structures::town_style_resort, structures::town_zone_middle, structures::town_cottage, 0.2f },
+		{ structures::town_style_resort, structures::town_zone_edge, structures::town_home, 0.6f },
+		{ structures::town_style_resort, structures::town_zone_edge, structures::town_cottage, 0.25f },
+		{ structures::town_style_resort, structures::town_zone_edge, structures::town_ruin, 0.15f },
+		{ structures::town_style_estate, structures::town_zone_core, structures::town_flats, 0.5f },
+		{ structures::town_style_estate, structures::town_zone_core, structures::town_shop, 0.2f },
+		{ structures::town_style_estate, structures::town_zone_core, structures::town_home, 0.3f },
+		{ structures::town_style_estate, structures::town_zone_middle, structures::town_home, 0.6f },
+		{ structures::town_style_estate, structures::town_zone_middle, structures::town_flats, 0.3f },
+		{ structures::town_style_estate, structures::town_zone_middle, structures::town_garage, 0.1f },
+		{ structures::town_style_estate, structures::town_zone_edge, structures::town_home, 0.7f },
+		{ structures::town_style_estate, structures::town_zone_edge, structures::town_ruin, 0.15f },
+		{ structures::town_style_estate, structures::town_zone_edge, structures::town_shed, 0.15f }
+	};
+	constexpr structures::town_special_s town_specials[] =
+	{
+		{ structures::town_style_capital, structures::town_plaza, 2u, false },
+		{ structures::town_style_capital, structures::town_church, 1u, false },
+		{ structures::town_style_capital, structures::town_hall, 1u, false },
+		{ structures::town_style_capital, structures::town_police, 1u, false },
+		{ structures::town_style_capital, structures::town_clinic, 1u, false },
+		{ structures::town_style_capital, structures::town_pub, 3u, false },
+		{ structures::town_style_capital, structures::town_school, 1u, true },
+		{ structures::town_style_capital, structures::town_fuel, 1u, true },
+		{ structures::town_style_capital, structures::town_garage, 1u, true },
+		{ structures::town_style_harbour, structures::town_plaza, 1u, false },
+		{ structures::town_style_harbour, structures::town_church, 1u, false },
+		{ structures::town_style_harbour, structures::town_pub, 2u, false },
+		{ structures::town_style_harbour, structures::town_police, 1u, false },
+		{ structures::town_style_harbour, structures::town_hall, 1u, false },
+		{ structures::town_style_harbour, structures::town_clinic, 1u, true },
+		{ structures::town_style_village, structures::town_plaza, 1u, false },
+		{ structures::town_style_village, structures::town_church, 1u, false },
+		{ structures::town_style_village, structures::town_hall, 1u, false },
+		{ structures::town_style_village, structures::town_pub, 1u, false },
+		{ structures::town_style_village, structures::town_shop, 2u, false },
+		{ structures::town_style_village, structures::town_garage, 1u, true },
+		{ structures::town_style_resort, structures::town_plaza, 1u, false },
+		{ structures::town_style_resort, structures::town_pub, 2u, false },
+		{ structures::town_style_resort, structures::town_church, 1u, false },
+		{ structures::town_style_resort, structures::town_flats, 2u, false },
+		{ structures::town_style_estate, structures::town_plaza, 1u, false },
+		{ structures::town_style_estate, structures::town_school, 1u, false },
+		{ structures::town_style_estate, structures::town_shop, 2u, false },
+		{ structures::town_style_estate, structures::town_fuel, 1u, true }
+	};
+	constexpr structures::town_dressing_s town_square_dressing[] =
+	{
+		{ "prop_bench", structures::surface_wood, 1.0f },
+		{ "prop_litter_bin", structures::surface_metal, 0.8f },
+		{ "prop_phone_box", structures::surface_metal, 0.6f },
+		{ "prop_post_box", structures::surface_metal, 0.7f },
+		{ "prop_horse_trough", structures::surface_rock, 0.4f }
+	};
+	constexpr const char* town_stall_models[2] = { "prop_market_stall_a", "prop_market_stall_b" };
+	constexpr const char* town_wall_model = "prop_garden_wall";
+	constexpr const char* town_fence_model = "prop_picket_fence";
 	constexpr structures::town_paving_s town_pavings[structures::town_surface_count] =
 	{
 		{ structures::material_road_cracked, { 0.92f, 0.9f, 0.88f }, 0.035f, 3.0f, false },
@@ -6159,145 +6331,17 @@ namespace zp
 		{ structures::material_cobbles, { 0.95f, 0.94f, 0.92f }, 0.15f, 2.0f, true },
 		{ structures::material_setts, { 0.85f, 0.84f, 0.82f }, 0.06f, 3.0f, false }
 	};
-	constexpr structures::town_patch_s town_patches[] =
-	{
-		{ { -3.5f, -145.0f }, { 3.5f, 125.0f }, structures::town_road },
-		{ { -135.0f, -3.5f }, { -3.5f, 3.5f }, structures::town_road },
-		{ { 3.5f, -3.5f }, { 140.0f, 3.5f }, structures::town_road },
-		{ { -66.5f, 73.5f }, { -3.5f, 78.5f }, structures::town_lane },
-		{ { 3.5f, 73.5f }, { 106.5f, 78.5f }, structures::town_lane },
-		{ { -66.5f, -74.5f }, { -3.5f, -69.5f }, structures::town_lane },
-		{ { 3.5f, -74.5f }, { 106.5f, -69.5f }, structures::town_lane },
-		{ { -66.5f, 3.5f }, { -61.5f, 73.5f }, structures::town_lane },
-		{ { -66.5f, -69.5f }, { -61.5f, -3.5f }, structures::town_lane },
-		{ { 101.5f, 3.5f }, { 106.5f, 73.5f }, structures::town_lane },
-		{ { 101.5f, -69.5f }, { 106.5f, -3.5f }, structures::town_lane },
-		{ { 3.5f, 3.5f }, { 60.0f, 50.0f }, structures::town_square },
-		{ { -6.0f, 3.5f }, { -3.5f, 73.5f }, structures::town_walk },
-		{ { -61.5f, 3.5f }, { -6.0f, 6.0f }, structures::town_walk },
-		{ { 3.5f, 50.0f }, { 6.0f, 73.5f }, structures::town_walk },
-		{ { 60.0f, 3.5f }, { 101.5f, 6.0f }, structures::town_walk },
-		{ { -6.0f, -69.5f }, { -3.5f, -3.5f }, structures::town_walk },
-		{ { -61.5f, -6.0f }, { -6.0f, -3.5f }, structures::town_walk },
-		{ { 3.5f, -69.5f }, { 6.0f, -3.5f }, structures::town_walk },
-		{ { 6.0f, -6.0f }, { 101.5f, -3.5f }, structures::town_walk },
-		{ { -6.0f, 78.5f }, { -3.5f, 120.0f }, structures::town_walk },
-		{ { 3.5f, 78.5f }, { 6.0f, 120.0f }, structures::town_walk },
-		{ { -6.0f, -140.0f }, { -3.5f, -74.5f }, structures::town_walk },
-		{ { 3.5f, -115.0f }, { 6.0f, -74.5f }, structures::town_walk },
-		{ { -130.0f, 3.5f }, { -66.5f, 6.0f }, structures::town_walk },
-		{ { -130.0f, -6.0f }, { -66.5f, -3.5f }, structures::town_walk },
-		{ { 106.5f, 3.5f }, { 128.0f, 6.0f }, structures::town_walk },
-		{ { 106.5f, -6.0f }, { 114.0f, -3.5f }, structures::town_walk },
-		{ { -58.0f, -42.0f }, { -36.0f, -18.0f }, structures::town_yard }
-	};
-	constexpr structures::town_row_s town_rows[] =
-	{
-		{ { -6.0f, 73.0f }, { -6.0f, 20.0f }, 1.0f, 8u, { structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
-		{ { -6.0f, 6.0f }, { -61.0f, 6.0f }, 1.0f, 8u, { structures::town_shop, structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_house } },
-		{ { -60.0f, 20.0f }, { -60.0f, 72.0f }, 3.0f, 2u, { structures::town_flats, structures::town_flats } },
-		{ { 58.0f, 51.0f }, { 21.0f, 51.0f }, 1.0f, 4u, { structures::town_pub, structures::town_shop, structures::town_shop, structures::town_terrace } },
-		{ { 6.0f, 51.0f }, { 6.0f, 73.0f }, 1.0f, 4u, { structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace } },
-		{ { 100.0f, 6.0f }, { 62.0f, 6.0f }, 1.0f, 3u, { structures::town_clinic, structures::town_shop, structures::town_shop } },
-		{ { -6.0f, -22.0f }, { -6.0f, -69.0f }, 1.0f, 5u, { structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_police } },
-		{ { -61.0f, -6.0f }, { -12.0f, -6.0f }, 1.0f, 6u, { structures::town_school, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
-		{ { 6.0f, -69.0f }, { 6.0f, -20.0f }, 1.0f, 7u, { structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_shop } },
-		{ { 6.0f, -6.0f }, { 60.0f, -6.0f }, 1.0f, 6u, { structures::town_shop, structures::town_shop, structures::town_terrace, structures::town_terrace, structures::town_terrace, structures::town_garage } },
-		{ { -6.0f, 120.0f }, { -6.0f, 82.0f }, 3.0f, 3u, { structures::town_house, structures::town_cottage, structures::town_house } },
-		{ { 6.0f, 82.0f }, { 6.0f, 120.0f }, 3.0f, 3u, { structures::town_cottage, structures::town_ruin, structures::town_cottage } },
-		{ { -6.0f, -78.0f }, { -6.0f, -140.0f }, 3.0f, 4u, { structures::town_cottage, structures::town_house, structures::town_ruin, structures::town_cottage } },
-		{ { 6.0f, -115.0f }, { 6.0f, -78.0f }, 3.0f, 2u, { structures::town_house, structures::town_cottage } },
-		{ { -68.0f, 6.0f }, { -130.0f, 6.0f }, 3.0f, 4u, { structures::town_cottage, structures::town_house, structures::town_cottage, structures::town_ruin } },
-		{ { -130.0f, -6.0f }, { -68.0f, -6.0f }, 3.0f, 4u, { structures::town_ruin, structures::town_cottage, structures::town_house, structures::town_cottage } }
-	};
-	constexpr structures::town_site_s town_sites[] =
-	{
-		{ structures::town_church, { 73.0f, 28.0f }, half_pi },
-		{ structures::town_hall, { 80.0f, 61.0f }, half_pi },
-		{ structures::town_fuel, { 80.0f, -38.0f }, -0.734f }
-	};
-	constexpr structures::town_yard_s town_yards[] =
-	{
-		{ { -47.0f, 18.0f }, { -18.0f, 71.0f }, 10u },
-		{ { 18.0f, 63.0f }, { 56.0f, 71.0f }, 5u },
-		{ { -44.0f, -66.0f }, { -18.0f, -20.0f }, 8u },
-		{ { 18.0f, -66.0f }, { 58.0f, -20.0f }, 9u },
-		{ { 62.0f, 38.0f }, { 98.0f, 48.0f }, 4u }
-	};
-	constexpr structures::vec2_s town_memorial = { 31.75f, 26.75f };
 	constexpr const char* town_memorial_model = "prop_war_memorial";
-	constexpr structures::town_run_s town_runs[] =
-	{
-		{ "prop_garden_wall", { 60.5f, 49.5f }, { 99.5f, 49.5f }, 4.0f, structures::surface_rock },
-		{ "prop_garden_wall", { 99.5f, 49.5f }, { 99.5f, 19.0f }, 4.0f, structures::surface_rock },
-		{ "prop_garden_wall", { 60.5f, 49.5f }, { 60.5f, 37.0f }, 4.0f, structures::surface_rock },
-		{ "prop_garden_wall", { 60.5f, 19.0f }, { 60.5f, 9.0f }, 4.0f, structures::surface_rock },
-		{ "prop_railing", { -3.8f, 6.5f }, { -3.8f, 15.5f }, 3.0f, structures::surface_metal },
-		{ "prop_railing", { -15.5f, 3.8f }, { -6.5f, 3.8f }, 3.0f, structures::surface_metal },
-		{ "prop_railing", { -3.8f, -15.5f }, { -3.8f, -6.5f }, 3.0f, structures::surface_metal },
-		{ "prop_railing", { -6.5f, -3.8f }, { -15.5f, -3.8f }, 3.0f, structures::surface_metal },
-		{ "prop_railing", { 3.8f, -6.5f }, { 3.8f, -9.5f }, 3.0f, structures::surface_metal },
-		{ "prop_railing", { 15.5f, -3.8f }, { 6.5f, -3.8f }, 3.0f, structures::surface_metal },
-		{ "prop_sandbags", { -6.0f, -88.0f }, { -3.0f, -88.0f }, 3.0f, structures::surface_fabric },
-		{ "prop_sandbags", { 3.0f, -91.0f }, { 6.0f, -91.0f }, 3.0f, structures::surface_fabric },
-		{ "prop_sandbags", { -3.0f, 93.0f }, { -6.0f, 93.0f }, 3.0f, structures::surface_fabric },
-		{ "prop_sandbags", { -108.0f, 6.5f }, { -108.0f, 3.5f }, 3.0f, structures::surface_fabric },
-		{ "prop_sandbags", { -108.0f, -3.5f }, { -108.0f, -6.5f }, 3.0f, structures::surface_fabric }
-	};
 	constexpr std::float_t town_memorial_steps[3] = { 5.4f, 4.2f, 3.0f };
 	constexpr auto town_memorial_rise = 0.2f;
 	constexpr auto town_memorial_plinth = 1.6f;
 	constexpr auto town_memorial_needle = 4.6f;
-	constexpr structures::vec2_s town_planters[4] = { { 14.0f, 14.0f }, { 50.0f, 14.0f }, { 14.0f, 40.0f }, { 50.0f, 40.0f } };
-	constexpr structures::vec2_s town_trees[] = { { 64.0f, 13.0f }, { 66.0f, 45.0f }, { 90.0f, 46.0f }, { 97.0f, 30.0f }, { -30.0f, 60.0f }, { 30.0f, -45.0f }, { -25.0f, -50.0f }, { 40.0f, 67.0f } };
 	constexpr auto town_planter_size = 2.8f;
 	constexpr auto town_planter_rim = 0.2f;
 	constexpr auto town_planter_height = 0.5f;
 	constexpr auto town_planter_soil = 0.36f;
 	constexpr auto town_bollard_spacing = 2.6f;
 	constexpr auto town_bollard_inset = 0.45f;
-	constexpr structures::town_prop_s town_props[] =
-	{
-		{ "prop_bench", { 31.75f, 32.75f }, 0.0f, structures::surface_wood },
-		{ "prop_bench", { 31.75f, 20.75f }, pi, structures::surface_wood },
-		{ "prop_bench", { 37.75f, 26.75f }, half_pi, structures::surface_wood },
-		{ "prop_bench", { 25.75f, 26.75f }, -half_pi, structures::surface_wood },
-		{ "prop_bench", { 20.0f, 47.0f }, 0.0f, structures::surface_wood },
-		{ "prop_bench", { 44.0f, 47.0f }, 0.0f, structures::surface_wood },
-		{ "prop_phone_box", { 8.0f, 8.5f }, half_pi, structures::surface_metal },
-		{ "prop_post_box", { 4.6f, 53.0f }, half_pi, structures::surface_metal },
-		{ "prop_post_box", { -4.7f, -40.0f }, -half_pi, structures::surface_metal },
-		{ "prop_street_sign", { -5.2f, -6.8f }, 0.0f, structures::surface_metal },
-		{ "prop_street_sign", { 4.8f, 82.0f }, 0.0f, structures::surface_metal },
-		{ "prop_street_sign", { -4.8f, -78.0f }, pi, structures::surface_metal },
-		{ "prop_market_stall_a", { 11.5f, 21.0f }, -half_pi, structures::surface_wood },
-		{ "prop_market_stall_b", { 11.5f, 25.5f }, -half_pi, structures::surface_wood },
-		{ "prop_market_stall_a", { 11.5f, 30.0f }, -half_pi, structures::surface_wood },
-		{ "prop_market_stall_b", { 11.5f, 34.5f }, -half_pi, structures::surface_wood },
-		{ "prop_horse_trough", { 5.4f, 44.0f }, half_pi, structures::surface_rock },
-		{ "prop_litter_bin", { -4.8f, 30.0f }, -half_pi, structures::surface_metal },
-		{ "prop_litter_bin", { 4.8f, 62.0f }, half_pi, structures::surface_metal },
-		{ "prop_litter_bin", { -4.8f, -32.0f }, -half_pi, structures::surface_metal },
-		{ "prop_litter_bin", { 4.8f, -52.0f }, half_pi, structures::surface_metal },
-		{ "prop_litter_bin", { 28.0f, -4.8f }, pi, structures::surface_metal },
-		{ "prop_litter_bin", { 82.0f, 4.8f }, 0.0f, structures::surface_metal },
-		{ "prop_litter_bin", { -38.0f, 4.8f }, 0.0f, structures::surface_metal },
-		{ "prop_litter_bin", { -40.0f, -4.8f }, pi, structures::surface_metal },
-		{ "prop_litter_bin", { 7.5f, 46.0f }, 0.0f, structures::surface_metal },
-		{ "prop_bus_shelter", { 5.0f, 96.0f }, half_pi, structures::surface_metal },
-		{ "prop_bus_shelter", { -95.0f, -5.0f }, pi, structures::surface_metal },
-		{ "prop_traffic_cone", { -2.6f, -93.4f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { -1.2f, -93.8f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { 0.4f, -94.0f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { 1.9f, -96.4f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { -2.8f, -101.0f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { 0.6f, 95.5f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { -0.6f, 104.5f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { 3.0f, 105.0f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { -110.0f, -0.4f }, 0.0f, structures::surface_fabric },
-		{ "prop_traffic_cone", { -110.4f, 2.0f }, 0.0f, structures::surface_fabric },
-		{ "prop_wreck_hatch", { 1.4f, -84.0f }, 0.25f, structures::surface_metal }
-	};
 	constexpr structures::vec2_s rig_site = { -5300.0f, -3600.0f };
 	constexpr auto rig_yaw = 0.55f;
 	constexpr auto rig_clearance = 70.0f;
@@ -6321,7 +6365,6 @@ namespace zp
 	constexpr auto roadside_steep = 0.86f;
 	constexpr auto roadside_barrel_chance = 0.55f;
 	constexpr auto roadside_crate_chance = 0.4f;
-	constexpr structures::vec3_s town_barriers[] ={ { -2.4f, 98.0f, 0.25f }, { 2.6f, 101.5f, -0.3f }, { -1.0f, -96.0f, 0.15f }, { 2.8f, -99.0f, -0.4f }, { -112.0f, 1.6f, 1.75f }, { -115.0f, -2.2f, 1.3f } };
 	constexpr const char* surface_names[structures::surface_count] = { "concrete", "metal", "grate", "wood", "glass", "fabric", "dirt", "flesh", "water", "grass", "sand", "rock", "gravel" };
 	constexpr const char* biome_names[structures::biome_count] = { "sea", "beach", "rocky shore", "dunes", "marsh", "meadow", "farmland", "broadleaf woodland", "pinewood", "coastal heath", "moorland", "summit" };
 	constexpr auto biome_scatter = 7.0f;
@@ -6329,9 +6372,9 @@ namespace zp
 	constexpr structures::biome_flora_s biome_flora[structures::biome_count] =
 	{
 		{ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.002f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f, 0.0f },
+		{ 0.0f, 0.0f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f, 0.0f },
 		{ 0.0f, 0.0f, 0.05f, 0.004f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.004f },
-		{ 0.0f, 0.001f, 0.002f, 0.0f, 0.002f, 0.0f, 0.0f, 0.03f, 0.002f, 0.02f },
+		{ 0.0f, 0.0f, 0.002f, 0.0f, 0.002f, 0.0f, 0.0f, 0.03f, 0.002f, 0.02f },
 		{ 0.02f, 0.012f, 0.002f, 0.0f, 0.004f, 0.004f, 0.0f, 0.12f, 0.01f, 0.0f },
 		{ 0.006f, 0.003f, 0.006f, 0.0012f, 0.012f, 0.004f, 0.0035f, 0.03f, 0.004f, 0.006f },
 		{ 0.002f, 0.001f, 0.002f, 0.0f, 0.006f, 0.006f, 0.012f, 0.02f, 0.002f, 0.002f },
