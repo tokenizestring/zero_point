@@ -33,7 +33,13 @@ namespace zp
 
 			settle();
 
+			gather_courses();
+
+			baker_towns.plan(courses, stops, preview_path);
+
 			grade();
+
+			pad();
 
 			shade();
 
@@ -60,6 +66,15 @@ namespace zp
 
 			add_blob("terrain_biome", biomes);
 			add_blob("terrain_ground", ground);
+
+			std::vector<std::uint8_t> plot_bytes(sizeof(std::uint32_t) + baker_towns.plots.size() * sizeof(structures::town_plot_s));
+
+			const auto plot_count{ static_cast<std::uint32_t>(baker_towns.plots.size()) };
+
+			std::memcpy(plot_bytes.data(), &plot_count, sizeof(plot_count));
+			std::memcpy(plot_bytes.data() + sizeof(plot_count), baker_towns.plots.data(), baker_towns.plots.size() * sizeof(structures::town_plot_s));
+
+			add_blob("world_plots", plot_bytes);
 
 			structures::terrain_header_s header{ terrain_resolution, terrain_texture_size, terrain_size, terrain_origin, *std::min_element(heights.begin(), heights.end()), *std::max_element(heights.begin(), heights.end()), sea_level, baker::terrain_seed };
 
@@ -397,8 +412,7 @@ namespace zp
 
 		for (const auto& site : world_sites)
 		{
-			auto sum{ 0.0 };
-			auto samples{ 0u };
+			std::double_t moments[9]{};
 
 			for (auto angle{ 0u }; angle < 32u; angle++)
 			{
@@ -406,17 +420,38 @@ namespace zp
 				{
 					const auto distance{ site.inner * static_cast<std::float_t>(ring) / 4.0f };
 					const auto theta{ static_cast<std::float_t>(angle) / 32.0f * two_pi };
+					const std::double_t dx{ std::sin(theta) * distance };
+					const std::double_t dz{ std::cos(theta) * distance };
 
-					if (const auto ground{ height_at(site.position.x + std::sin(theta) * distance, site.position.y + std::cos(theta) * distance) }; ground > sea_level + 1.0f)
+					if (const auto ground{ height_at(site.position.x + static_cast<std::float_t>(dx), site.position.y + static_cast<std::float_t>(dz)) }; ground > sea_level + 1.0f)
 					{
-						sum += ground;
-
-						samples++;
+						moments[0] += 1.0;
+						moments[1] += dx;
+						moments[2] += dz;
+						moments[3] += dx * dx;
+						moments[4] += dz * dz;
+						moments[5] += dx * dz;
+						moments[6] += ground;
+						moments[7] += dx * ground;
+						moments[8] += dz * ground;
 					}
 				}
 			}
 
-			const auto target{ std::max(static_cast<std::float_t>(sum / static_cast<std::double_t>(std::max(samples, 1u))), 3.5f) };
+			const auto count{ std::max(moments[0], 1.0) };
+			const auto mean_x{ moments[1] / count };
+			const auto mean_z{ moments[2] / count };
+			const auto mean_h{ moments[6] / count };
+			const auto xx{ moments[3] / count - mean_x * mean_x };
+			const auto zz{ moments[4] / count - mean_z * mean_z };
+			const auto xz{ moments[5] / count - mean_x * mean_z };
+			const auto xh{ moments[7] / count - mean_x * mean_h };
+			const auto zh{ moments[8] / count - mean_z * mean_h };
+			const auto determinant{ xx * zz - xz * xz };
+			const auto tilt_x{ std::fabs(determinant) > 1e-6 ? (xh * zz - zh * xz) / determinant : 0.0 };
+			const auto tilt_z{ std::fabs(determinant) > 1e-6 ? (zh * xx - xh * xz) / determinant : 0.0 };
+			const auto base{ mean_h - tilt_x * mean_x - tilt_z * mean_z };
+			const auto keep{ baker_towns.planned(site.landmark) ? baker::town_relief_keep : (landmark_settlements[site.landmark] == structures::settlement_outlier ? 0.08f : 0.3f) };
 			const auto first_row{ static_cast<std::uint32_t>(std::clamp((site.position.y - site.outer - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(size - 1u))) };
 			const auto last_row{ static_cast<std::uint32_t>(std::clamp((site.position.y + site.outer - terrain_origin) / terrain_spacing + 1.0f, 0.0f, static_cast<std::float_t>(size - 1u))) };
 			const auto first_column{ static_cast<std::uint32_t>(std::clamp((site.position.x - site.outer - terrain_origin) / terrain_spacing, 0.0f, static_cast<std::float_t>(size - 1u))) };
@@ -429,10 +464,13 @@ namespace zp
 					const auto x{ terrain_origin + static_cast<std::float_t>(column) * terrain_spacing };
 					const auto z{ terrain_origin + static_cast<std::float_t>(row) * terrain_spacing };
 					const auto distance{ std::sqrt((x - site.position.x) * (x - site.position.x) + (z - site.position.y) * (z - site.position.y)) };
+					const auto target{ std::max(static_cast<std::float_t>(base + tilt_x * static_cast<std::double_t>(x - site.position.x) + tilt_z * static_cast<std::double_t>(z - site.position.y)), sea_level + 1.2f) };
 
 					if (auto& height{ heights[static_cast<std::size_t>(row) * size + column] }; distance < site.outer && height > sea_level + 0.5f)
 					{
-						height = std::max(mathematics.lerp(height, target + (height - target) * 0.08f, mathematics.smoothstep(site.outer, site.inner, distance)), sea_level + 0.6f);
+						const auto weight{ mathematics.smoothstep(site.outer, site.inner, distance) * mathematics.smoothstep(sea_level + 0.4f, sea_level + baker::settle_shore, height) };
+
+						height = std::max(mathematics.lerp(height, target + (height - target) * keep, weight), sea_level + 0.6f);
 					}
 				}
 			}
@@ -479,12 +517,58 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void baker_terrain_c::gather_courses()
+	{
+		courses.clear();
+
+		for (const auto& route : world_routes)
+		{
+			baker::course_s course{};
+
+			course.kind = route.kind;
+			course.paving = route.kind == structures::route_rail ? structures::track_material_ballast : (route.width >= 6.0f ? structures::track_material_asphalt : structures::track_material_dirt);
+			course.rank = 0u;
+			course.landmark = structures::landmark_count;
+			course.parent = UINT32_MAX;
+			course.width = route.width;
+			course.grade = route.grade;
+			course.smoothing = route.smoothing;
+			course.slope = route.slope;
+			course.closed = route.closed;
+
+			route_path(route, course.path);
+
+			for (const auto& point : course.path)
+			{
+				const auto walk{ route.kind == structures::route_road ? baker_towns.walk_at(point) : 0.0f };
+
+				course.paving = walk > 0.0f && course.paving == structures::track_material_dirt ? structures::track_material_asphalt : course.paving;
+
+				course.walks.push_back(walk);
+				course.flats.push_back(route.width * 0.5f + walk);
+			}
+
+			courses.push_back(std::move(course));
+		}
+
+		for (auto& course : courses)
+		{
+			if (course.kind == structures::route_rail)
+			{
+				stations(course.path, course.width * 0.5f, course.flats);
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void baker_terrain_c::grade()
 	{
 		const auto size{ static_cast<std::int32_t>(terrain_resolution) };
 
 		route_near.assign(heights.size(), 0.0f);
 		route_kind.assign(heights.size(), 0u);
+		beds.assign(heights.size(), 0u);
 		routes.clear();
 
 		std::vector<std::float_t> nearest(heights.size(), FLT_MAX);
@@ -493,12 +577,9 @@ namespace zp
 		std::vector<std::uint8_t> bedded(heights.size(), 0u);
 		std::vector<std::size_t> touched;
 
-		for (const auto& route : world_routes)
+		for (const auto& route : courses)
 		{
-			std::vector<structures::vec2_s> path;
-
-			route_path(route, path);
-
+			const auto& path{ route.path };
 			const auto count{ static_cast<std::int32_t>(path.size()) };
 			const auto window{ std::max(1, static_cast<std::int32_t>(route.smoothing / baker::route_spacing * 0.5f)) };
 			const auto half{ route.width * 0.5f };
@@ -509,13 +590,8 @@ namespace zp
 			std::vector<std::float_t> spans(path.size());
 			std::vector<std::float_t> lowest(path.size(), -FLT_MAX);
 			std::vector<std::float_t> highest(path.size(), FLT_MAX);
-			std::vector<std::float_t> flat(path.size(), half);
+			std::vector<std::float_t> flat{ route.flats };
 			std::vector<std::uint8_t> pinned(path.size(), 0u);
-
-			if (route.kind == structures::route_rail)
-			{
-				stations(path, half, flat);
-			}
 
 			for (auto index{ 0 }; index < count; index++)
 			{
@@ -652,10 +728,11 @@ namespace zp
 				}
 
 				bedded[cell] = static_cast<std::uint8_t>(distance < half ? 1u : (bedded[cell] & 1u));
+				beds[cell] = static_cast<std::uint8_t>(distance < broad[cell] + 0.5f ? 1u : beds[cell]);
 				nearest[cell] = FLT_MAX;
 			}
 
-			structures::route_path_s entry{ route.kind, route.width, route.closed, {} };
+			structures::route_path_s entry{ route.kind, route.paving, route.width, route.closed, {}, route.walks };
 
 			for (auto index{ 0 }; index < count; index++)
 			{
@@ -668,13 +745,49 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
+	void baker_terrain_c::pad()
+	{
+		const auto size{ static_cast<std::int32_t>(terrain_resolution) };
+
+		for (auto& plot : baker_towns.plots)
+		{
+			const structures::vec2_s away{ std::sin(plot.yaw), std::cos(plot.yaw) };
+			const structures::vec2_s across{ away.y, -away.x };
+			const auto reach{ std::max(plot.size.x, plot.size.y) + baker::town_pad_blend + 2.0f };
+			const auto first_column{ std::max(static_cast<std::int32_t>((plot.position.x - reach - terrain_origin) / terrain_spacing), 0) };
+			const auto last_column{ std::min(static_cast<std::int32_t>((plot.position.x + reach - terrain_origin) / terrain_spacing) + 1, size - 1) };
+			const auto first_row{ std::max(static_cast<std::int32_t>((plot.position.y - reach - terrain_origin) / terrain_spacing), 0) };
+			const auto last_row{ std::min(static_cast<std::int32_t>((plot.position.y + reach - terrain_origin) / terrain_spacing) + 1, size - 1) };
+
+			plot.floor = height_at(plot.position.x, plot.position.y) + town_walk_top;
+
+			for (auto row{ first_row }; row <= last_row; row++)
+			{
+				for (auto column{ first_column }; column <= last_column; column++)
+				{
+					const auto cell{ static_cast<std::size_t>(row) * static_cast<std::size_t>(size) + static_cast<std::size_t>(column) };
+					const structures::vec2_s spot{ terrain_origin + static_cast<std::float_t>(column) * terrain_spacing, terrain_origin + static_cast<std::float_t>(row) * terrain_spacing };
+					const auto u{ std::fabs(mathematics.dot(spot - plot.position, across)) - plot.size.x * 0.5f - 0.5f };
+					const auto v{ mathematics.dot(spot - plot.position, away) };
+					const auto outside{ mathematics.length(structures::vec2_s{ std::max(u, 0.0f), std::max({ -v, v - plot.size.y - 0.5f, 0.0f }) }) };
+
+					if (beds[cell] == 0u && outside < baker::town_pad_blend)
+					{
+						heights[cell] = mathematics.lerp(heights[cell], plot.floor - baker::town_pad_sink, 1.0f - mathematics.smoothstep(0.0f, baker::town_pad_blend, outside));
+					}
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
 	void baker_terrain_c::stations(const std::vector<structures::vec2_s>& rail, std::float_t half, std::vector<std::float_t>& flat)
 	{
 		const auto count{ static_cast<std::int32_t>(rail.size()) };
 
 		std::vector<std::float_t> along(rail.size() + 1u, 0.0f);
 		std::vector<std::int32_t> crossings;
-		std::vector<structures::vec2_s> road;
 
 		stops.clear();
 
@@ -683,13 +796,11 @@ namespace zp
 			along[index + 1] = along[index] + mathematics.length(rail[(index + 1) % count] - rail[index]);
 		}
 
-		for (const auto& route : world_routes)
+		for (const auto& course : courses)
 		{
-			if (route.kind == structures::route_road)
+			if (course.kind == structures::route_road)
 			{
-				route_path(route, road);
-
-				for (const auto& point : road)
+				for (const auto& point : course.path)
 				{
 					for (auto index{ 0 }; index < count; index++)
 					{
@@ -779,10 +890,12 @@ namespace zp
 			const std::uint32_t flags{ route.closed ? 1u : 0u };
 
 			baker_models.append(item, &route.kind, sizeof(route.kind));
+			baker_models.append(item, &route.paving, sizeof(route.paving));
 			baker_models.append(item, &flags, sizeof(flags));
 			baker_models.append(item, &route.width, sizeof(route.width));
 			baker_models.append(item, &point_count, sizeof(point_count));
 			baker_models.append(item, route.points.data(), route.points.size() * sizeof(structures::vec3_s));
+			baker_models.append(item, route.walks.data(), route.walks.size() * sizeof(std::float_t));
 		}
 
 		items.push_back(std::move(item));
@@ -873,6 +986,18 @@ namespace zp
 		std::vector<std::float_t> level(count), steep(count), damp(count), coast(count), relief(count), exposure(count), moist(count);
 		std::vector<std::double_t> table(static_cast<std::size_t>(size + 1) * static_cast<std::size_t>(size + 1), 0.0);
 		std::vector<std::double_t> seep(table.size(), 0.0);
+		std::vector<structures::vec3_s> towns;
+
+		for (const auto& profile : town_profiles)
+		{
+			for (const auto& site : world_sites)
+			{
+				if (site.landmark == profile.landmark)
+				{
+					towns.push_back({ site.position.x, site.position.y, profile.radius + 25.0f });
+				}
+			}
+		}
 
 		jobs.parallel_for(biome_size, [&](std::uint32_t row)
 			{
@@ -986,11 +1111,14 @@ namespace zp
 					const auto windswept{ (exposure[cell] > 0.62f && coast[cell] < 300.0f + 160.0f * drift && tall > 7.0f) || (relief[cell] > 3.5f && exposure[cell] > 0.45f && tall > 30.0f) || (coast[cell] < 150.0f + 260.0f * edge && tall > 11.0f && drift > -0.12f) };
 					const auto upland{ tall > 118.0f + 20.0f * edge ? structures::biome_summit : (tall > 96.0f + 14.0f * edge && exposure[cell] > 0.4f ? structures::biome_moor : (windswept ? structures::biome_heath : wooded)) };
 					const auto soaked{ (moist[cell] > 0.17f + 0.06f * edge && tilt < 0.05f && tall < 30.0f) || (tall < 4.4f + 1.5f * drift && tilt < 0.022f && coast[cell] > 50.0f && edge > 0.08f) };
-					const auto sandy{ coast[cell] < 190.0f + 120.0f * edge && tall < 12.0f && tilt < 0.16f && exposure[cell] > 0.5f };
+					const auto sandy{ x < baker::dune_west && coast[cell] < 300.0f + 160.0f * edge && tall < 14.0f && tilt < 0.16f && exposure[cell] > 0.45f };
 					const auto inland{ sandy ? structures::biome_dunes : (soaked ? structures::biome_marsh : upland) };
-					const auto coastal{ tall < shoreline + 1.4f ? (tilt > 0.14f ? structures::biome_shore : structures::biome_beach) : (coast[cell] < 60.0f && tilt > 0.22f ? structures::biome_shore : inland) };
+					const auto strand{ coast[cell] < baker::beach_reach + baker::beach_spread * edge };
+					const auto coastal{ tall < shoreline + 1.4f && strand ? (tilt > 0.14f ? structures::biome_shore : structures::biome_beach) : (coast[cell] < 60.0f && tilt > 0.22f ? structures::biome_shore : inland) };
+					const auto settled{ strand == false && std::any_of(towns.begin(), towns.end(), [&](const structures::vec3_s& town) { return (x - town.x) * (x - town.x) + (z - town.y) * (z - town.y) < town.z * town.z; }) };
+					const auto tamed{ settled && (coastal == structures::biome_farmland || coastal == structures::biome_dunes || coastal == structures::biome_beach || coastal == structures::biome_marsh || coastal == structures::biome_heath || coastal == structures::biome_moor) };
 
-					biomes[cell] = static_cast<std::uint8_t>(tall < sea_level + 0.05f ? structures::biome_sea : coastal);
+					biomes[cell] = static_cast<std::uint8_t>(tall < sea_level + 0.05f ? structures::biome_sea : (tamed ? structures::biome_meadow : coastal));
 				}
 			});
 
@@ -1066,6 +1194,13 @@ namespace zp
 		for (auto& splat : splats)
 		{
 			splat.assign(count * 4u, 0u);
+		}
+
+		std::vector<std::uint8_t> planned(std::size(world_sites), 0u);
+
+		for (auto index{ 0u }; index < std::size(world_sites); index++)
+		{
+			planned[index] = baker_towns.planned(world_sites[index].landmark) ? 1u : 0u;
 		}
 
 		jobs.parallel_for(size, [&](std::uint32_t row)
@@ -1180,7 +1315,7 @@ namespace zp
 
 					for (const auto& site : world_sites)
 					{
-						if (const auto reach{ site.inner * 0.58f }; (x - site.position.x) * (x - site.position.x) + (z - site.position.y) * (z - site.position.y) < reach * reach)
+						if (const auto reach{ site.inner * 0.58f }; planned[&site - world_sites] == 0u && (x - site.position.x) * (x - site.position.x) + (z - site.position.y) * (z - site.position.y) < reach * reach)
 						{
 							const auto settle{ mathematics.smoothstep(reach, site.inner * 0.22f, std::sqrt((x - site.position.x) * (x - site.position.x) + (z - site.position.y) * (z - site.position.y))) * (0.55f + 0.45f * mathematics.smoothstep(0.35f, 0.65f, patches)) };
 

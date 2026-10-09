@@ -58,6 +58,42 @@ namespace zp
 		constexpr auto route_floor = 2.5f;
 		constexpr auto route_shoulder = 30.0f;
 		constexpr auto route_paint_band = 1.6f;
+		constexpr auto town_cell = 4.0f;
+		constexpr auto town_fine_cell = 1.0f;
+		constexpr auto town_margin = 64.0f;
+		constexpr auto town_steep_cost = 70.0f;
+		constexpr auto town_grade_limit = 0.17f;
+		constexpr auto town_steep_penalty = 25.0f;
+		constexpr auto town_crowd_reach = 30.0f;
+		constexpr auto town_crowd_cost = 2.5f;
+		constexpr auto town_join_reach = 5.0f;
+		constexpr auto town_rail_clear = 9.0f;
+		constexpr auto town_station_clear = 46.0f;
+		constexpr auto town_ground_floor = 1.4f;
+		constexpr auto town_gate_reach = 30.0f;
+		constexpr auto town_dead_end = 10.0f;
+		constexpr auto town_street_minimum = 34.0f;
+		constexpr auto town_loop_reach = 130.0f;
+		constexpr auto town_simplify = 2.6f;
+		constexpr auto town_smoothing = 3u;
+		constexpr auto town_plot_step = 1.0f;
+		constexpr auto town_plot_relief = 3.4f;
+		constexpr auto town_plot_clearance = 0.35f;
+		constexpr auto town_plot_gap = 0.5f;
+		constexpr auto town_attached_chance = 0.75f;
+		constexpr auto town_pad_blend = 5.0f;
+		constexpr auto town_pad_sink = 0.12f;
+		constexpr auto town_street_grade = 0.15f;
+		constexpr auto town_street_smoothing = 12.0f;
+		constexpr auto town_street_slope = 0.6f;
+		constexpr auto town_preview_scale = 2.0f;
+		constexpr auto town_relief_keep = 0.5f;
+		constexpr auto settle_shore = 3.0f;
+		constexpr auto dune_west = -2600.0f;
+		constexpr auto beach_reach = 36.0f;
+		constexpr auto beach_spread = 28.0f;
+		constexpr std::float_t town_rings[3] = { 0.38f, 0.62f, 0.88f };
+		constexpr structures::vec3_s town_role_colors[structures::town_building_count] = { { 0.75f, 0.35f, 0.3f }, { 0.95f, 0.6f, 0.2f }, { 0.6f, 0.2f, 0.55f }, { 0.95f, 0.95f, 0.95f }, { 0.2f, 0.3f, 0.85f }, { 0.9f, 0.3f, 0.35f }, { 0.45f, 0.45f, 0.45f }, { 0.95f, 0.85f, 0.1f }, { 0.55f, 0.5f, 0.7f }, { 0.3f, 0.7f, 0.9f }, { 0.85f, 0.75f, 0.55f }, { 0.65f, 0.45f, 0.3f }, { 0.75f, 0.6f, 0.45f }, { 0.35f, 0.3f, 0.28f }, { 0.55f, 0.35f, 0.2f }, { 0.5f, 0.42f, 0.3f }, { 0.9f, 0.55f, 0.45f }, { 0.8f, 0.8f, 0.7f } };
 		constexpr auto biome_relief_radius = 12;
 		constexpr auto biome_wind_steps = 20u;
 		constexpr auto biome_wind_stride = 40.0f;
@@ -319,6 +355,39 @@ namespace zp
 			std::uint32_t to;
 			std::uint32_t stamp;
 		};
+
+		struct course_s
+		{
+			std::uint32_t kind;
+			std::uint32_t paving;
+			std::uint32_t rank;
+			std::uint32_t landmark;
+			std::uint32_t parent;
+			std::float_t width;
+			std::float_t grade;
+			std::float_t smoothing;
+			std::float_t slope;
+			bool closed;
+			std::vector<structures::vec2_s> path;
+			std::vector<std::float_t> walks;
+			std::vector<std::float_t> flats;
+		};
+
+		struct frontage_s
+		{
+			std::uint32_t course;
+			std::float_t side;
+			std::vector<structures::vec2_s> points;
+			std::vector<structures::vec2_s> aways;
+			std::vector<std::float_t> arcs;
+		};
+
+		struct opening_s
+		{
+			std::float_t distance;
+			std::uint32_t frontage;
+			std::float_t arc;
+		};
 	}
 
 	class baker_simplifier_c
@@ -416,7 +485,9 @@ namespace zp
 		std::vector<std::float_t> occlusion;
 		std::vector<std::float_t> route_near;
 		std::vector<std::uint8_t> route_kind;
+		std::vector<std::uint8_t> beds;
 		std::vector<structures::route_path_s> routes;
+		std::vector<baker::course_s> courses;
 		std::vector<structures::station_s> stops;
 		std::vector<std::uint8_t> biomes;
 		std::vector<std::uint8_t> shading;
@@ -432,7 +503,9 @@ namespace zp
 		void add_compressed(const char* name, std::uint32_t size, const std::vector<std::uint8_t>& base);
 		void add_blob(const char* name, const std::vector<std::uint8_t>& bytes);
 		void preview_biomes(const std::string& path);
+		void gather_courses();
 		void grade();
+		void pad();
 		void stations(const std::vector<structures::vec2_s>& rail, std::float_t half, std::vector<std::float_t>& flat);
 		void route_path(const structures::world_route_s& route, std::vector<structures::vec2_s>& path);
 		void write_routes();
@@ -454,6 +527,55 @@ namespace zp
 		std::float_t ridged(std::float_t x, std::float_t z, std::uint32_t octaves, std::uint32_t seed);
 		std::float_t bilinear(const std::vector<std::float_t>& grid, std::uint32_t size, std::float_t x, std::float_t z);
 		std::float_t bicubic(const std::vector<std::float_t>& grid, std::uint32_t size, std::float_t x, std::float_t z);
+	};
+
+	class baker_towns_c
+	{
+	public:
+
+		std::vector<structures::town_plot_s> plots;
+		std::vector<std::float_t> level;
+		std::vector<std::float_t> reach;
+		std::vector<std::uint32_t> owner;
+		std::vector<std::uint8_t> blocked;
+		std::vector<std::float_t> spent;
+		std::vector<std::int32_t> came;
+		std::vector<std::float_t> room;
+		std::vector<std::uint32_t> members;
+		std::vector<baker::frontage_s> frontages;
+		structures::vec2_s corner{};
+		std::uint32_t cells = 0u;
+		std::uint32_t fine = 0u;
+		std::uint32_t state = 1u;
+		std::size_t first_plot = 0u;
+
+		void plan(std::vector<baker::course_s>& courses, const std::vector<structures::station_s>& stops, const std::string& preview_path);
+		void lay_out(const structures::town_profile_s& profile, const structures::world_site_s& site, std::vector<baker::course_s>& courses, const std::vector<structures::station_s>& stops);
+		void survey(const structures::town_profile_s& profile, const structures::world_site_s& site, const std::vector<baker::course_s>& courses, const std::vector<structures::station_s>& stops);
+		void block(structures::vec2_s point, std::float_t radius);
+		void stamp(const baker::course_s& course, std::uint32_t index);
+		bool connect(std::int32_t start, std::int32_t goal, std::uint32_t avoid, std::uint32_t shun, std::vector<structures::vec2_s>& out);
+		bool lay_street(std::vector<structures::vec2_s> points, std::uint32_t rank, std::float_t width, std::uint32_t start_parent, std::uint32_t end_parent, std::uint32_t landmark, std::vector<baker::course_s>& courses);
+		void smooth(std::vector<structures::vec2_s>& points);
+		void simplify(const std::vector<structures::vec2_s>& points, std::size_t from, std::size_t to, std::vector<std::uint8_t>& keep);
+		void trim(std::vector<structures::vec2_s>& points, const baker::course_s& parent);
+		structures::vec2_s nearest(const baker::course_s& course, structures::vec2_s point, std::float_t& gap);
+		void measure_room(const std::vector<baker::course_s>& courses, const std::vector<structures::station_s>& stops);
+		void front(const std::vector<baker::course_s>& courses);
+		void parcel(const structures::town_profile_s& profile, const structures::world_site_s& site, const std::vector<baker::course_s>& courses);
+		bool place(const baker::frontage_s& frontage, std::float_t arc, std::uint32_t role, structures::vec2_s size, std::uint32_t landmark, const structures::world_site_s& site, std::float_t radius);
+		bool fits(const structures::town_plot_s& plot, const structures::world_site_s& site, std::float_t radius);
+		bool overlaps(const structures::town_plot_s& a, const structures::town_plot_s& b);
+		structures::vec2_s along_at(const baker::frontage_s& frontage, std::float_t arc);
+		std::uint32_t pick(std::uint32_t style, std::uint32_t zone);
+		std::float_t room_at(structures::vec2_s point);
+		std::float_t walk_at(structures::vec2_s point);
+		bool planned(std::uint32_t landmark);
+		bool inside(structures::vec2_s point, std::float_t margin);
+		std::float_t random();
+		std::int32_t cell_at(structures::vec2_s point);
+		structures::vec2_s cell_center(std::int32_t cell);
+		void preview(const std::string& path, const structures::town_profile_s& profile, const structures::world_site_s& site, const std::vector<baker::course_s>& courses);
 	};
 
 	class baker_images_c
@@ -604,6 +726,7 @@ namespace zp
 	extern baker_simplifier_c baker_simplifier;
 	extern baker_characters_c baker_characters;
 	extern baker_terrain_c baker_terrain;
+	extern baker_towns_c baker_towns;
 	extern baker_models_c baker_models;
 	extern baker_images_c baker_images;
 	extern baker_compressor_c baker_compressor;
