@@ -209,7 +209,7 @@ rules = {
 	"town": {"search": 1400.0, "flat": 0.9, "high": 0.0, "floor": 4.0},
 	"outpost": {"search": 1600.0, "flat": 0.0, "high": 1.0, "floor": 20.0},
 	"halt": {"search": 700.0, "flat": 0.3, "high": 0.0, "floor": 3.0},
-	"harbour": {"search": 700.0, "flat": 0.2, "high": -0.08, "floor": 2.5},
+	"harbour": {"search": 700.0, "flat": 0.6, "high": -0.02, "floor": 4.5},
 	"brelade": {"search": 700.0, "flat": 0.2, "high": -0.08, "floor": 2.5},
 	"clement": {"search": 600.0, "flat": 0.2, "high": -0.05, "floor": 2.5},
 	"default": {"search": 500.0, "flat": 0.25, "high": 0.0, "floor": 3.0},
