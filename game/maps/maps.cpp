@@ -34,6 +34,7 @@ namespace zp
 		objectives.clear();
 		lights.clear();
 		clearings.clear();
+		clearing_cells.clear();
 		hotspots.clear();
 		landmarks.clear();
 		roads.clear();
@@ -42,6 +43,8 @@ namespace zp
 		facades.clear();
 		stations.clear();
 		crossings.clear();
+		plots.clear();
+		plantings.clear();
 		building_species.clear();
 
 		std::fill(std::begin(crates), std::end(crates), UINT32_MAX);
@@ -1230,7 +1233,8 @@ namespace zp
 				if (spaced && height > 4.0f && height < 45.0f && highest - lowest < 0.1f && cleared(x, z) == false && layer_barren[std::min(terrain.ground(x, z), terrain_layer_count - 1u)] == false)
 				{
 					farming.springs.push_back({ x, highest + 0.025f, z, radius });
-					clearings.push_back({ x, 0.0f, z, radius + 2.5f });
+
+					clear_area({ x, 0.0f, z, radius + 2.5f });
 
 					terrain.mask_rectangle({ x, height, z }, radius + 0.3f, radius + 0.3f, 0.0f);
 
@@ -1343,17 +1347,9 @@ namespace zp
 				}
 			};
 
-		for (const auto& site : world_sites)
+		for (const auto& planting : plantings)
 		{
-			for (auto index{ 0u }; site.landmark == structures::landmark_town && index < std::size(town_planters) + std::size(town_trees); index++)
-			{
-				const auto potted{ index < std::size(town_planters) };
-				const auto local{ potted ? town_planters[index] : town_trees[index - std::size(town_planters)] };
-				const auto x{ site.position.x + local.x };
-				const auto z{ site.position.y + local.y };
-
-				plant(structures::tree_oak, { x, terrain.height(x, z) + (potted ? town_pavings[structures::town_square].top + town_planter_soil : 0.0f), z }, mathematics.lerp(tree_species[structures::tree_oak].smallest, tree_species[structures::tree_oak].largest, potted ? 0.25f : 0.6f), chance() * two_pi, chance());
-			}
+			plant(structures::tree_oak, { planting.x, planting.y, planting.z }, mathematics.lerp(tree_species[structures::tree_oak].smallest, tree_species[structures::tree_oak].largest, planting.w), chance() * two_pi, chance());
 		}
 
 		for (auto z{ terrain_origin + 3.0f }; z < terrain_origin + terrain_size - 3.0f; z += 5.0f)
@@ -1547,13 +1543,16 @@ namespace zp
 	*/
 	void maps_c::build_monuments()
 	{
+		load_plots();
+
 		for (const auto& site : world_sites)
 		{
 			const structures::vec3_s center{ site.position.x, 0.0f, site.position.y };
+			const auto profile{ std::find_if(std::begin(town_profiles), std::end(town_profiles), [&](const structures::town_profile_s& entry) { return entry.landmark == site.landmark; }) };
 
-			if (site.landmark == structures::landmark_town)
+			if (profile != std::end(town_profiles))
 			{
-				build_town(center, site.inner);
+				build_settlement(site, *profile);
 			}
 
 			else if (site.landmark == structures::landmark_outpost)
@@ -1590,7 +1589,7 @@ namespace zp
 
 		if (raised)
 		{
-			clearings.push_back({ rig_site.x, 0.0f, rig_site.y, rig_clearance });
+			clear_area({ rig_site.x, 0.0f, rig_site.y, rig_clearance });
 
 			logger.write("maps: oil rig raised from %u parts at %.0f %.0f", raised, rig_site.x, rig_site.y);
 		}
@@ -1721,7 +1720,7 @@ namespace zp
 		const auto farm{ landmark_settlements[site.landmark] == structures::settlement_farm };
 		const auto count{ landmark_houses[site.landmark] };
 
-		clearings.push_back({ center.x, 0.0f, center.z, site.inner + 8.0f });
+		clear_area({ center.x, 0.0f, center.z, site.inner + 8.0f });
 		landmarks.push_back({ site.position, site.inner * 0.8f, site.landmark });
 
 		if (village || hamlet)
@@ -1776,152 +1775,316 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void maps_c::build_town(structures::vec3_s center, std::float_t radius)
+	void maps_c::load_plots()
 	{
-		clearings.push_back({ center.x, 0.0f, center.z, town_clear_radius });
-		hotspots.push_back({ center.x, 0.0f, center.z, radius * 0.75f });
-		landmarks.push_back({ { center.x, center.z }, radius, structures::landmark_town });
+		plots.clear();
 
-		for (auto surface{ 0u }; surface < structures::town_surface_count; surface++)
+		if (const auto entry{ pak.find("world_plots") }; entry && entry->size >= sizeof(std::uint32_t))
 		{
-			town_materials[surface] = models.variant(town_pavings[surface].material, town_pavings[surface].tint, 0.0f);
+			stream_reader_c reader{};
+
+			reader.reset(pak.data(entry), static_cast<std::uint32_t>(entry->size));
+
+			plots.resize(std::min(reader.u32(), plot_limit));
+
+			reader.bytes(plots.data(), static_cast<std::uint32_t>(plots.size() * sizeof(structures::town_plot_s)));
+
+			if (reader.overflow)
+			{
+				plots.clear();
+			}
 		}
 
-		kerb_material = models.variant(structures::material_concrete_rough, { 0.62f, 0.61f, 0.59f }, 0.0f);
-		dash_material = models.variant(structures::material_paint_white, { 0.8f, 0.78f, 0.72f }, 0.0f);
-		granite_material = models.variant(structures::material_concrete_rough, { 0.86f, 0.85f, 0.83f }, 0.0f);
-		iron_material = models.variant(structures::material_paint_gunmetal, { 0.35f, 0.35f, 0.36f }, 0.6f);
-		soil_material = models.variant(structures::material_terrain_soil, { 0.8f, 0.78f, 0.75f }, 0.0f);
-
-		for (const auto& patch : town_patches)
-		{
-			pave(center, patch);
-		}
-
-		dress_square(center);
-
-		for (const auto& row : town_rows)
-		{
-			line_up(center, row);
-		}
-
-		for (const auto& site : town_sites)
-		{
-			const auto spot{ center + structures::vec3_s{ site.position.x, 0.0f, site.position.y } };
-
-			erect(site.building, spot, site.yaw, terrain.height(spot.x, spot.z));
-		}
-
-		light_streets(center);
-
-		litter_town(center);
-
-		logger.write("maps: Saint Aubin laid out with %zu streets and squares, %zu building rows", std::size(town_patches), std::size(town_rows));
+		logger.write("maps: %zu town plots loaded", plots.size());
 	}
 	/*
 	//=====================================================================================
 	*/
-	void maps_c::pave(structures::vec3_s center, const structures::town_patch_s& patch)
+	void maps_c::build_settlement(const structures::world_site_s& site, const structures::town_profile_s& profile)
 	{
-		const auto& paving{ town_pavings[patch.paving] };
-		const structures::vec2_s low{ center.x + patch.minimum.x, center.z + patch.minimum.y };
-		const structures::vec2_s high{ center.x + patch.maximum.x, center.z + patch.maximum.y };
-		const auto columns{ std::max(1u, static_cast<std::uint32_t>(std::ceil((high.x - low.x) / town_grid))) };
-		const auto rows{ std::max(1u, static_cast<std::uint32_t>(std::ceil((high.y - low.y) / town_grid))) };
+		std::vector<std::string> homes;
+
+		char name[64]{};
+
+		for (auto index{ 1u }; index <= town_home_models; index++)
+		{
+			std::snprintf(name, sizeof(name), "%s%02u", town_home_prefix, index);
+
+			if (models.find(name))
+			{
+				homes.push_back(name);
+			}
+		}
+
+		if (homes.empty())
+		{
+			homes.assign(std::begin(town_home_fallbacks), std::end(town_home_fallbacks));
+		}
+
+		for (auto index{ homes.size() }; index > 1u; index--)
+		{
+			std::swap(homes[index - 1u], homes[std::min(static_cast<std::size_t>(chance() * static_cast<std::float_t>(index)), index - 1u)]);
+		}
+
+		landmarks.push_back({ site.position, profile.radius * 0.8f, site.landmark });
+		hotspots.push_back({ site.position.x, 0.0f, site.position.y, profile.radius * 0.6f });
+
+		auto built{ 0u };
+		auto squares{ 0u };
+		auto home{ 0u };
+
+		for (const auto& plot : plots)
+		{
+			if (plot.landmark == site.landmark && plot.role == structures::town_plaza)
+			{
+				build_square(plot, profile, squares++);
+			}
+
+			else if (plot.landmark == site.landmark)
+			{
+				build_plot(plot, plot.role == structures::town_home && homes.size() ? homes[home++ % homes.size()].c_str() : town_buildings[plot.role].model);
+
+				built++;
+			}
+		}
+
+		dress_town(site, profile);
+
+		logger.write("maps: %s built with %u buildings, %u squares, %zu unique homes", landmark_names[site.landmark], built, squares, homes.size());
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::build_plot(const structures::town_plot_s& plot, const char* model_name)
+	{
+		const structures::vec2_s away{ std::sin(plot.yaw), std::cos(plot.yaw) };
+		const structures::vec3_s front{ plot.position.x, plot.floor, plot.position.y };
+		const auto middle{ plot.position + away * (plot.size.y * 0.5f) };
+		const auto garden{ plot.role == structures::town_home || plot.role == structures::town_cottage || plot.role == structures::town_house };
+
+		auto depth{ town_buildings[plot.role].size.y * 0.7f };
+
+		clear_area({ middle.x, 0.0f, middle.y, mathematics.length(plot.size) * 0.5f + town_clearing_margin });
+
+		if (const auto model{ models.find(model_name) }; model)
+		{
+			const auto pivot{ rotate_yaw({ (model->bounds_min.x + model->bounds_max.x) * 0.5f, 0.0f, model->bounds_min.z }, plot.yaw) };
+			const auto inner{ plot.position + away * ((model->bounds_max.z - model->bounds_min.z) * 0.5f) };
+
+			depth = model->bounds_max.z - model->bounds_min.z;
+
+			place_building(model_name, front - pivot, plot.yaw);
+
+			terrain.mask_rectangle({ inner.x, plot.floor, inner.y }, (model->bounds_max.x - model->bounds_min.x) * 0.5f + 0.3f, depth * 0.5f + 0.3f, plot.yaw);
+		}
+
+		else
+		{
+			const auto& plan{ town_buildings[plot.role] };
+
+			build_house(front + structures::vec3_s{ away.x, 0.0f, away.y } * (depth * 0.5f), plot.yaw, plan.size.x * 0.85f, depth, std::max(plan.floors, 1u), 0.2f + chance() * 0.4f);
+		}
+
+		if (garden || plot.role == structures::town_church)
+		{
+			garden_walls(plot, depth + 0.6f);
+		}
+
+		if (garden && plot.size.y - depth > 4.0f && chance() < 0.4f)
+		{
+			const auto back{ plot.position + away * (depth + (plot.size.y - depth) * 0.6f) + structures::vec2_s{ away.y, -away.x } * ((chance() - 0.5f) * plot.size.x * 0.5f) };
+
+			plantings.push_back({ back.x, terrain.height(back.x, back.y), back.y, 0.3f + chance() * 0.35f });
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::garden_walls(const structures::town_plot_s& plot, std::float_t start)
+	{
+		const structures::vec2_s away{ std::sin(plot.yaw), std::cos(plot.yaw) };
+		const structures::vec2_s across{ away.y, -away.x };
+		const auto half{ plot.size.x * 0.5f - town_wall_inset };
+		const auto depth{ plot.size.y - town_wall_inset };
+		const structures::vec2_s corners[4] = { plot.position + across * half + away * start, plot.position + across * half + away * depth, plot.position - across * half + away * depth, plot.position - across * half + away * start };
+
+		for (auto edge{ 0u }; edge < 3u; edge++)
+		{
+			const auto from{ corners[edge] };
+			const auto to{ corners[edge + 1u] };
+			const auto length{ mathematics.length(to - from) };
+			const auto pieces{ static_cast<std::uint32_t>(std::floor(length / town_wall_piece)) };
+			const auto direction{ mathematics.normalize(to - from) };
+
+			for (auto piece{ 0u }; piece < pieces; piece++)
+			{
+				const auto spot{ from + direction * ((static_cast<std::float_t>(piece) + 0.5f) * (length / static_cast<std::float_t>(pieces))) };
+
+				if (chance() > 0.12f)
+				{
+					fixture(town_wall_model, { spot.x, terrain.height(spot.x, spot.y), spot.y }, std::atan2(-direction.y, direction.x), structures::surface_rock);
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::build_square(const structures::town_plot_s& plot, const structures::town_profile_s& profile, std::uint32_t ordinal)
+	{
+		const structures::vec2_s away{ std::sin(plot.yaw), std::cos(plot.yaw) };
+		const structures::vec2_s across{ away.y, -away.x };
+		const auto columns{ std::max(1u, static_cast<std::uint32_t>(std::ceil(plot.size.x / town_tile))) };
+		const auto rows{ std::max(1u, static_cast<std::uint32_t>(std::ceil(plot.size.y / town_tile))) };
 		const auto first_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
 		const auto first_index{ static_cast<std::uint32_t>(builder.indices.size()) };
-		const auto lengthwise{ high.y - low.y > high.x - low.x };
+		const auto& paving{ town_pavings[structures::town_square] };
+		const auto top{ plot.floor };
+		const auto middle{ plot.position + away * (plot.size.y * 0.5f) };
+		const auto corner = [&](std::float_t u, std::float_t v)
+			{
+				return plot.position + across * (u * plot.size.x) + away * (v * plot.size.y);
+			};
 
-		builder.set_material(town_materials[patch.paving]);
+		clear_area({ middle.x, 0.0f, middle.y, mathematics.length(plot.size) * 0.5f + town_clearing_margin });
+
+		builder.set_material(town_materials[structures::town_square]);
 
 		for (auto row{ 0u }; row <= rows; row++)
 		{
 			for (auto column{ 0u }; column <= columns; column++)
 			{
-				const auto x{ mathematics.lerp(low.x, high.x, static_cast<std::float_t>(column) / static_cast<std::float_t>(columns)) };
-				const auto z{ mathematics.lerp(low.y, high.y, static_cast<std::float_t>(row) / static_cast<std::float_t>(rows)) };
-				const auto corner{ builder.add_vertex({ x, terrain.height(x, z) + paving.top, z }, { 0.0f, 1.0f, 0.0f }, { x / paving.tile, -z / paving.tile }) };
+				const auto spot{ corner(static_cast<std::float_t>(column) / static_cast<std::float_t>(columns) - 0.5f, static_cast<std::float_t>(row) / static_cast<std::float_t>(rows)) };
+				const auto vertex{ builder.add_vertex({ spot.x, top, spot.y }, { 0.0f, 1.0f, 0.0f }, { spot.x / paving.tile, -spot.y / paving.tile }) };
 
 				if (row && column)
 				{
-					builder.add_triangle(corner - columns - 2u, corner - columns - 1u, corner);
-					builder.add_triangle(corner - columns - 2u, corner, corner - 1u);
+					builder.add_triangle(vertex - columns - 2u, vertex - columns - 1u, vertex);
+					builder.add_triangle(vertex - columns - 2u, vertex, vertex - 1u);
 				}
 			}
 		}
 
 		builder.compute_tangents(first_vertex, first_index);
 
-		if (paving.raised)
+		rim(corner(0.5f, 0.0f), corner(0.5f, 1.0f), top, across);
+		rim(corner(0.5f, 1.0f), corner(-0.5f, 1.0f), top, away);
+		rim(corner(-0.5f, 1.0f), corner(-0.5f, 0.0f), top, -across);
+
+		world.add_box({ middle.x, top - 0.35f, middle.y }, { plot.size.x, 0.7f, plot.size.y }, mathematics.quat_axis_angle({ 0.0f, 1.0f, 0.0f }, plot.yaw), structures::surface_concrete, structures::contents_solid);
+
+		terrain.mask_rectangle({ middle.x, top, middle.y }, plot.size.x * 0.5f + 0.3f, plot.size.y * 0.5f + 0.3f, plot.yaw);
+
+		for (auto v{ street_mark_step * 0.5f }; v < plot.size.y; v += street_mark_step)
 		{
-			kerb({ low.x, low.y }, { high.x, low.y }, paving.top, { 0.0f, 0.0f, -1.0f });
-			kerb({ high.x, low.y }, { high.x, high.y }, paving.top, { 1.0f, 0.0f, 0.0f });
-			kerb({ high.x, high.y }, { low.x, high.y }, paving.top, { 0.0f, 0.0f, 1.0f });
-			kerb({ low.x, high.y }, { low.x, low.y }, paving.top, { -1.0f, 0.0f, 0.0f });
-
-			const auto across{ std::max(1u, static_cast<std::uint32_t>(std::ceil((high.x - low.x) / town_tile))) };
-			const auto down{ std::max(1u, static_cast<std::uint32_t>(std::ceil((high.y - low.y) / town_tile))) };
-
-			for (auto row{ 0u }; row < down; row++)
+			for (auto u{ street_mark_step * 0.5f }; u < plot.size.x; u += street_mark_step)
 			{
-				for (auto column{ 0u }; column < across; column++)
+				for (auto kind{ 0u }; kind < street_ground_kinds; kind++)
 				{
-					const auto x0{ mathematics.lerp(low.x, high.x, static_cast<std::float_t>(column) / static_cast<std::float_t>(across)) };
-					const auto x1{ mathematics.lerp(low.x, high.x, static_cast<std::float_t>(column + 1u) / static_cast<std::float_t>(across)) };
-					const auto z0{ mathematics.lerp(low.y, high.y, static_cast<std::float_t>(row) / static_cast<std::float_t>(down)) };
-					const auto z1{ mathematics.lerp(low.y, high.y, static_cast<std::float_t>(row + 1u) / static_cast<std::float_t>(down)) };
-					const structures::vec4_s grounds{ terrain.height(x0, z0), terrain.height(x1, z0), terrain.height(x0, z1), terrain.height(x1, z1) };
-					const auto top{ (grounds.x + grounds.y + grounds.z + grounds.w) * 0.25f + paving.top };
-					const auto bottom{ std::min({ grounds.x, grounds.y, grounds.z, grounds.w }) - town_footing };
+					if (speckle() < street_wear[structures::town_square][kind])
+					{
+						const auto angle{ speckle() * two_pi };
+						const auto spot{ corner(mathematics.saturate((u + (speckle() - 0.5f) * street_mark_step) / plot.size.x) - 0.5f, mathematics.saturate((v + (speckle() - 0.5f) * street_mark_step) / plot.size.y)) };
 
-					world.add_box({ (x0 + x1) * 0.5f, (top + bottom) * 0.5f, (z0 + z1) * 0.5f }, { x1 - x0, top - bottom, z1 - z0 }, mathematics.quat_identity(), structures::surface_concrete, structures::contents_solid);
+						stain(kind, { spot.x, top, spot.y }, { 0.0f, 1.0f, 0.0f }, { std::cos(angle), 0.0f, std::sin(angle) });
+					}
 				}
 			}
 		}
 
-		if (patch.paving == structures::town_road || patch.paving == structures::town_lane)
+		if (ordinal == 0u && models.find(town_memorial_model))
 		{
-			roads.push_back({ lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, low.y } : structures::vec2_s{ low.x, (low.y + high.y) * 0.5f }, lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, high.y } : structures::vec2_s{ high.x, (low.y + high.y) * 0.5f }, lengthwise ? high.x - low.x : high.y - low.y });
+			fixture(town_memorial_model, { middle.x, top, middle.y }, plot.yaw, structures::surface_rock);
 		}
 
-		if (patch.paving == structures::town_road)
+		else if (ordinal == 0u)
 		{
-			mark_centre(center, patch);
+			build_memorial({ middle.x, 0.0f, middle.y });
 		}
 
-		if (patch.paving == structures::town_square || patch.paving == structures::town_yard)
+		for (auto bench{ 0u }; bench < 4u; bench++)
 		{
-			weather_area(low, high, paving.top, patch.paving);
+			const auto angle{ plot.yaw + static_cast<std::float_t>(bench) * half_pi + half_pi * 0.5f };
+			const structures::vec2_s offset{ std::sin(angle) * town_bench_ring, std::cos(angle) * town_bench_ring };
+			const auto spot{ middle + offset };
+
+			fixture("prop_bench", { spot.x, top, spot.y }, std::atan2(offset.x, offset.y), structures::surface_wood);
 		}
 
-		else
+		for (auto planter{ 0u }; planter < 4u; planter++)
 		{
-			weather_strip(lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, low.y } : structures::vec2_s{ low.x, (low.y + high.y) * 0.5f }, lengthwise ? structures::vec2_s{ (low.x + high.x) * 0.5f, high.y } : structures::vec2_s{ high.x, (low.y + high.y) * 0.5f }, lengthwise ? high.x - low.x : high.y - low.y, paving.top, patch.paving);
+			const auto spot{ corner(planter & 1u ? 0.5f - 3.0f / plot.size.x : -0.5f + 3.0f / plot.size.x, planter & 2u ? 1.0f - 3.0f / plot.size.y : 3.0f / plot.size.y) };
+			const auto reach{ (town_planter_size - town_planter_rim) * 0.5f };
+			const auto inner{ town_planter_size - town_planter_rim * 2.0f };
+			const auto rotation{ mathematics.quat_axis_angle({ 0.0f, 1.0f, 0.0f }, plot.yaw) };
+			const auto place = [&](structures::vec2_s offset, structures::vec3_s size)
+				{
+					const auto at{ spot + across * offset.x + away * offset.y };
+
+					world.add_box({ at.x, top + size.y * 0.5f, at.y }, size, rotation, structures::surface_concrete, structures::contents_solid);
+
+					builder.set_material(kerb_material);
+
+					builder.box({ at.x, top + size.y * 0.5f, at.y }, size, rotation);
+				};
+
+			place({ -reach, 0.0f }, { town_planter_rim, town_planter_height, town_planter_size });
+			place({ reach, 0.0f }, { town_planter_rim, town_planter_height, town_planter_size });
+			place({ 0.0f, -reach }, { inner, town_planter_height, town_planter_rim });
+			place({ 0.0f, reach }, { inner, town_planter_height, town_planter_rim });
+
+			builder.set_material(soil_material);
+
+			builder.box({ spot.x, top + town_planter_soil * 0.5f, spot.y }, { inner, town_planter_soil, inner }, rotation);
+
+			plantings.push_back({ spot.x, top + town_planter_soil, spot.y, 0.25f });
 		}
 
-		terrain.mask_rectangle({ (low.x + high.x) * 0.5f, 0.0f, (low.y + high.y) * 0.5f }, (high.x - low.x) * 0.5f + 0.3f, (high.y - low.y) * 0.5f + 0.3f, 0.0f);
+		for (auto index{ 0u }; index < std::size(town_square_dressing); index++)
+		{
+			const auto& dressing{ town_square_dressing[index] };
+			const auto spot{ corner((static_cast<std::float_t>(index) + 0.5f) / static_cast<std::float_t>(std::size(town_square_dressing)) - 0.5f, 0.12f) };
+
+			if (chance() < dressing.chance)
+			{
+				fixture(dressing.model, { spot.x, top, spot.y }, plot.yaw, dressing.surface);
+			}
+		}
+
+		for (auto stall{ 0u }; (profile.style == structures::town_style_capital || profile.style == structures::town_style_harbour) && ordinal == 0u && stall < 4u; stall++)
+		{
+			const auto spot{ corner((static_cast<std::float_t>(stall) - 1.5f) * town_stall_spacing / plot.size.x, 1.0f - 2.2f / plot.size.y) };
+
+			fixture(town_stall_models[stall % std::size(town_stall_models)], { spot.x, top, spot.y }, plot.yaw, structures::surface_wood);
+		}
+
+		for (auto bollard{ town_bollard_spacing * 0.5f }; bollard < plot.size.x; bollard += town_bollard_spacing)
+		{
+			const auto spot{ corner(bollard / plot.size.x - 0.5f, town_bollard_inset / plot.size.y) };
+
+			fixture("prop_bollard", { spot.x, top, spot.y }, plot.yaw, structures::surface_metal);
+		}
 	}
 	/*
 	//=====================================================================================
 	*/
-	void maps_c::kerb(structures::vec2_s from, structures::vec2_s to, std::float_t top, structures::vec3_s outward)
+	void maps_c::rim(structures::vec2_s from, structures::vec2_s to, std::float_t top, structures::vec2_s outward)
 	{
-		const auto length{ std::sqrt((to.x - from.x) * (to.x - from.x) + (to.y - from.y) * (to.y - from.y)) };
+		const auto length{ mathematics.length(to - from) };
 		const auto pieces{ std::max(1u, static_cast<std::uint32_t>(std::ceil(length / town_grid))) };
 		const auto first_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
 		const auto first_index{ static_cast<std::uint32_t>(builder.indices.size()) };
+		const structures::vec3_s normal{ outward.x, 0.0f, outward.y };
 
 		builder.set_material(kerb_material);
 
 		for (auto piece{ 0u }; piece <= pieces; piece++)
 		{
-			const auto x{ mathematics.lerp(from.x, to.x, static_cast<std::float_t>(piece) / static_cast<std::float_t>(pieces)) };
-			const auto z{ mathematics.lerp(from.y, to.y, static_cast<std::float_t>(piece) / static_cast<std::float_t>(pieces)) };
-			const auto ground{ terrain.height(x, z) };
-			const structures::vec3_s upper_point{ x, ground + top, z };
-			const structures::vec3_s lower_point{ x, ground - town_kerb_drop, z };
-			const auto upper{ builder.add_vertex(upper_point, outward, builder.project_uv(upper_point, outward)) };
-			const auto lower{ builder.add_vertex(lower_point, outward, builder.project_uv(lower_point, outward)) };
+			const auto spot{ from + (to - from) * (static_cast<std::float_t>(piece) / static_cast<std::float_t>(pieces)) };
+			const structures::vec3_s upper_point{ spot.x, top, spot.y };
+			const structures::vec3_s lower_point{ spot.x, std::min(terrain.height(spot.x, spot.y), top) - town_kerb_drop, spot.y };
+			const auto upper{ builder.add_vertex(upper_point, normal, builder.project_uv(upper_point, normal)) };
+			const auto lower{ builder.add_vertex(lower_point, normal, builder.project_uv(lower_point, normal)) };
 
 			if (piece)
 			{
@@ -1931,107 +2094,6 @@ namespace zp
 		}
 
 		builder.compute_tangents(first_vertex, first_index);
-	}
-	/*
-	//=====================================================================================
-	*/
-	void maps_c::mark_centre(structures::vec3_s center, const structures::town_patch_s& patch)
-	{
-		const auto lengthwise{ patch.maximum.y - patch.minimum.y > patch.maximum.x - patch.minimum.x };
-		const auto low{ lengthwise ? patch.minimum.y : patch.minimum.x };
-		const auto high{ lengthwise ? patch.maximum.y : patch.maximum.x };
-		const auto middle{ lengthwise ? (patch.minimum.x + patch.maximum.x) * 0.5f : (patch.minimum.y + patch.maximum.y) * 0.5f };
-		const auto lift{ town_pavings[patch.paving].top + town_dash_lift };
-
-		builder.set_material(dash_material);
-
-		for (auto along{ low + town_dash_spacing * 0.5f }; high - low > town_dash_minimum && along + town_dash_length < high; along += town_dash_spacing)
-		{
-			const structures::vec2_s spot{ lengthwise ? middle : along + town_dash_length * 0.5f, lengthwise ? along + town_dash_length * 0.5f : middle };
-
-			if (chance() > town_dash_worn && junction(spot, &patch) == false)
-			{
-				const auto half{ lengthwise ? structures::vec2_s{ town_dash_width * 0.5f, town_dash_length * 0.5f } : structures::vec2_s{ town_dash_length * 0.5f, town_dash_width * 0.5f } };
-				const auto point = [&](std::float_t x, std::float_t z)
-					{
-						const structures::vec2_s at{ center.x + spot.x + x, center.z + spot.y + z };
-
-						return structures::vec3_s{ at.x, terrain.height(at.x, at.y) + lift, at.y };
-					};
-
-				builder.quad(point(-half.x, -half.y), point(half.x, -half.y), point(half.x, half.y), point(-half.x, half.y), { 0.0f, 1.0f, 0.0f });
-			}
-		}
-	}
-	/*
-	//=====================================================================================
-	*/
-	bool maps_c::junction(structures::vec2_s spot, const structures::town_patch_s* skip)
-	{
-		const auto reach{ town_junction_clear * 0.5f };
-
-		for (const auto& patch : town_patches)
-		{
-			if (&patch != skip && (patch.paving == structures::town_road || patch.paving == structures::town_lane) && spot.x > patch.minimum.x - reach && spot.x < patch.maximum.x + reach && spot.y > patch.minimum.y - reach && spot.y < patch.maximum.y + reach)
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-	/*
-	//=====================================================================================
-	*/
-	void maps_c::line_up(structures::vec3_s center, const structures::town_row_s& row)
-	{
-		const structures::vec2_s span{ row.to.x - row.from.x, row.to.y - row.from.y };
-		const auto length{ std::sqrt(span.x * span.x + span.y * span.y) };
-		const structures::vec2_s along{ span.x / length, span.y / length };
-		const structures::vec2_s facing{ -along.y, along.x };
-		const auto yaw{ std::atan2(-facing.x, -facing.y) };
-
-		auto cursor{ 0.0f };
-		auto previous{ static_cast<std::uint32_t>(structures::town_building_count) };
-
-		for (auto index{ 0u }; index < row.count; index++)
-		{
-			const auto kind{ row.buildings[index] };
-			const auto& plan{ town_buildings[kind] };
-			const auto model{ models.find(plan.model) };
-			const auto left{ model ? model->bounds_min.x : plan.size.x * -0.5f };
-			const auto right{ model ? model->bounds_max.x : plan.size.x * 0.5f };
-			const auto front{ model ? model->bounds_min.z : plan.size.y * -0.5f };
-			const auto back{ model ? model->bounds_max.z : plan.size.y * 0.5f };
-			const auto start{ cursor + (index == 0u || (kind == structures::town_terrace && previous == structures::town_terrace) ? 0.0f : row.gap) };
-			const auto width{ right - left };
-
-			if (start + width <= length)
-			{
-				const structures::vec2_s door{ center.x + row.from.x + along.x * (start + width * 0.5f), center.z + row.from.y + along.y * (start + width * 0.5f) };
-				const structures::vec3_s origin{ center.x + row.from.x + along.x * (start + right) + facing.x * front, 0.0f, center.z + row.from.y + along.y * (start + right) + facing.y * front };
-
-				if (route_gap(origin.x, origin.z) > std::max(width, back - front) * 0.5f + town_route_margin)
-				{
-					erect(kind, origin, yaw, terrain.height(door.x, door.y));
-				}
-
-				cursor = start + width;
-				previous = kind;
-			}
-		}
-	}
-	/*
-	//=====================================================================================
-	*/
-	void maps_c::erect(std::uint32_t kind, structures::vec3_s origin, std::float_t yaw, std::float_t ground)
-	{
-		const auto& plan{ town_buildings[kind] };
-
-		if (place_building(plan.model, { origin.x, ground + town_pavings[structures::town_walk].top, origin.z }, yaw) == false)
-		{
-			build_house(origin, yaw, plan.size.x, plan.size.y, plan.floors, kind == structures::town_ruin ? 0.85f : 0.2f + chance() * 0.35f);
-		}
 	}
 	/*
 	//=====================================================================================
@@ -2084,97 +2146,129 @@ namespace zp
 	/*
 	//=====================================================================================
 	*/
-	void maps_c::light_streets(structures::vec3_s center)
+	void maps_c::dress_town(const structures::world_site_s& site, const structures::town_profile_s& profile)
 	{
-		for (const auto& patch : town_patches)
+		const auto wreck_budget{ static_cast<std::uint32_t>(static_cast<std::float_t>(town_wrecks) * profile.radius / 175.0f) };
+
+		auto lamps{ 0u };
+		auto wrecks{ 0u };
+		auto signs{ 0u };
+		auto shelter{ false };
+
+		for (auto self{ 0u }; self < paths.size(); self++)
 		{
-			if (patch.paving == structures::town_walk)
+			const auto& path{ paths[self] };
+			const auto half{ path.width * 0.5f };
+			const auto lift{ lifts[self] };
+			const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+
+			auto travelled{ 0.0f };
+			auto next_lamp{ town_lamp_spacing * (0.3f + 0.5f * chance()) };
+			auto next_wreck{ town_wreck_gap * (1.0f + 3.0f * chance()) };
+			auto side{ chance() < 0.5f ? 1.0f : -1.0f };
+
+			for (auto index{ 1u }; path.kind == structures::route_road && index < count; index++)
 			{
-				const auto lengthwise{ patch.maximum.y - patch.minimum.y > patch.maximum.x - patch.minimum.x };
-				const auto low{ lengthwise ? patch.minimum.y : patch.minimum.x };
-				const auto high{ lengthwise ? patch.maximum.y : patch.maximum.x };
-				const auto near_edge{ lengthwise ? patch.minimum.x : patch.minimum.y };
-				const auto far_edge{ lengthwise ? patch.maximum.x : patch.maximum.y };
-				const auto edge{ std::fabs(near_edge) < std::fabs(far_edge) ? near_edge : far_edge };
-				const auto side{ edge > 0.0f ? 1.0f : -1.0f };
-				const auto line{ edge + side * town_lamp_inset };
-				const auto yaw{ lengthwise ? (side > 0.0f ? -half_pi : half_pi) : (side > 0.0f ? pi : 0.0f) };
+				const auto& point{ path.points[index] };
+				const auto& previous{ path.points[index - 1u] };
+				const structures::vec2_s spot{ point.x, point.z };
+				const auto tangent{ mathematics.normalize(structures::vec2_s{ point.x - previous.x, point.z - previous.z }) };
+				const structures::vec2_s left{ -tangent.y, tangent.x };
+				const auto distance{ mathematics.length(spot - site.position) };
 
-				for (auto along{ low + (side > 0.0f ? town_lamp_spacing * 0.2f : town_lamp_spacing * 0.7f) }; along < high - 1.5f; along += town_lamp_spacing)
+				travelled += mathematics.length(structures::vec2_s{ point.x - previous.x, point.z - previous.z });
+
+				if (distance < profile.radius && path.walks[index] > 0.0f && travelled > next_lamp)
 				{
-					const structures::vec2_s spot{ center.x + (lengthwise ? line : along), center.z + (lengthwise ? along : line) };
+					const auto outward{ left * side };
+					const auto lamp{ spot + outward * (half + town_lamp_inset) };
 
-					fixture(town_lamp_model, { spot.x, terrain.height(spot.x, spot.y) + town_pavings[structures::town_walk].top, spot.y }, yaw, structures::surface_metal);
+					if (intruder(lamp, self) == SIZE_MAX)
+					{
+						fixture(town_lamp_model, { lamp.x, point.y + lift + town_walk_top, lamp.y }, std::atan2(-outward.x, -outward.y), structures::surface_metal);
+
+						lamps++;
+					}
+
+					next_lamp = travelled + town_lamp_spacing * (0.85f + 0.3f * chance());
+					side = -side;
+				}
+
+				if (distance < profile.radius && travelled > next_wreck && wrecks < wreck_budget)
+				{
+					const auto lateral{ (chance() - 0.5f) * std::max(half - 1.2f, 0.0f) * 2.0f };
+					const auto car{ spot + left * lateral };
+
+					if (intruder(car, self) == SIZE_MAX)
+					{
+						fixture(town_wreck_models[std::min(static_cast<std::size_t>(chance() * static_cast<std::float_t>(std::size(town_wreck_models))), std::size(town_wreck_models) - 1u)], { car.x, point.y + lift, car.y }, std::atan2(tangent.x, tangent.y) + (chance() - 0.5f) * 0.6f + (chance() < 0.5f ? pi : 0.0f), structures::surface_metal);
+
+						wrecks++;
+					}
+
+					next_wreck = travelled + town_wreck_gap * (1.0f + 4.0f * chance());
+				}
+
+				if (shelter == false && path.walks[index] > 0.0f && path.width >= 6.0f && distance > profile.radius * 0.55f && distance < profile.radius * 0.75f)
+				{
+					const auto outward{ left * side };
+					const auto stop{ spot + outward * (half + path.walks[index] - 0.9f) };
+
+					if (intruder(stop, self) == SIZE_MAX)
+					{
+						fixture("prop_bus_shelter", { stop.x, point.y + lift + town_walk_top, stop.y }, std::atan2(outward.x, outward.y), structures::surface_metal);
+
+						shelter = true;
+					}
+				}
+
+				if (path.walks[index] > 0.0f && path.walks[index - 1u] <= 0.0f && distance > profile.radius * 0.6f && chance() < town_barricade_chance)
+				{
+					const auto across{ spot + tangent * 6.0f };
+
+					fixture(town_barrier_models[0], { across.x + left.x * half * 0.45f, point.y + lift, across.y + left.y * half * 0.45f }, std::atan2(left.x, left.y) + (chance() - 0.5f) * 0.4f, structures::surface_concrete);
+					fixture(town_barrier_models[1], { across.x - left.x * half * 0.2f + tangent.x * 3.0f, point.y + lift, across.y - left.y * half * 0.2f + tangent.y * 3.0f }, std::atan2(left.x, left.y) + (chance() - 0.5f) * 0.5f, structures::surface_concrete);
+					fixture("prop_sandbags", { across.x - left.x * (half + 1.1f), point.y + lift + town_walk_top, across.y - left.y * (half + 1.1f) }, std::atan2(left.x, left.y), structures::surface_fabric);
+
+					for (auto cone{ 0u }; cone < 4u; cone++)
+					{
+						const auto spot_cone{ across + tangent * (-2.0f - static_cast<std::float_t>(cone) * 1.6f) + left * ((chance() - 0.5f) * half) };
+
+						fixture("prop_traffic_cone", { spot_cone.x, point.y + lift, spot_cone.y }, chance() * two_pi, structures::surface_fabric);
+					}
+				}
+			}
+
+			if (path.kind == structures::route_road && count > 4u && mathematics.length(structures::vec2_s{ path.points[0].x, path.points[0].z } - site.position) < profile.radius && path.walks[0] > 0.0f)
+			{
+				const structures::vec2_s start{ path.points[0].x, path.points[0].z };
+				const auto tangent{ mathematics.normalize(structures::vec2_s{ path.points[2].x - start.x, path.points[2].z - start.y }) };
+				const structures::vec2_s left{ -tangent.y, tangent.x };
+
+				if (intruder(start - tangent * 1.5f, self) != SIZE_MAX)
+				{
+					const auto post{ start + tangent * 2.4f + left * (half + path.walks[0] * 0.6f) };
+
+					fixture("prop_street_sign", { post.x, path.points[0].y + lift + town_walk_top, post.y }, std::atan2(tangent.x, tangent.y), structures::surface_metal);
+
+					signs++;
 				}
 			}
 		}
-	}
-	/*
-	//=====================================================================================
-	*/
-	void maps_c::litter_town(structures::vec3_s center)
-	{
-		for (const auto& barrier : town_barriers)
+
+		for (const auto& plot : plots)
 		{
-			const structures::vec2_s spot{ center.x + barrier.x, center.z + barrier.y };
-
-			fixture(town_barrier_models[static_cast<std::uint32_t>(chance() * 1.99f)], { spot.x, terrain.height(spot.x, spot.y) + town_pavings[structures::town_road].top, spot.y }, barrier.z, structures::surface_concrete);
-		}
-
-		auto wrecked{ 0u };
-
-		for (auto attempt{ 0u }; attempt < town_wrecks * 12u && wrecked < town_wrecks; attempt++)
-		{
-			const auto& patch{ town_patches[std::min(static_cast<std::size_t>(chance() * static_cast<std::float_t>(std::size(town_patches))), std::size(town_patches) - 1u)] };
-			const auto lengthwise{ patch.maximum.y - patch.minimum.y > patch.maximum.x - patch.minimum.x };
-			const structures::vec2_s spot{ mathematics.lerp(patch.minimum.x + 1.2f, patch.maximum.x - 1.2f, chance()), mathematics.lerp(patch.minimum.y + 1.2f, patch.maximum.y - 1.2f, chance()) };
-
-			if ((patch.paving == structures::town_road || patch.paving == structures::town_lane) && junction(spot, &patch) == false)
+			if (plot.landmark == site.landmark && (plot.role == structures::town_shop || plot.role == structures::town_pub) && chance() < 0.5f)
 			{
-				const auto yaw{ (lengthwise ? 0.0f : half_pi) + (chance() - 0.5f) * 0.7f + (chance() < 0.5f ? pi : 0.0f) };
-				const structures::vec2_s world_spot{ center.x + spot.x, center.z + spot.y };
+				const structures::vec2_s away{ std::sin(plot.yaw), std::cos(plot.yaw) };
+				const structures::vec2_s across{ away.y, -away.x };
+				const auto spot{ plot.position - away * 1.1f + across * ((chance() < 0.5f ? 1.0f : -1.0f) * (plot.size.x * 0.5f - 0.7f)) };
 
-				fixture(town_wreck_models[std::min(static_cast<std::size_t>(chance() * static_cast<std::float_t>(std::size(town_wreck_models))), std::size(town_wreck_models) - 1u)], { world_spot.x, terrain.height(world_spot.x, world_spot.y) + town_pavings[patch.paving].top, world_spot.y }, yaw, structures::surface_metal);
-
-				wrecked++;
+				fixture(chance() < 0.7f ? "prop_litter_bin" : "metal_trash_can", { spot.x, plot.floor + road_lift, spot.y }, plot.yaw, structures::surface_metal);
 			}
 		}
 
-		for (const auto& yard : town_yards)
-		{
-			for (auto item{ 0u }; item < yard.clutter; item++)
-			{
-				const auto x{ center.x + mathematics.lerp(yard.minimum.x, yard.maximum.x, chance()) };
-				const auto z{ center.z + mathematics.lerp(yard.minimum.y, yard.maximum.y, chance()) };
-				const structures::vec3_s ground{ x, terrain.height(x, z), z };
-				const auto pick{ chance() };
-
-				if (pick < 0.3f)
-				{
-					barrel_node(ground);
-				}
-
-				else if (pick < 0.5f)
-				{
-					container_node(chance() < 0.6f ? structures::node_box : structures::node_toolbox, ground, chance() * two_pi);
-				}
-
-				else if (pick < 0.68f)
-				{
-					fixture("old_tyre", ground, chance() * two_pi, structures::surface_fabric);
-				}
-
-				else if (pick < 0.84f)
-				{
-					fixture("metal_trash_can", ground, chance() * two_pi, structures::surface_metal);
-				}
-
-				else
-				{
-					fixture(chance() < 0.5f ? "utility_box_01" : "power_box_01", ground, chance() * two_pi, structures::surface_metal);
-				}
-			}
-		}
+		logger.write("maps: %s dressed with %u lamps, %u wrecks, %u street signs", landmark_names[site.landmark], lamps, wrecks, signs);
 	}
 	/*
 	//=====================================================================================
@@ -2214,7 +2308,7 @@ namespace zp
 
 						fixture(roadside_wrecks[pick], { spot.x, terrain.height(spot.x, spot.z), spot.z }, yaw, structures::surface_metal);
 
-						clearings.push_back({ spot.x, 0.0f, spot.z, roadside_room });
+						clear_area({ spot.x, 0.0f, spot.z, roadside_room });
 
 						terrain.mask_rectangle({ spot.x, terrain.height(spot.x, spot.z), spot.z }, 1.3f, 2.4f, yaw);
 
@@ -2244,123 +2338,6 @@ namespace zp
 		}
 
 		logger.write("maps: %u roadside wrecks", placed);
-	}
-	/*
-	//=====================================================================================
-	*/
-	void maps_c::dress_square(structures::vec3_s center)
-	{
-		const auto on_road = [&](structures::vec2_s spot)
-			{
-				return std::any_of(std::begin(town_patches), std::end(town_patches), [&](const structures::town_patch_s& patch) { return (patch.paving == structures::town_road || patch.paving == structures::town_lane) && spot.x > patch.minimum.x && spot.x < patch.maximum.x && spot.y > patch.minimum.y && spot.y < patch.maximum.y; });
-			};
-		const auto cast_bollard{ models.find("prop_bollard") != nullptr };
-
-		for (const auto& patch : town_patches)
-		{
-			if (patch.paving == structures::town_square)
-			{
-				const structures::vec2_s corners[4] = { patch.minimum, { patch.maximum.x, patch.minimum.y }, patch.maximum, { patch.minimum.x, patch.maximum.y } };
-
-				for (auto edge{ 0u }; edge < 4u; edge++)
-				{
-					const auto from{ corners[edge] };
-					const auto to{ corners[(edge + 1u) % 4u] };
-					const auto length{ std::sqrt((to.x - from.x) * (to.x - from.x) + (to.y - from.y) * (to.y - from.y)) };
-					const structures::vec2_s along{ (to.x - from.x) / length, (to.y - from.y) / length };
-					const structures::vec2_s outward{ along.y, -along.x };
-
-					for (auto distance{ town_bollard_spacing * 0.5f }; distance < length; distance += town_bollard_spacing)
-					{
-						const structures::vec2_s spot{ from.x + along.x * distance - outward.x * town_bollard_inset, from.y + along.y * distance - outward.y * town_bollard_inset };
-
-						if (on_road({ spot.x + outward.x * (town_bollard_inset + 1.0f), spot.y + outward.y * (town_bollard_inset + 1.0f) }))
-						{
-							const auto x{ center.x + spot.x };
-							const auto z{ center.z + spot.y };
-							const auto ground{ terrain.height(x, z) + town_pavings[structures::town_square].top };
-
-							if (cast_bollard)
-							{
-								fixture("prop_bollard", { x, ground, z }, std::atan2(-outward.x, -outward.y), structures::surface_metal);
-							}
-
-							else
-							{
-								solid({ x, ground + 0.45f, z }, { 0.2f, 0.9f, 0.2f }, iron_material, structures::surface_metal);
-
-								detail({ x, ground + 0.93f, z }, { 0.26f, 0.07f, 0.26f }, mathematics.quat_identity(), iron_material);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		for (const auto& spot : town_planters)
-		{
-			const auto x{ center.x + spot.x };
-			const auto z{ center.z + spot.y };
-			const auto ground{ terrain.height(x, z) + town_pavings[structures::town_square].top };
-			const auto reach{ (town_planter_size - town_planter_rim) * 0.5f };
-			const auto inner{ town_planter_size - town_planter_rim * 2.0f };
-
-			solid({ x - reach, ground + town_planter_height * 0.5f, z }, { town_planter_rim, town_planter_height, town_planter_size }, kerb_material, structures::surface_concrete);
-			solid({ x + reach, ground + town_planter_height * 0.5f, z }, { town_planter_rim, town_planter_height, town_planter_size }, kerb_material, structures::surface_concrete);
-			solid({ x, ground + town_planter_height * 0.5f, z - reach }, { inner, town_planter_height, town_planter_rim }, kerb_material, structures::surface_concrete);
-			solid({ x, ground + town_planter_height * 0.5f, z + reach }, { inner, town_planter_height, town_planter_rim }, kerb_material, structures::surface_concrete);
-			solid({ x, ground + town_planter_soil * 0.5f, z }, { inner, town_planter_soil, inner }, soil_material, structures::surface_dirt);
-		}
-
-		if (const structures::vec3_s spot{ center.x + town_memorial.x, 0.0f, center.z + town_memorial.y }; models.find(town_memorial_model))
-		{
-			fixture(town_memorial_model, { spot.x, terrain.height(spot.x, spot.z) + town_pavings[structures::town_square].top, spot.z }, 0.0f, structures::surface_rock);
-		}
-
-		else
-		{
-			build_memorial(spot);
-		}
-
-		for (const auto& run : town_runs)
-		{
-			const structures::vec2_s span{ run.to.x - run.from.x, run.to.y - run.from.y };
-			const auto length{ std::sqrt(span.x * span.x + span.y * span.y) };
-			const auto pieces{ std::max(1u, static_cast<std::uint32_t>(std::round(length / run.piece))) };
-			const auto yaw{ std::atan2(-span.y, span.x) };
-
-			for (auto piece{ 0u }; piece < pieces; piece++)
-			{
-				const auto along{ (static_cast<std::float_t>(piece) + 0.5f) / static_cast<std::float_t>(pieces) };
-				const structures::vec2_s spot{ run.from.x + span.x * along, run.from.y + span.y * along };
-				const auto x{ center.x + spot.x };
-				const auto z{ center.z + spot.y };
-
-				fixture(run.model, { x, terrain.height(x, z) + paving_top(spot), z }, yaw, run.surface);
-			}
-		}
-
-		for (const auto& entry : town_props)
-		{
-			const auto x{ center.x + entry.position.x };
-			const auto z{ center.z + entry.position.y };
-
-			fixture(entry.model, { x, terrain.height(x, z) + paving_top(entry.position), z }, entry.yaw, entry.surface);
-		}
-	}
-	/*
-	//=====================================================================================
-	*/
-	std::float_t maps_c::paving_top(structures::vec2_s spot)
-	{
-		auto top{ 0.0f };
-
-		for (const auto& patch : town_patches)
-		{
-			top = spot.x >= patch.minimum.x && spot.x <= patch.maximum.x && spot.y >= patch.minimum.y && spot.y <= patch.maximum.y ? std::max(top, town_pavings[patch.paving].top) : top;
-		}
-
-		return top;
 	}
 	/*
 	//=====================================================================================
@@ -2554,7 +2531,7 @@ namespace zp
 	{
 		const auto ground{ terrain.height(center.x, center.z) };
 
-		clearings.push_back({ center.x, 0.0f, center.z, 42.0f });
+		clear_area({ center.x, 0.0f, center.z, 42.0f });
 		hotspots.push_back({ center.x, 0.0f, center.z, 26.0f });
 		landmarks.push_back({ { center.x, center.z }, 30.0f, structures::landmark_outpost });
 
@@ -2657,7 +2634,7 @@ namespace zp
 	*/
 	void maps_c::build_yard(structures::vec3_s center)
 	{
-		clearings.push_back({ center.x, 0.0f, center.z, 52.0f });
+		clear_area({ center.x, 0.0f, center.z, 52.0f });
 		hotspots.push_back({ center.x, 0.0f, center.z, 30.0f });
 		landmarks.push_back({ { center.x, center.z }, 40.0f, structures::landmark_yard });
 
@@ -2957,11 +2934,14 @@ namespace zp
 				structures::route_path_s path{};
 
 				path.kind = reader.u32();
+				path.paving = std::min(reader.u32(), static_cast<std::uint32_t>(structures::track_material_count) - 1u);
 				path.closed = reader.u32() != 0u;
 				path.width = reader.f32();
 				path.points.resize(std::min(reader.u32(), 1000000u));
+				path.walks.resize(path.points.size());
 
 				reader.bytes(path.points.data(), static_cast<std::uint32_t>(path.points.size() * sizeof(structures::vec3_s)));
+				reader.bytes(path.walks.data(), static_cast<std::uint32_t>(path.walks.size() * sizeof(std::float_t)));
 
 				if (reader.overflow == false && path.points.size() > 1u)
 				{
@@ -2972,11 +2952,11 @@ namespace zp
 
 		for (const auto& path : paths)
 		{
-			const auto reach{ path.width * 0.5f + route_clear_margin + route_cell * 0.5f };
-			const auto span{ static_cast<std::int32_t>(std::ceil(reach / route_cell)) };
-
-			for (const auto& point : path.points)
+			for (auto index{ 0u }; index < path.points.size(); index++)
 			{
+				const auto& point{ path.points[index] };
+				const auto reach{ path.width * 0.5f + path.walks[index] + route_clear_margin + route_cell * 0.5f };
+				const auto span{ static_cast<std::int32_t>(std::ceil(reach / route_cell)) };
 				const auto column{ static_cast<std::int32_t>((point.x - terrain_origin) / route_cell) };
 				const auto row{ static_cast<std::int32_t>((point.z - terrain_origin) / route_cell) };
 
@@ -2998,7 +2978,79 @@ namespace zp
 			}
 		}
 
-		logger.write("maps: %zu routes and %zu stations loaded", paths.size(), stations.size());
+		lifts.clear();
+
+		for (auto index{ 0u }; index < paths.size(); index++)
+		{
+			lifts.push_back(road_lift + static_cast<std::float_t>(index % path_lift_orders) * road_lift_step);
+		}
+
+		index_segments();
+
+		logger.write("maps: %zu routes and %zu stations loaded, %zu segment cells", paths.size(), stations.size(), segment_cells.size());
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::index_segments()
+	{
+		const auto columns{ static_cast<std::int32_t>(std::ceil(terrain_size / segment_cell)) };
+
+		segment_cells.clear();
+
+		for (auto index{ 0u }; index < paths.size(); index++)
+		{
+			const auto& path{ paths[index] };
+			const auto reach{ path.width * 0.5f + 1.5f };
+
+			for (auto point{ 1u }; point < path.points.size(); point++)
+			{
+				const auto& from{ path.points[point - 1u] };
+				const auto& to{ path.points[point] };
+				const auto first_column{ std::max(static_cast<std::int32_t>((std::min(from.x, to.x) - reach - terrain_origin) / segment_cell), 0) };
+				const auto last_column{ std::min(static_cast<std::int32_t>((std::max(from.x, to.x) + reach - terrain_origin) / segment_cell), columns - 1) };
+				const auto first_row{ std::max(static_cast<std::int32_t>((std::min(from.z, to.z) - reach - terrain_origin) / segment_cell), 0) };
+				const auto last_row{ std::min(static_cast<std::int32_t>((std::max(from.z, to.z) + reach - terrain_origin) / segment_cell), columns - 1) };
+
+				for (auto row{ first_row }; row <= last_row; row++)
+				{
+					for (auto column{ first_column }; column <= last_column; column++)
+					{
+						segment_cells[static_cast<std::uint32_t>(row * columns + column)].push_back(index << 20u | point);
+					}
+				}
+			}
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	std::size_t maps_c::intruder(structures::vec2_s spot, std::size_t self)
+	{
+		const auto columns{ static_cast<std::int32_t>(std::ceil(terrain_size / segment_cell)) };
+		const auto column{ static_cast<std::int32_t>((spot.x - terrain_origin) / segment_cell) };
+		const auto row{ static_cast<std::int32_t>((spot.y - terrain_origin) / segment_cell) };
+
+		if (const auto found{ segment_cells.find(static_cast<std::uint32_t>(row * columns + column)) }; column >= 0 && row >= 0 && column < columns && row < columns && found != segment_cells.end())
+		{
+			for (const auto item : found->second)
+			{
+				const auto index{ static_cast<std::size_t>(item >> 20u) };
+				const auto point{ item & 0xFFFFFu };
+				const auto& path{ paths[index] };
+				const structures::vec2_s from{ path.points[point - 1u].x, path.points[point - 1u].z };
+				const structures::vec2_s span{ path.points[point].x - from.x, path.points[point].z - from.y };
+				const auto along{ mathematics.saturate(mathematics.dot(spot - from, span) / std::max(mathematics.dot(span, span), 0.0001f)) };
+				const auto reach{ path.width * 0.5f + (path.kind == structures::route_rail ? 1.2f : town_walk_cut) };
+
+				if (index != self && mathematics.length(spot - (from + span * along)) < reach)
+				{
+					return index;
+				}
+			}
+		}
+
+		return SIZE_MAX;
 	}
 	/*
 	//=====================================================================================
@@ -3037,6 +3089,18 @@ namespace zp
 		track_materials[structures::track_material_ballast] = models.variant(structures::material_terrain_gravel, { 0.62f, 0.58f, 0.54f }, 0.0f);
 		track_materials[structures::track_material_sleeper] = models.variant(structures::material_plywood, { 0.36f, 0.29f, 0.23f }, 0.0f);
 		track_materials[structures::track_material_rail] = models.variant(structures::material_metal_rust, { 0.46f, 0.4f, 0.37f }, 0.35f);
+		track_materials[structures::track_material_setts] = models.variant(structures::material_setts, { 0.93f, 0.91f, 0.88f }, 0.0f);
+
+		for (auto surface{ 0u }; surface < structures::town_surface_count; surface++)
+		{
+			town_materials[surface] = models.variant(town_pavings[surface].material, town_pavings[surface].tint, 0.0f);
+		}
+
+		kerb_material = models.variant(structures::material_concrete_rough, { 0.62f, 0.61f, 0.59f }, 0.0f);
+		dash_material = models.variant(structures::material_paint_white, { 0.8f, 0.78f, 0.72f }, 0.0f);
+		granite_material = models.variant(structures::material_concrete_rough, { 0.86f, 0.85f, 0.83f }, 0.0f);
+		iron_material = models.variant(structures::material_paint_gunmetal, { 0.35f, 0.35f, 0.36f }, 0.6f);
+		soil_material = models.variant(structures::material_terrain_soil, { 0.8f, 0.78f, 0.75f }, 0.0f);
 
 		for (const auto& path : paths)
 		{
@@ -3064,18 +3128,17 @@ namespace zp
 	{
 		const auto half{ path.width * 0.5f };
 		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
-		const auto lift{ road_lift + static_cast<std::float_t>(order) * road_lift_step };
+		const auto lift{ lifts[order] };
 		const auto first_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
 		const auto first_index{ static_cast<std::uint32_t>(builder.indices.size()) };
-		const std::float_t offsets[4] = { half + road_skirt, half, -half, -half - road_skirt };
-		const std::float_t drops[4] = { road_skirt_drop, 0.0f, 0.0f, road_skirt_drop };
 		const std::float_t leans[4] = { 0.35f, 0.0f, 0.0f, -0.35f };
 
 		auto travelled{ 0.0f };
+		auto paved{ false };
 
 		std::uint32_t previous_ring[4]{};
 
-		builder.set_material(track_materials[path.width >= 6.0f ? structures::track_material_asphalt : structures::track_material_dirt]);
+		builder.set_material(track_materials[path.paving]);
 
 		for (auto index{ 0u }; index < count; index++)
 		{
@@ -3085,8 +3148,14 @@ namespace zp
 			const auto along{ mathematics.normalize(structures::vec3_s{ next.x - previous.x, 0.0f, next.z - previous.z }) };
 			const structures::vec3_s side{ along.z, 0.0f, -along.x };
 			const structures::vec3_s surface{ point.x, point.y + lift, point.z };
+			const auto skirt{ path.walks[index] > 0.0f ? 0.0f : road_skirt };
+			const auto drop{ path.walks[index] > 0.0f ? 0.0f : road_skirt_drop };
+			const std::float_t offsets[4] = { half + skirt, half, -half, -half - skirt };
+			const std::float_t drops[4] = { drop, 0.0f, 0.0f, drop };
 
 			std::uint32_t ring[4]{};
+
+			paved = paved || path.walks[index] > 0.0f;
 
 			travelled += mathematics.length(structures::vec3_s{ point.x - previous.x, 0.0f, point.z - previous.z });
 
@@ -3112,10 +3181,255 @@ namespace zp
 
 				roads.push_back({ { point.x, point.z }, { ahead.x, ahead.z }, path.width });
 
-				terrain.mask_rectangle({ (point.x + ahead.x) * 0.5f, 0.0f, (point.z + ahead.z) * 0.5f }, half + 0.6f, mathematics.length(structures::vec3_s{ ahead.x - point.x, 0.0f, ahead.z - point.z }) * 0.5f + 0.5f, std::atan2(ahead.x - point.x, ahead.z - point.z));
+				terrain.mask_rectangle({ (point.x + ahead.x) * 0.5f, 0.0f, (point.z + ahead.z) * 0.5f }, half + 0.6f + (path.walks[index] > 0.0f ? path.walks[index] + town_plot_setback : 0.0f), mathematics.length(structures::vec3_s{ ahead.x - point.x, 0.0f, ahead.z - point.z }) * 0.5f + 0.5f, std::atan2(ahead.x - point.x, ahead.z - point.z));
 			}
 
 			std::copy(std::begin(ring), std::end(ring), std::begin(previous_ring));
+		}
+
+		builder.compute_tangents(first_vertex, first_index);
+
+		if (paved)
+		{
+			build_walks(path, order);
+		}
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::build_walks(const structures::route_path_s& path, std::size_t self)
+	{
+		const auto half{ path.width * 0.5f };
+		const auto lift{ lifts[self] };
+		const auto count{ static_cast<std::uint32_t>(path.points.size()) };
+		const structures::vec3_s up{ 0.0f, 1.0f, 0.0f };
+
+		const auto ground = [&](std::uint32_t index)
+			{
+				return path.points[index].y + lift;
+			};
+
+		const auto tangent_at = [&](std::uint32_t index)
+			{
+				const auto& previous{ path.points[index ? index - 1u : 0u] };
+				const auto& next{ path.points[std::min(index + 1u, count - 1u)] };
+
+				return mathematics.normalize(structures::vec2_s{ next.x - previous.x, next.z - previous.z });
+			};
+
+		const auto top_vertex = [&](structures::vec2_s spot, std::float_t height, std::uint32_t material, std::float_t tile)
+			{
+				builder.set_material(material);
+
+				return builder.add_vertex({ spot.x, height, spot.y }, up, { spot.x / tile, -spot.y / tile });
+			};
+
+		const auto wall = [&](structures::vec2_s from, std::float_t from_low, std::float_t from_high, structures::vec2_s to, std::float_t to_low, std::float_t to_high, structures::vec2_s facing)
+			{
+				const structures::vec3_s normal{ facing.x, 0.0f, facing.y };
+				const structures::vec3_s corners[4] = { { from.x, from_low, from.y }, { from.x, from_high, from.y }, { to.x, to_high, to.y }, { to.x, to_low, to.y } };
+
+				builder.set_material(kerb_material);
+
+				const auto a{ builder.add_vertex(corners[0], normal, builder.project_uv(corners[0], normal)) };
+				const auto b{ builder.add_vertex(corners[1], normal, builder.project_uv(corners[1], normal)) };
+				const auto c{ builder.add_vertex(corners[2], normal, builder.project_uv(corners[2], normal)) };
+				const auto d{ builder.add_vertex(corners[3], normal, builder.project_uv(corners[3], normal)) };
+
+				builder.add_triangle(a, b, c);
+				builder.add_triangle(a, c, d);
+			};
+
+		const auto first_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
+		const auto first_index{ static_cast<std::uint32_t>(builder.indices.size()) };
+
+		for (auto side{ -1.0f }; side < 2.0f; side += 2.0f)
+		{
+			for (auto index{ 1u }; index < count; index++)
+			{
+				const auto walk_a{ path.walks[index - 1u] };
+				const auto walk_b{ path.walks[index] };
+
+				if (walk_a > 0.0f && walk_b > 0.0f)
+				{
+					const auto tangent_a{ tangent_at(index - 1u) };
+					const auto tangent_b{ tangent_at(index) };
+					const structures::vec2_s away_a{ -tangent_a.y * side, tangent_a.x * side };
+					const structures::vec2_s away_b{ -tangent_b.y * side, tangent_b.x * side };
+					const structures::vec2_s centre_a{ path.points[index - 1u].x, path.points[index - 1u].z };
+					const structures::vec2_s centre_b{ path.points[index].x, path.points[index].z };
+					const auto band_a{ walk_a + town_plot_setback + 0.1f };
+					const auto band_b{ walk_b + town_plot_setback + 0.1f };
+					const structures::vec2_s inner_a{ centre_a + away_a * half };
+					const structures::vec2_s inner_b{ centre_b + away_b * half };
+					const structures::vec2_s outer_a{ centre_a + away_a * (half + band_a) };
+					const structures::vec2_s outer_b{ centre_b + away_b * (half + band_b) };
+					const structures::vec2_s taps[5] = { inner_a, outer_a, outer_b, inner_b, (inner_a + outer_a + outer_b + inner_b) * 0.25f };
+
+					auto blocker{ SIZE_MAX };
+					auto inside{ 0u };
+
+					for (const auto& tap : taps)
+					{
+						if (const auto found{ intruder(tap, self) }; found != SIZE_MAX)
+						{
+							blocker = found;
+							inside++;
+						}
+					}
+
+					if (inside < std::size(taps))
+					{
+						structures::vec2_s cut_point{};
+						structures::vec2_s cut_normal{};
+
+						if (blocker != SIZE_MAX)
+						{
+							const auto& other{ paths[blocker] };
+							const auto middle{ taps[4] };
+
+							auto best{ FLT_MAX };
+
+							for (auto point{ 1u }; point < other.points.size(); point++)
+							{
+								const structures::vec2_s from{ other.points[point - 1u].x, other.points[point - 1u].z };
+								const structures::vec2_s span{ other.points[point].x - from.x, other.points[point].z - from.y };
+								const auto along{ mathematics.saturate(mathematics.dot(middle - from, span) / std::max(mathematics.dot(span, span), 0.0001f)) };
+								const auto spot{ from + span * along };
+
+								if (const auto distance{ mathematics.length(middle - spot) }; distance < best)
+								{
+									best = distance;
+									cut_normal = distance > 0.001f ? (middle - spot) / distance : away_a;
+									cut_point = spot + cut_normal * (other.width * 0.5f + (other.kind == structures::route_rail ? 1.2f : town_walk_cut));
+								}
+							}
+						}
+
+						const auto keep = [&](const structures::vec3_s& spot)
+							{
+								return blocker == SIZE_MAX ? 1.0f : mathematics.dot(structures::vec2_s{ spot.x, spot.z } - cut_point, cut_normal);
+							};
+
+						const auto clip = [&](const structures::vec3_s* input, std::uint32_t input_count, structures::vec3_s* output)
+							{
+								auto produced{ 0u };
+
+								for (auto corner{ 0u }; corner < input_count; corner++)
+								{
+									const auto& current{ input[corner] };
+									const auto& following{ input[(corner + 1u) % input_count] };
+									const auto a{ keep(current) };
+									const auto b{ keep(following) };
+
+									if (a >= 0.0f)
+									{
+										output[produced++] = current;
+									}
+
+									if ((a >= 0.0f) != (b >= 0.0f))
+									{
+										output[produced++] = current + (following - current) * (a / (a - b));
+									}
+								}
+
+								return produced;
+							};
+
+						const auto fan = [&](const structures::vec3_s* polygon, std::uint32_t size, std::uint32_t material, std::float_t tile)
+							{
+								for (auto corner{ 2u }; corner < size; corner++)
+								{
+									const auto a{ top_vertex({ polygon[0].x, polygon[0].z }, polygon[0].y, material, tile) };
+									const auto b{ top_vertex({ polygon[corner - 1u].x, polygon[corner - 1u].z }, polygon[corner - 1u].y, material, tile) };
+									const auto c{ top_vertex({ polygon[corner].x, polygon[corner].z }, polygon[corner].y, material, tile) };
+
+									builder.add_triangle(a, b, c);
+								}
+							};
+
+						const auto edge = [&](const structures::vec3_s& from, const structures::vec3_s& to, std::float_t drop, structures::vec2_s facing, bool earth)
+							{
+								const auto a{ keep(from) };
+								const auto b{ keep(to) };
+								const auto start{ a >= 0.0f ? from : from + (to - from) * (a / (a - b)) };
+								const auto finish{ b >= 0.0f ? to : from + (to - from) * (a / (a - b)) };
+
+								if (a >= 0.0f || b >= 0.0f)
+								{
+									wall({ start.x, start.z }, earth ? std::min(terrain.height(start.x, start.z), start.y) - town_kerb_drop : start.y - drop, start.y, { finish.x, finish.z }, earth ? std::min(terrain.height(finish.x, finish.z), finish.y) - town_kerb_drop : finish.y - drop, finish.y, facing);
+								}
+							};
+
+						const auto height_a{ ground(index - 1u) + town_walk_top };
+						const auto height_b{ ground(index) + town_walk_top };
+						const auto kerb_a{ inner_a + away_a * town_kerb_width };
+						const auto kerb_b{ inner_b + away_b * town_kerb_width };
+						const structures::vec3_s band[4] = { { inner_a.x, height_a, inner_a.y }, { outer_a.x, height_a, outer_a.y }, { outer_b.x, height_b, outer_b.y }, { inner_b.x, height_b, inner_b.y } };
+						const structures::vec3_s strip[4] = { band[0], { kerb_a.x, height_a, kerb_a.y }, { kerb_b.x, height_b, kerb_b.y }, band[3] };
+						const structures::vec3_s flags[4] = { strip[1], band[1], band[2], strip[2] };
+
+						structures::vec3_s clipped[8]{};
+						structures::vec3_s cut_edge[2]{};
+
+						auto cuts{ 0u };
+
+						fan(clipped, clip(strip, 4u, clipped), granite_material, 1.0f);
+
+						fan(clipped, clip(flags, 4u, clipped), town_materials[structures::town_walk], town_walk_tile);
+
+						const auto corners{ clip(band, 4u, clipped) };
+
+						for (auto corner{ 0u }; blocker != SIZE_MAX && corner < corners && cuts < 2u; corner++)
+						{
+							if (std::fabs(keep(clipped[corner])) < 0.001f)
+							{
+								cut_edge[cuts++] = clipped[corner];
+							}
+						}
+
+						if (cuts == 2u)
+						{
+							wall({ cut_edge[0].x, cut_edge[0].z }, cut_edge[0].y - town_walk_top - 0.05f, cut_edge[0].y, { cut_edge[1].x, cut_edge[1].z }, cut_edge[1].y - town_walk_top - 0.05f, cut_edge[1].y, cut_normal * -1.0f);
+						}
+
+						edge(band[0], band[3], town_walk_top + 0.03f, -away_a, false);
+
+						edge(band[1], band[2], 0.0f, away_a, true);
+
+						if ((index == 1u || path.walks[index - 2u] <= 0.0f) && keep(band[0]) >= 0.0f && keep(band[1]) >= 0.0f)
+						{
+							wall(inner_a, height_a - town_walk_top - 0.03f, height_a, outer_a, height_a - town_walk_top - 0.03f, height_a, -tangent_a);
+						}
+
+						if ((index + 1u == count || path.walks[index + 1u] <= 0.0f) && keep(band[2]) >= 0.0f && keep(band[3]) >= 0.0f)
+						{
+							wall(inner_b, height_b - town_walk_top - 0.03f, height_b, outer_b, height_b - town_walk_top - 0.03f, height_b, tangent_b);
+						}
+
+						if (corners >= 3u && blocker == SIZE_MAX && index % 3u == 0u)
+						{
+							const auto from{ (inner_a + outer_a) * 0.5f };
+							const auto reach{ std::min(index + 2u, count - 1u) };
+							const structures::vec2_s centre_c{ path.points[reach].x, path.points[reach].z };
+							const auto tangent_c{ tangent_at(reach) };
+							const structures::vec2_s away_c{ -tangent_c.y * side, tangent_c.x * side };
+							const auto to{ centre_c + away_c * (half + (band_a + band_b) * 0.25f) };
+							const auto span{ to - from };
+							const auto length{ mathematics.length(span) };
+							const auto bottom{ std::min(ground(index - 1u), ground(reach)) - town_footing };
+							const auto summit{ std::max(height_a, height_b) };
+
+							if (length > 0.5f && intruder(to, self) == SIZE_MAX)
+							{
+								const auto middle{ (from + to) * 0.5f };
+
+								world.add_box({ middle.x, (summit + bottom) * 0.5f, middle.y }, { (band_a + band_b) * 0.5f, summit - bottom, length }, mathematics.quat_axis_angle({ 0.0f, 1.0f, 0.0f }, std::atan2(span.x, span.y)), structures::surface_concrete, structures::contents_solid);
+							}
+						}
+					}
+				}
+			}
 		}
 
 		builder.compute_tangents(first_vertex, first_index);
@@ -3261,7 +3575,7 @@ namespace zp
 			{
 				const auto spot{ line_at(path, reach, along) };
 
-				clearings.push_back({ spot.x, 0.0f, spot.z, station_clearing });
+				clear_area({ spot.x, 0.0f, spot.z, station_clearing });
 			}
 
 			const auto stop{ line_at(path, reach, head) };
@@ -3467,7 +3781,7 @@ namespace zp
 			const structures::vec3_s side{ along.z, 0.0f, -along.x };
 			const structures::vec3_s up{ 0.0f, 1.0f, 0.0f };
 			const std::float_t offsets[4] = { -2.5f, -1.55f, 1.55f, 2.5f };
-			const std::float_t lifts[4] = { -0.08f, rail_ballast_top, rail_ballast_top, -0.08f };
+			const std::float_t rises[4] = { -0.08f, rail_ballast_top, rail_ballast_top, -0.08f };
 
 			std::uint32_t ring[4]{};
 
@@ -3475,7 +3789,7 @@ namespace zp
 
 			for (auto corner{ 0u }; corner < 4u && paneled == false; corner++)
 			{
-				ring[corner] = builder.add_vertex(point + side * offsets[corner] + up * lifts[corner], mathematics.normalize(up + side * (corner == 0u ? -0.35f : (corner == 3u ? 0.35f : 0.0f))), { 0.0f, 0.0f });
+				ring[corner] = builder.add_vertex(point + side * offsets[corner] + up * rises[corner],mathematics.normalize(up + side * (corner == 0u ? -0.35f : (corner == 3u ? 0.35f : 0.0f))), { 0.0f, 0.0f });
 			}
 
 			if (step)
@@ -3539,20 +3853,48 @@ namespace zp
 	*/
 	bool maps_c::cleared(std::float_t x, std::float_t z)
 	{
+		const auto columns{ static_cast<std::int32_t>(std::ceil(terrain_size / clearing_cell)) };
+		const auto column{ static_cast<std::int32_t>((x - terrain_origin) / clearing_cell) };
+		const auto row{ static_cast<std::int32_t>((z - terrain_origin) / clearing_cell) };
+
 		if (on_route(x, z))
 		{
 			return true;
 		}
 
-		for (const auto& clearing : clearings)
+		if (const auto found{ clearing_cells.find(static_cast<std::uint32_t>(row * columns + column)) }; column >= 0 && row >= 0 && column < columns && row < columns && found != clearing_cells.end())
 		{
-			if ((x - clearing.x) * (x - clearing.x) + (z - clearing.z) * (z - clearing.z) < clearing.w * clearing.w)
+			for (const auto index : found->second)
 			{
-				return true;
+				if (const auto& clearing{ clearings[index] }; (x - clearing.x) * (x - clearing.x) + (z - clearing.z) * (z - clearing.z) < clearing.w * clearing.w)
+				{
+					return true;
+				}
 			}
 		}
 
 		return false;
+	}
+	/*
+	//=====================================================================================
+	*/
+	void maps_c::clear_area(structures::vec4_s area)
+	{
+		const auto columns{ static_cast<std::int32_t>(std::ceil(terrain_size / clearing_cell)) };
+		const auto first_column{ std::max(static_cast<std::int32_t>((area.x - area.w - terrain_origin) / clearing_cell), 0) };
+		const auto last_column{ std::min(static_cast<std::int32_t>((area.x + area.w - terrain_origin) / clearing_cell), columns - 1) };
+		const auto first_row{ std::max(static_cast<std::int32_t>((area.z - area.w - terrain_origin) / clearing_cell), 0) };
+		const auto last_row{ std::min(static_cast<std::int32_t>((area.z + area.w - terrain_origin) / clearing_cell), columns - 1) };
+
+		clearings.push_back(area);
+
+		for (auto row{ first_row }; row <= last_row; row++)
+		{
+			for (auto column{ first_column }; column <= last_column; column++)
+			{
+				clearing_cells[static_cast<std::uint32_t>(row * columns + column)].push_back(static_cast<std::uint32_t>(clearings.size() - 1u));
+			}
+		}
 	}
 	/*
 	//=====================================================================================
