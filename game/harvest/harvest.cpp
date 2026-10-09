@@ -13,6 +13,7 @@ namespace zp
 	{
 		nodes.clear();
 		changed.clear();
+		waiting.clear();
 		by_brush.clear();
 
 		tool = {};
@@ -354,16 +355,32 @@ namespace zp
 	*/
 	void harvest_c::respawn(std::float_t delta)
 	{
-		for (auto index{ 0u }; index < nodes.size(); index++)
-		{
-			if (auto& node{ nodes[index] }; node.depleted)
-			{
-				node.timer -= delta;
+		auto slot{ 0u };
 
-				if (node.timer <= 0.0f)
-				{
-					restore(index);
-				}
+		while (slot < waiting.size())
+		{
+			const auto index{ waiting[slot] };
+
+			if (nodes[index].depleted)
+			{
+				nodes[index].timer -= delta;
+			}
+
+			if (nodes[index].depleted && nodes[index].timer <= 0.0f)
+			{
+				restore(index);
+			}
+
+			if (nodes[index].depleted)
+			{
+				slot++;
+			}
+
+			else
+			{
+				waiting[slot] = waiting.back();
+
+				waiting.pop_back();
 			}
 		}
 	}
@@ -610,6 +627,11 @@ namespace zp
 		if (index < nodes.size())
 		{
 			auto& node{ nodes[index] };
+
+			if (node.depleted == false)
+			{
+				waiting.push_back(index);
+			}
 
 			node.depleted = true;
 			node.timer = node_respawn[node.kind];

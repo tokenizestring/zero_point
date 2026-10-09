@@ -15,6 +15,7 @@ namespace zp
 
 		std::vector<structures::resource_node_s> nodes;
 		std::vector<std::uint32_t> changed;
+		std::vector<std::uint32_t> waiting;
 		std::vector<structures::felled_s> felled;
 		std::unordered_map<std::int32_t, std::uint32_t> by_brush;
 		structures::tool_state_s tool{};
