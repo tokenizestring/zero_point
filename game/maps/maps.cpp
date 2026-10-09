@@ -3193,6 +3193,46 @@ namespace zp
 		{
 			build_walks(path, order);
 		}
+
+		if (paved && path.width >= 6.0f)
+		{
+			const auto dash_vertex{ static_cast<std::uint32_t>(builder.vertices.size()) };
+			const auto dash_index{ static_cast<std::uint32_t>(builder.indices.size()) };
+
+			auto along_path{ 0.0f };
+			auto next_dash{ town_dash_spacing * 0.5f };
+
+			builder.set_material(dash_material);
+
+			for (auto index{ 1u }; index < count; index++)
+			{
+				const auto& from{ path.points[index - 1u] };
+				const auto& to{ path.points[index] };
+				const auto span{ mathematics.length(structures::vec2_s{ to.x - from.x, to.z - from.z }) };
+
+				for (; next_dash < along_path + span; next_dash += town_dash_spacing)
+				{
+					const auto t{ (next_dash - along_path) / std::max(span, 0.0001f) };
+					const auto centre{ from + (to - from) * t };
+					const auto tangent{ mathematics.normalize(structures::vec2_s{ to.x - from.x, to.z - from.z }) };
+					const structures::vec2_s side{ -tangent.y, tangent.x };
+					const auto height{ centre.y + lift + town_dash_lift };
+					const auto corner = [&](std::float_t forward, std::float_t lateral)
+						{
+							return structures::vec3_s{ centre.x + tangent.x * forward + side.x * lateral, height, centre.z + tangent.y * forward + side.y * lateral };
+						};
+
+					if (path.walks[index] > 0.0f && speckle() > town_dash_worn && intruder({ centre.x, centre.z }, order) == SIZE_MAX)
+					{
+						builder.quad(corner(-town_dash_length * 0.5f, -town_dash_width * 0.5f), corner(town_dash_length * 0.5f, -town_dash_width * 0.5f), corner(town_dash_length * 0.5f, town_dash_width * 0.5f), corner(-town_dash_length * 0.5f, town_dash_width * 0.5f), { 0.0f, 1.0f, 0.0f });
+					}
+				}
+
+				along_path += span;
+			}
+
+			builder.compute_tangents(dash_vertex, dash_index);
+		}
 	}
 	/*
 	//=====================================================================================
